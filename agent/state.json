@@ -10,8 +10,8 @@
   },
   "github": {
     "latestRelease": {
-      "tag": "v0.2.37",
-      "name": "v0.2.37"
+      "tag": "",
+      "name": ""
     }
   },
   "trackedIssues": {
@@ -91,86 +91,5 @@
     }
   },
   "lastScannedIssueNumber": 166,
-  "researchedIssues": {
-    "161": {
-      "title": "ReferenceError: Bun is not defined when running with Node.js (v0.2.29)",
-      "verdict": "skipped",
-      "reason": "False alarm - agentic bug report, closed by reporter",
-      "researchedAt": "2026-02-09T00:00:00Z"
-    },
-    "155": {
-      "title": "Invalid model ID causes opaque schema validation crash instead of helpful error",
-      "verdict": "skipped",
-      "reason": "False alarm - issue not reproducible, closed by reporter",
-      "researchedAt": "2026-02-09T00:00:00Z"
-    },
-    "156": {
-      "title": "SDK incompatibility with Claude Code 2.1.x: --verbose flag required",
-      "verdict": "skipped",
-      "reason": "False alarm - fly.io specific, not SDK bug",
-      "researchedAt": "2026-02-09T00:00:00Z"
-    },
-    "151": {
-      "title": "Breaking: Duplicate tool_use IDs in v0.2.19",
-      "verdict": "skipped",
-      "reason": "Fixed in v0.2.20, no longer relevant",
-      "researchedAt": "2026-02-09T00:00:00Z"
-    },
-    "144": {
-      "title": "ANTHROPIC_BASE_URL via env option broken in v0.2.8+",
-      "verdict": "added_known_issue",
-      "reason": "Confirmed regression affecting custom base URL users, workaround available",
-      "researchedAt": "2026-02-09T00:00:00Z"
-    },
-    "158": {
-      "title": "Subagents are unable to inherit MCPs that are created via createSdkMcpServer starting v0.2.23",
-      "verdict": "skipped",
-      "reason": "Fixed in v0.2.34",
-      "researchedAt": "2026-02-09T00:00:00Z"
-    },
-    "130": {
-      "title": "Async subagents error with only prompt commands are supported in streaming mode",
-      "verdict": "skipped",
-      "reason": "Fixed in CLI 2.1.7, no longer relevant",
-      "researchedAt": "2026-02-09T00:00:00Z"
-    },
-    "122": {
-      "title": "SDK MCP servers fail to connect from concurrent query() calls - 60s timeout",
-      "verdict": "added_known_issue",
-      "reason": "Confirmed bug affecting concurrent usage, clear workaround available",
-      "researchedAt": "2026-02-09T00:00:00Z"
-    },
-    "121": {
-      "title": "Missing @anthropic-ai/sdk dependency causes types to resolve as any",
-      "verdict": "added_known_issue",
-      "reason": "Common TypeScript footgun, simple fix",
-      "researchedAt": "2026-02-09T00:00:00Z"
-    },
-    "115": {
-      "title": "allowedTools does not restrict built-in tools - security issue for read-only agents",
-      "verdict": "added_rule",
-      "reason": "User error - bypassPermissions disables allowedTools. Added rule to prevent misuse",
-      "researchedAt": "2026-02-09T00:00:00Z"
-    },
-    "106": {
-      "title": "SDK Should Throw Error Instead of Exiting with Code 1 on Long Input",
-      "verdict": "added_known_issue",
-      "reason": "Common production pain point, workaround via debug option",
-      "researchedAt": "2026-02-09T00:00:00Z"
-    },
-    "129": {
-      "title": "Ripgrep binary lacks execute permission on Remote SSH (VSIX doesn't preserve Unix permissions)",
-      "verdict": "added_known_issue",
-      "reason": "VS Code extension developers hit this, clear workaround available",
-      "researchedAt": "2026-02-09T00:00:00Z"
-    },
-    "118": {
-      "title": "MCP tool calls timeout at 5 minutes due to undici headersTimeout despite MCP_TOOL_TIMEOUT=1200000 (20 minutes)",
-      "verdict": "added_known_issue",
-      "reason": "Confirmed bug blocking long-running MCP tools, no workaround",
-      "researchedAt": "2026-02-09T00:00:00Z"
-    }
-  },
-  "lastResearchDate": "2026-02-09T00:00:00Z",
-  "lastUpdated": "2026-02-09T00:00:00Z"
+  "lastUpdated": "2026-02-09T08:10:24Z"
 }

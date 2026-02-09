@@ -1,0 +1,368 @@
+name: SDK Update Check
+
+on:
+  schedule:
+    - cron: "0 8 * * *"  # Daily at 08:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  MAX_MEND_RETRIES: 2
+  PIPELINE_LOG: /tmp/pipeline-log.json
+
+jobs:
+  daily-run:
+    if: github.repository == 'xiaolai/claude-agent-sdk-skill-autoupdated'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Initialize pipeline log
+        run: |
+          echo '{"startedAt":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","steps":[]}' > "$PIPELINE_LOG"
+
+      # ---------------------------------------------------------------
+      # 1. Monitor — zero API cost
+      # ---------------------------------------------------------------
+      - name: Run change monitor
+        id: monitor
+        working-directory: agent
+        run: |
+          START=$(date +%s)
+          bash monitor.sh && echo "changes=false" >> "$GITHUB_OUTPUT" || {
+            exit_code=$?
+            if [ "$exit_code" -eq 1 ]; then
+              echo "changes=true" >> "$GITHUB_OUTPUT"
+            else
+              ELAPSED=$(( $(date +%s) - START ))
+              jq --arg s "monitor" --arg r "error" --arg d "${ELAPSED}s" \
+                --arg e "Monitor script failed with exit code $exit_code" \
+                '.steps += [{"step":$s,"result":$r,"duration":$d,"error":$e}]' \
+                "$PIPELINE_LOG" > /tmp/pl.tmp && mv /tmp/pl.tmp "$PIPELINE_LOG"
+              exit $exit_code
+            fi
+          }
+          ELAPSED=$(( $(date +%s) - START ))
+          CHANGES="${{ steps.monitor.outputs.changes }}"
+          # Output may not be set yet in this run block, detect from exit code
+          if [ -f /tmp/change-report.json ]; then
+            CHANGES="true"
+          else
+            CHANGES="false"
+          fi
+          jq --arg s "monitor" --arg r "success" --arg d "${ELAPSED}s" \
+            --arg c "$CHANGES" \
+            '.steps += [{"step":$s,"result":$r,"duration":$d,"changesDetected":($c == "true")}]' \
+            "$PIPELINE_LOG" > /tmp/pl.tmp && mv /tmp/pl.tmp "$PIPELINE_LOG"
+
+      # ---------------------------------------------------------------
+      # 2. Setup — install + authenticate (once)
+      # ---------------------------------------------------------------
+      - name: Update Claude Code
+        run: claude update
+
+      - name: Authenticate Claude Code
+        id: auth
+        run: |
+          if [ -n "${{ secrets.CLAUDE_SETUP_TOKEN }}" ]; then
+            echo "Using subscription token authentication"
+            echo "${{ secrets.CLAUDE_SETUP_TOKEN }}" | claude setup-token
+            echo "method=subscription" >> "$GITHUB_OUTPUT"
+          elif [ -n "${{ secrets.ANTHROPIC_API_KEY }}" ]; then
+            echo "Using API key authentication"
+            echo "ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}" >> "$GITHUB_ENV"
+            echo "method=api_key" >> "$GITHUB_OUTPUT"
+          else
+            echo "ERROR: No authentication configured."
+            echo "Set either CLAUDE_SETUP_TOKEN (subscription) or ANTHROPIC_API_KEY secret."
+            jq --arg s "auth" --arg r "error" \
+              --arg e "No authentication configured" \
+              '.steps += [{"step":$s,"result":$r,"error":$e}]' \
+              "$PIPELINE_LOG" > /tmp/pl.tmp && mv /tmp/pl.tmp "$PIPELINE_LOG"
+            exit 1
+          fi
+          jq --arg s "auth" --arg r "success" --arg m "${{ steps.auth.outputs.method || 'unknown' }}" \
+            '.steps += [{"step":$s,"result":$r,"method":$m}]' \
+            "$PIPELINE_LOG" > /tmp/pl.tmp && mv /tmp/pl.tmp "$PIPELINE_LOG"
+
+      - name: Install agent dependencies
+        working-directory: agent
+        run: npm install
+
+      # ---------------------------------------------------------------
+      # 3. Update agent — only when version changes detected
+      # ---------------------------------------------------------------
+      - name: Run update agent
+        id: update
+        if: steps.monitor.outputs.changes == 'true'
+        continue-on-error: true
+        working-directory: agent
+        run: |
+          START=$(date +%s)
+          npx tsx update-agent.ts 2>&1 | tee /tmp/update-agent.log
+          EXIT_CODE=${PIPESTATUS[0]}
+          ELAPSED=$(( $(date +%s) - START ))
+
+          if [ "$EXIT_CODE" -eq 0 ]; then
+            jq --arg s "update" --arg r "success" --arg d "${ELAPSED}s" \
+              '.steps += [{"step":$s,"result":$r,"duration":$d}]' \
+              "$PIPELINE_LOG" > /tmp/pl.tmp && mv /tmp/pl.tmp "$PIPELINE_LOG"
+          else
+            LAST_LINES=$(tail -20 /tmp/update-agent.log | jq -Rs '.')
+            jq --arg s "update" --arg r "failed" --arg d "${ELAPSED}s" \
+              --arg c "$EXIT_CODE" --argjson e "$LAST_LINES" \
+              '.steps += [{"step":$s,"result":$r,"duration":$d,"exitCode":($c|tonumber),"lastOutput":$e}]' \
+              "$PIPELINE_LOG" > /tmp/pl.tmp && mv /tmp/pl.tmp "$PIPELINE_LOG"
+            exit $EXIT_CODE
+          fi
+
+      # ---------------------------------------------------------------
+      # 4. Research agent — runs daily
+      # ---------------------------------------------------------------
+      - name: Run research agent
+        id: research
+        continue-on-error: true
+        working-directory: agent
+        run: |
+          START=$(date +%s)
+          npx tsx research-agent.ts 2>&1 | tee /tmp/research-agent.log
+          EXIT_CODE=${PIPESTATUS[0]}
+          ELAPSED=$(( $(date +%s) - START ))
+
+          if [ "$EXIT_CODE" -eq 0 ]; then
+            jq --arg s "research" --arg r "success" --arg d "${ELAPSED}s" \
+              '.steps += [{"step":$s,"result":$r,"duration":$d}]' \
+              "$PIPELINE_LOG" > /tmp/pl.tmp && mv /tmp/pl.tmp "$PIPELINE_LOG"
+          else
+            LAST_LINES=$(tail -20 /tmp/research-agent.log | jq -Rs '.')
+            jq --arg s "research" --arg r "failed" --arg d "${ELAPSED}s" \
+              --arg c "$EXIT_CODE" --argjson e "$LAST_LINES" \
+              '.steps += [{"step":$s,"result":$r,"duration":$d,"exitCode":($c|tonumber),"lastOutput":$e}]' \
+              "$PIPELINE_LOG" > /tmp/pl.tmp && mv /tmp/pl.tmp "$PIPELINE_LOG"
+            exit $EXIT_CODE
+          fi
+
+      # ---------------------------------------------------------------
+      # 5. Verify → Mend loop (only when version changed)
+      # ---------------------------------------------------------------
+      - name: Verify and mend loop
+        id: verify
+        if: steps.monitor.outputs.changes == 'true'
+        continue-on-error: true
+        working-directory: agent
+        run: |
+          START=$(date +%s)
+          VERIFY_RESULT="unknown"
+          MEND_ATTEMPTS=0
+
+          for attempt in $(seq 0 $MAX_MEND_RETRIES); do
+            echo ""
+            echo "=== Verification attempt $((attempt + 1)) of $((MAX_MEND_RETRIES + 1)) ==="
+            echo ""
+
+            if bash verify.sh; then
+              ELAPSED=$(( $(date +%s) - START ))
+              jq --arg s "verify" --arg r "success" --arg d "${ELAPSED}s" \
+                --arg a "$((attempt + 1))" --arg m "$MEND_ATTEMPTS" \
+                '.steps += [{"step":$s,"result":$r,"duration":$d,"verifyAttempt":($a|tonumber),"mendRuns":($m|tonumber)}]' \
+                "$PIPELINE_LOG" > /tmp/pl.tmp && mv /tmp/pl.tmp "$PIPELINE_LOG"
+              exit 0
+            fi
+
+            if [ "$attempt" -eq "$MAX_MEND_RETRIES" ]; then
+              ELAPSED=$(( $(date +%s) - START ))
+              # Capture verify failures for the report
+              FAILURES=""
+              if [ -f /tmp/verify-report.json ]; then
+                FAILURES=$(jq -c '.failures' /tmp/verify-report.json)
+              fi
+              jq --arg s "verify" --arg r "failed" --arg d "${ELAPSED}s" \
+                --arg a "$((attempt + 1))" --arg m "$MEND_ATTEMPTS" \
+                --argjson f "${FAILURES:-[]}" \
+                '.steps += [{"step":$s,"result":$r,"duration":$d,"verifyAttempt":($a|tonumber),"mendRuns":($m|tonumber),"failures":$f}]' \
+                "$PIPELINE_LOG" > /tmp/pl.tmp && mv /tmp/pl.tmp "$PIPELINE_LOG"
+              exit 1
+            fi
+
+            echo ""
+            echo "--- Running mending agent (attempt $((attempt + 1))) ---"
+            echo ""
+            MEND_ATTEMPTS=$((MEND_ATTEMPTS + 1))
+            npx tsx mending-agent.ts 2>&1 | tee /tmp/mending-agent-$((attempt + 1)).log
+          done
+
+      # ---------------------------------------------------------------
+      # 6. Report agent — always runs, even after failures
+      # ---------------------------------------------------------------
+      - name: Update state.json
+        if: always() && steps.monitor.outputs.changes == 'true'
+        working-directory: agent
+        run: |
+          if [ -f /tmp/fresh-state.json ]; then
+            cp /tmp/fresh-state.json state.json
+          fi
+
+      - name: Finalize pipeline log
+        if: always()
+        run: |
+          # Record final status of each step using GitHub context
+          jq \
+            --arg update_outcome "${{ steps.update.outcome || 'skipped' }}" \
+            --arg research_outcome "${{ steps.research.outcome || 'skipped' }}" \
+            --arg verify_outcome "${{ steps.verify.outcome || 'skipped' }}" \
+            --arg finished "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            '. + {
+              "finishedAt": $finished,
+              "outcomes": {
+                "update": $update_outcome,
+                "research": $research_outcome,
+                "verify": $verify_outcome
+              }
+            }' "$PIPELINE_LOG" > /tmp/pl.tmp && mv /tmp/pl.tmp "$PIPELINE_LOG"
+
+          echo "Pipeline log:"
+          cat "$PIPELINE_LOG" | jq .
+
+      - name: Run report agent
+        if: always()
+        continue-on-error: true
+        working-directory: agent
+        run: |
+          START=$(date +%s)
+          npx tsx report-agent.ts 2>&1 | tee /tmp/report-agent.log
+          EXIT_CODE=${PIPESTATUS[0]}
+          ELAPSED=$(( $(date +%s) - START ))
+
+          if [ "$EXIT_CODE" -eq 0 ]; then
+            jq --arg s "report" --arg r "success" --arg d "${ELAPSED}s" \
+              '.steps += [{"step":$s,"result":$r,"duration":$d}]' \
+              "$PIPELINE_LOG" > /tmp/pl.tmp && mv /tmp/pl.tmp "$PIPELINE_LOG"
+          else
+            jq --arg s "report" --arg r "failed" --arg d "${ELAPSED}s" \
+              --arg c "$EXIT_CODE" \
+              '.steps += [{"step":$s,"result":$r,"duration":$d,"exitCode":($c|tonumber)}]' \
+              "$PIPELINE_LOG" > /tmp/pl.tmp && mv /tmp/pl.tmp "$PIPELINE_LOG"
+          fi
+
+      # ---------------------------------------------------------------
+      # 7. Stamp README with today's date
+      # ---------------------------------------------------------------
+      - name: Update README auto-updated date
+        if: always()
+        run: |
+          NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          sed -i "s/auto-updated\*\*: [0-9T:Z-]\{20\}/auto-updated**: $NOW/" README.md
+
+      # ---------------------------------------------------------------
+      # 8. Single commit — always runs to save report + partial work
+      # ---------------------------------------------------------------
+      - name: Commit and push
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add -A .
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+
+          TODAY=$(date -u +%Y-%m-%d)
+          REPORT="/tmp/change-report.json"
+
+          # Check if any agent failed
+          HAS_FAILURES="false"
+          if jq -e '.outcomes | to_entries[] | select(.value == "failure")' "$PIPELINE_LOG" > /dev/null 2>&1; then
+            HAS_FAILURES="true"
+          fi
+
+          {
+            # Title
+            if [ "$HAS_FAILURES" == "true" ]; then
+              FAILED_STEPS=$(jq -r '[.outcomes | to_entries[] | select(.value == "failure") | .key] | join(", ")' "$PIPELINE_LOG")
+              if [ -f "$REPORT" ] && jq -e '.changes[] | select(.type == "npm_version")' "$REPORT" > /dev/null 2>&1; then
+                OLD_VER=$(jq -r '.oldVersion' "$REPORT")
+                NEW_VER=$(jq -r '.newVersion // "update"' "$REPORT")
+                echo "daily: partial run (${TODAY}) — ${FAILED_STEPS} failed [SDK v${OLD_VER} → v${NEW_VER}]"
+              else
+                echo "daily: partial run (${TODAY}) — ${FAILED_STEPS} failed"
+              fi
+            elif [ -f "$REPORT" ] && jq -e '.changes[] | select(.type == "npm_version")' "$REPORT" > /dev/null 2>&1; then
+              OLD_VER=$(jq -r '.oldVersion' "$REPORT")
+              NEW_VER=$(jq -r '.newVersion // "update"' "$REPORT")
+              echo "update: SDK v${OLD_VER} → v${NEW_VER} (${TODAY})"
+            else
+              echo "daily: research + report (${TODAY})"
+            fi
+
+            echo ""
+
+            # Version update details (if applicable)
+            if [ -f "$REPORT" ] && jq -e '.changes[] | select(.type == "npm_version")' "$REPORT" > /dev/null 2>&1; then
+              OLD_VER=$(jq -r '.oldVersion' "$REPORT")
+              NEW_VER=$(jq -r '.newVersion // "update"' "$REPORT")
+              echo "## Version Update"
+              echo "- Bump @anthropic-ai/claude-agent-sdk ${OLD_VER} → ${NEW_VER}"
+
+              RELEASE_NOTES=$(jq -r '.changes[] | select(.type == "github_release") | .releaseNotes // empty' "$REPORT")
+              [ -n "$RELEASE_NOTES" ] && echo "- Release notes: $(echo "$RELEASE_NOTES" | head -c 200)"
+
+              jq -e '.changes[] | select(.type == "peer_deps")' "$REPORT" > /dev/null 2>&1 && \
+                echo "- Peer deps: $(jq -c '.changes[] | select(.type == "peer_deps") | .old' "$REPORT") → $(jq -c '.changes[] | select(.type == "peer_deps") | .new' "$REPORT")"
+
+              jq -e '.changes[] | select(.type == "engines")' "$REPORT" > /dev/null 2>&1 && \
+                echo "- Engines: $(jq -c '.changes[] | select(.type == "engines") | .old' "$REPORT") → $(jq -c '.changes[] | select(.type == "engines") | .new' "$REPORT")"
+
+              for row in $(jq -c '.issueStateChanges[]?' "$REPORT"); do
+                echo "- Issue $(echo "$row" | jq -r '.repo')#$(echo "$row" | jq -r '.issue'): $(echo "$row" | jq -r '.oldState') → $(echo "$row" | jq -r '.newState')"
+              done
+
+              for row in $(jq -c '.newBugIssues[]?' "$REPORT"); do
+                echo "- New bug: #$(echo "$row" | jq -r '.issue') — $(echo "$row" | jq -r '.title')"
+              done
+            fi
+
+            # Research section
+            if git diff HEAD -- agent/state.json 2>/dev/null | grep -q '"verdict"'; then
+              echo ""
+              echo "## Research"
+              NEW_RESEARCHED=$(git diff HEAD -- agent/state.json | grep '^\+.*"verdict"' | wc -l | tr -d ' ')
+              ADDED=$(git diff HEAD -- agent/state.json | grep '^\+.*"added_known_issue\|added_rule"' | wc -l | tr -d ' ')
+              SKIPPED=$(git diff HEAD -- agent/state.json | grep '^\+.*"skipped"' | wc -l | tr -d ' ')
+              echo "Evaluated ${NEW_RESEARCHED} issue(s)."
+              [ "$ADDED" -gt 0 ] && echo "- Added ${ADDED} Known Issue(s) or rule(s)"
+              [ "$SKIPPED" -gt 0 ] && echo "- Skipped ${SKIPPED} issue(s)"
+            fi
+
+            # Failures section
+            if [ "$HAS_FAILURES" == "true" ]; then
+              echo ""
+              echo "## Failures"
+              jq -r '.steps[] | select(.result == "failed") | "- \(.step): exit \(.exitCode // "?") (\(.duration // "?"))"' "$PIPELINE_LOG"
+            fi
+          } > /tmp/commit-message.txt
+
+          git commit -F /tmp/commit-message.txt
+          git push
+
+      # ---------------------------------------------------------------
+      # 9. Fail the workflow if any critical step failed
+      # ---------------------------------------------------------------
+      - name: Check for failures
+        if: always()
+        run: |
+          UPDATE="${{ steps.update.outcome || 'skipped' }}"
+          RESEARCH="${{ steps.research.outcome || 'skipped' }}"
+          VERIFY="${{ steps.verify.outcome || 'skipped' }}"
+
+          if [ "$UPDATE" == "failure" ] || [ "$RESEARCH" == "failure" ] || [ "$VERIFY" == "failure" ]; then
+            echo "Pipeline had failures: update=$UPDATE research=$RESEARCH verify=$VERIFY"
+            echo "Report and partial changes have been committed."
+            exit 1
+          fi

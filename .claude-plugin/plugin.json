@@ -1,0 +1,11 @@
+{
+  "name": "claude-agent-sdk",
+  "description": "Build autonomous AI agents with Claude Agent SDK v0.2.37. Complete TypeScript API reference for query(), hooks, subagents, MCP, permissions, sandbox, structured outputs, and sessions.",
+  "version": "2.0.0",
+  "author": {
+    "name": "xiaolai"
+  },
+  "license": "MIT",
+  "repository": "https://github.com/xiaolai/xiaolai-claude-agent-sdk-skill",
+  "keywords": ["claude", "agent", "sdk", "mcp", "hooks", "subagents", "structured-outputs"]
+}

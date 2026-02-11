@@ -87,6 +87,16 @@ flowchart TD
 
 **Report Agent** generates a markdown summary of the day's pipeline run.
 
+## Cost Log
+
+| Date | SDK Version | Update | Research | Report | Total | Notes |
+|------|-------------|--------|----------|--------|-------|-------|
+| 2026-02-11 | v0.2.39 | — | $1.22 | $0.05 | **$1.27** | Research only, 13 issues evaluated |
+| 2026-02-10 | v0.2.38→v0.2.39 | — | — | — | **—** | Pipeline failed (CLI not installed) |
+| 2026-02-09 | v0.2.37 | — | $0.84 | $0.05 | **$0.89** | Research only, 13 issues evaluated |
+
+_Last 7 days only. Updated automatically by the report agent. See [reports/](reports/) for full history._
+
 ## How It Works
 
 The daily pipeline runs via GitHub Actions on this repo. It costs the **maintainer** a few dollars per day in LLM usage. The pipeline commits updated skill files directly to this repo.
@@ -101,7 +111,7 @@ The daily pipeline runs via GitHub Actions on this repo. It costs the **maintain
 ## Pipeline Prerequisites (maintainer only)
 
 - [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) installed on the runner
-- GitHub secret: `CLAUDE_SETUP_TOKEN` (subscription) or `ANTHROPIC_API_KEY`
+- GitHub secret: `CLAUDE_CODE_OAUTH_TOKEN` (subscription) or `ANTHROPIC_API_KEY`
 - `gh` CLI authenticated (for issue scanning)
 
 ## Links

@@ -1,6 +1,6 @@
 {
   "npm": {
-    "version": "0.2.38",
+    "version": "0.2.39",
     "peerDependencies": {
       "zod": "^4.0.0"
     },
@@ -91,5 +91,5 @@
     }
   },
   "lastScannedIssueNumber": 166,
-  "lastUpdated": "2026-02-10T08:11:20Z"
+  "lastUpdated": "2026-02-11T08:10:25Z"
 }

@@ -80,6 +80,42 @@
       "title": "Opaque process exited with code 1 errors",
       "state": "open",
       "knownIssueNumber": 11
+    },
+    "170": {
+      "repo": "anthropics/claude-agent-sdk-typescript",
+      "title": "permissionDecision: 'deny' causes missing tool_result",
+      "state": "open",
+      "knownIssueNumber": 12
+    },
+    "168": {
+      "repo": "anthropics/claude-agent-sdk-typescript",
+      "title": "thinking: { type: 'adaptive' } silently disables thinking",
+      "state": "open",
+      "knownIssueNumber": 13
+    },
+    "169": {
+      "repo": "anthropics/claude-agent-sdk-typescript",
+      "title": "HTTP MCP servers fail behind corporate proxies",
+      "state": "open",
+      "knownIssueNumber": 14
+    },
+    "157": {
+      "repo": "anthropics/claude-agent-sdk-typescript",
+      "title": "ANTHROPIC_LOG=debug corrupts SDK protocol",
+      "state": "open",
+      "knownIssueNumber": 15
+    },
+    "114": {
+      "repo": "anthropics/claude-agent-sdk-typescript",
+      "title": "MCP server responses don't reset activity timer",
+      "state": "open",
+      "knownIssueNumber": 16
+    },
+    "150": {
+      "repo": "anthropics/claude-agent-sdk-typescript",
+      "title": "SDK fails to discover CLI when bundled with bun build",
+      "state": "open",
+      "knownIssueNumber": 17
     }
   },
   "trackedIssuesExternal": {
@@ -90,6 +126,86 @@
       "knownIssueNumber": 5
     }
   },
-  "lastScannedIssueNumber": 166,
-  "lastUpdated": "2026-02-11T08:10:25Z"
+  "researchedIssues": {
+    "170": {
+      "title": "permissionDecision: 'deny' in PreToolUse hook causes missing tool_result",
+      "verdict": "added_known_issue",
+      "reason": "Common hook usage pattern with clear workaround, causes API 400 errors",
+      "researchedAt": "2026-02-11"
+    },
+    "169": {
+      "title": "HTTP MCP Servers Fail Behind Corporate Proxy",
+      "verdict": "added_known_issue",
+      "reason": "Critical blocker for enterprise adoption, no current workaround except switching to SSE/stdio",
+      "researchedAt": "2026-02-11"
+    },
+    "168": {
+      "title": "thinking: { type: 'adaptive' } silently disables thinking",
+      "verdict": "added_known_issue",
+      "reason": "SDK docs recommend using thinking option but it breaks thinking, has clear workaround",
+      "researchedAt": "2026-02-11"
+    },
+    "158": {
+      "title": "Subagents unable to inherit createSdkMcpServer MCPs",
+      "verdict": "skipped",
+      "reason": "Fixed in v0.2.34 per user comment, issue already resolved",
+      "researchedAt": "2026-02-11"
+    },
+    "157": {
+      "title": "ANTHROPIC_LOG=debug corrupts SDK protocol",
+      "verdict": "added_known_issue",
+      "reason": "Breaks standard debugging workflow, has clear workaround via debug option",
+      "researchedAt": "2026-02-11"
+    },
+    "156": {
+      "title": "SDK incompatibility with Claude Code 2.1.x --verbose flag",
+      "verdict": "skipped",
+      "reason": "Closed issue, reporter said it was fly.io specific, not a general SDK bug",
+      "researchedAt": "2026-02-11"
+    },
+    "155": {
+      "title": "Invalid model ID causes opaque schema validation crash",
+      "verdict": "skipped",
+      "reason": "Closed as not reproducible by maintainer",
+      "researchedAt": "2026-02-11"
+    },
+    "151": {
+      "title": "Breaking: Duplicate tool_use IDs in v0.2.19",
+      "verdict": "skipped",
+      "reason": "Fixed in v0.2.20, no longer relevant",
+      "researchedAt": "2026-02-11"
+    },
+    "150": {
+      "title": "SDK fails to discover bundled CLI when bundled with bun build",
+      "verdict": "added_known_issue",
+      "reason": "Clear use case (bundling), known root cause, has workaround",
+      "researchedAt": "2026-02-11"
+    },
+    "147": {
+      "title": "Add support for listing claude code past sessions",
+      "verdict": "skipped",
+      "reason": "Feature request, not a bug or known issue",
+      "researchedAt": "2026-02-11"
+    },
+    "130": {
+      "title": "Async subagents error with 'only prompt commands are supported in streaming mode'",
+      "verdict": "skipped",
+      "reason": "Closed, supposedly fixed in CLI 2.1.7, though one user reported still seeing it in 2.1.16",
+      "researchedAt": "2026-02-11"
+    },
+    "114": {
+      "title": "MCP server responses don't reset lastActivityTime",
+      "verdict": "added_known_issue",
+      "reason": "Well-documented issue with verified community patch, affects query performance and reliability",
+      "researchedAt": "2026-02-11"
+    },
+    "161": {
+      "title": "ReferenceError: Bun is not defined when running with Node.js",
+      "verdict": "skipped",
+      "reason": "False report, closed by author as agentic bug report error",
+      "researchedAt": "2026-02-11"
+    }
+  },
+  "lastScannedIssueNumber": 170,
+  "lastUpdated": "2026-02-11T16:30:00Z"
 }

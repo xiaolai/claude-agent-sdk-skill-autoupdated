@@ -596,6 +596,52 @@ await fs.promises.chmod(rgPath, 0o755);
 **Impact**: Difficult to debug production issues — all errors look identical.
 **Workaround**: Enable `debug: true` or `debugFile: 'debug.log'` option to capture detailed logs.
 
+### #12: permissionDecision: 'deny' causes missing tool_result, API 400 error
+**Error**: `invalid_request_error` - "tool_use ids were found without tool_result blocks" ([#170](https://github.com/anthropics/claude-agent-sdk-typescript/issues/170))
+**Cause**: PreToolUse hook with `permissionDecision: 'deny'` blocks tool execution but doesn't generate a corresponding `tool_result`, breaking conversation history.
+**Fix**: Use `permissionDecision: 'allow'` with modified input instead:
+```typescript
+return {
+  hookSpecificOutput: {
+    hookEventName: 'PreToolUse',
+    permissionDecision: 'allow',
+    updatedInput: { command: `echo "BLOCKED: ${reason}"` }
+  }
+};
+```
+
+### #13: thinking: { type: 'adaptive' } silently disables thinking
+**Error**: Zero thinking blocks despite `thinking: { type: 'adaptive' }` configured ([#168](https://github.com/anthropics/claude-agent-sdk-typescript/issues/168))
+**Cause**: SDK sets `maxThinkingTokens = undefined` for adaptive mode, preventing `--max-thinking-tokens` CLI flag from being passed.
+**Fix**: Use deprecated `maxThinkingTokens` option directly instead of `thinking`:
+```typescript
+// WRONG (disables thinking)
+thinking: { type: 'adaptive' }, effort: 'medium'
+
+// CORRECT
+maxThinkingTokens: 10000, effort: 'medium'
+```
+
+### #14: HTTP MCP servers fail behind corporate proxies
+**Error**: "The socket connection was closed unexpectedly" when HTTP MCP servers used behind corporate proxy with SSL inspection ([#169](https://github.com/anthropics/claude-agent-sdk-typescript/issues/169))
+**Cause**: Bundled MCP transport doesn't propagate proxy configuration from environment variables (HTTP_PROXY, HTTPS_PROXY, NODE_EXTRA_CA_CERTS).
+**Workaround**: Use SSE-type MCP servers or stdio MCP servers instead of HTTP type.
+
+### #15: ANTHROPIC_LOG=debug corrupts SDK protocol
+**Error**: `CLI output was not valid JSON` when `ANTHROPIC_LOG=debug` is set ([#157](https://github.com/anthropics/claude-agent-sdk-typescript/issues/157))
+**Cause**: Debug logs written to stdout corrupt JSON protocol between SDK and CLI subprocess.
+**Fix**: Don't use `ANTHROPIC_LOG=debug` with SDK. Use `debug: true` or `debugFile` option instead.
+
+### #16: MCP server responses don't reset activity timer
+**Error**: "Stream closed" errors or excessive query durations with SDK MCP servers ([#114](https://github.com/anthropics/claude-agent-sdk-typescript/issues/114))
+**Cause**: `sendMcpServerMessageToCli()` resolves MCP responses but doesn't reset `lastActivityTime`, causing premature timeouts or unnecessary waits.
+**Fix**: Increase `CLAUDE_CODE_STREAM_CLOSE_TIMEOUT` (e.g., 120000 for 120s) or apply [community patch](https://github.com/anthropics/claude-agent-sdk-typescript/issues/114#issuecomment-2693849829).
+
+### #17: SDK fails to discover CLI when bundled with bun build
+**Error**: `Claude Code executable not found at /$bunfs/root/cli.js` ([#150](https://github.com/anthropics/claude-agent-sdk-typescript/issues/150))
+**Cause**: `import.meta.url` resolves to virtual filesystem path when bundled, where CLI binary doesn't physically exist.
+**Workaround**: Set `pathToClaudeCodeExecutable` option explicitly to the physical CLI path, or avoid bundling the SDK.
+
 ---
 
 ## Changelog Highlights (v0.2.12 → v0.2.37)

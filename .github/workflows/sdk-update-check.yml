@@ -69,17 +69,20 @@ jobs:
       - name: Authenticate Claude Code
         id: auth
         run: |
-          if [ -n "${{ secrets.CLAUDE_SETUP_TOKEN }}" ]; then
-            echo "Using subscription token authentication"
-            echo "${{ secrets.CLAUDE_SETUP_TOKEN }}" | claude setup-token
-            echo "method=subscription" >> "$GITHUB_OUTPUT"
+          if [ -n "${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}" ]; then
+            echo "Using OAuth token authentication"
+            echo "CLAUDE_CODE_OAUTH_TOKEN=${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}" >> "$GITHUB_ENV"
+            # Skip onboarding in non-interactive mode
+            mkdir -p ~/.claude
+            echo '{"hasCompletedOnboarding":true}' > ~/.claude.json
+            echo "method=oauth" >> "$GITHUB_OUTPUT"
           elif [ -n "${{ secrets.ANTHROPIC_API_KEY }}" ]; then
             echo "Using API key authentication"
             echo "ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}" >> "$GITHUB_ENV"
             echo "method=api_key" >> "$GITHUB_OUTPUT"
           else
             echo "ERROR: No authentication configured."
-            echo "Set either CLAUDE_SETUP_TOKEN (subscription) or ANTHROPIC_API_KEY secret."
+            echo "Set either CLAUDE_CODE_OAUTH_TOKEN or ANTHROPIC_API_KEY secret."
             jq --arg s "auth" --arg r "error" \
               --arg e "No authentication configured" \
               '.steps += [{"step":$s,"result":$r,"error":$e}]' \

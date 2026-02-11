@@ -63,8 +63,8 @@ jobs:
       # ---------------------------------------------------------------
       # 2. Setup — install + authenticate (once)
       # ---------------------------------------------------------------
-      - name: Update Claude Code
-        run: claude update
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
 
       - name: Authenticate Claude Code
         id: auth

@@ -116,6 +116,24 @@
       "title": "SDK fails to discover CLI when bundled with bun build",
       "state": "open",
       "knownIssueNumber": 17
+    },
+    "171": {
+      "repo": "anthropics/claude-agent-sdk-typescript",
+      "title": "unstable_v2_createSession() doesn't support plugins option",
+      "state": "open",
+      "knownIssueNumber": 18
+    },
+    "172": {
+      "repo": "anthropics/claude-agent-sdk-typescript",
+      "title": "AgentDefinition.tools and disallowedTools not enforced for subagents",
+      "state": "open",
+      "knownIssueNumber": 19
+    },
+    "163": {
+      "repo": "anthropics/claude-agent-sdk-typescript",
+      "title": "AgentDefinition.tools is intersected with Options.tools",
+      "state": "open",
+      "knownIssueNumber": 19
     }
   },
   "trackedIssuesExternal": {
@@ -204,8 +222,26 @@
       "verdict": "skipped",
       "reason": "False report, closed by author as agentic bug report error",
       "researchedAt": "2026-02-11"
+    },
+    "171": {
+      "title": "unstable_v2_createSession() Does Not Support plugins Option",
+      "verdict": "added_known_issue",
+      "reason": "Well-documented API limitation affecting v2 sessions with plugins, no workaround except using query() API",
+      "researchedAt": "2026-02-12"
+    },
+    "172": {
+      "title": "AgentDefinition.tools and disallowedTools are not enforced for subagent child processes",
+      "verdict": "added_known_issue",
+      "reason": "Security/isolation issue with subagents, affects common use case, has functional workaround via hooks",
+      "researchedAt": "2026-02-12"
+    },
+    "152": {
+      "title": "Bug: Calling close() before first assistant message makes session non-resumable",
+      "verdict": "skipped",
+      "reason": "Fixed in latest SDK version per user confirmation",
+      "researchedAt": "2026-02-12"
     }
   },
-  "lastScannedIssueNumber": 170,
-  "lastUpdated": "2026-02-11T16:30:00Z"
+  "lastScannedIssueNumber": 172,
+  "lastUpdated": "2026-02-12T00:00:00Z"
 }

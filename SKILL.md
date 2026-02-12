@@ -642,6 +642,37 @@ maxThinkingTokens: 10000, effort: 'medium'
 **Cause**: `import.meta.url` resolves to virtual filesystem path when bundled, where CLI binary doesn't physically exist.
 **Workaround**: Set `pathToClaudeCodeExecutable` option explicitly to the physical CLI path, or avoid bundling the SDK.
 
+### #18: unstable_v2_createSession() doesn't support plugins option
+**Error**: Plugins silently ignored when using v2 session API ([#171](https://github.com/anthropics/claude-agent-sdk-typescript/issues/171))
+**Cause**: `SDKSessionOptions` type doesn't include `plugins` field, so `--plugin-dir` CLI argument is never passed to Claude Code process.
+**Workaround**: Use `query()` API instead of v2 sessions if you need plugin support. Plugins work correctly with the standard `query()` API.
+
+### #19: AgentDefinition.tools and disallowedTools not enforced for subagents
+**Error**: Subagents can call tools they shouldn't have access to, leading to infinite recursion ([#172](https://github.com/anthropics/claude-agent-sdk-typescript/issues/172), [#163](https://github.com/anthropics/claude-agent-sdk-typescript/issues/163))
+**Cause**: CLI doesn't map `AgentDefinition.tools` to `--allowedTools` / `--disallowedTools` flags when spawning subagent child processes.
+**Workaround**: Use `PreToolUse` hook with `canUseTool` callback to block disallowed tools:
+```typescript
+const activeSubagentSessions = new Map<string, string>();
+
+const options = {
+  hooks: {
+    SubagentStart: [(input) => {
+      activeSubagentSessions.set(input.session_id, input.agent_name);
+      return { continue: true };
+    }],
+  },
+  canUseTool: async ({ tool_name, session_id }) => {
+    if (tool_name === "Task" && activeSubagentSessions.has(session_id)) {
+      return {
+        allowed: false,
+        reason: "Task tool is not allowed in subagents"
+      };
+    }
+    return { allowed: true };
+  }
+};
+```
+
 ---
 
 ## Changelog Highlights (v0.2.12 → v0.2.37)

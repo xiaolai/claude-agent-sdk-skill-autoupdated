@@ -165,16 +165,18 @@ if [[ -n "$HAS_VERSION_CHANGE" ]]; then
   if [[ ! -f "$README_FILE" ]]; then
     fail "README.md" "File not found"
   else
-    if grep -q "v${NEW_VERSION}" "$README_FILE"; then
-      pass "README.md" "Contains v${NEW_VERSION}"
+    # README contains a historical table of older versions; only validate the
+    # current "SDK Version" line near the top to avoid false positives.
+    if grep -qE "^\\*\\*SDK Version\\*\\*: v${NEW_VERSION}\\b" "$README_FILE"; then
+      pass "README.md" "SDK Version line is v${NEW_VERSION}"
     else
-      fail "README.md" "Missing v${NEW_VERSION}"
+      fail "README.md" "SDK Version line missing v${NEW_VERSION}"
     fi
 
-    if grep -q "v${OLD_VERSION}" "$README_FILE"; then
-      fail "README.md" "Still contains old v${OLD_VERSION}"
+    if head -n 30 "$README_FILE" | grep -q "v${OLD_VERSION}"; then
+      fail "README.md" "Top section still contains old v${OLD_VERSION}"
     else
-      pass "README.md" "No stale version"
+      pass "README.md" "Top section has no stale version"
     fi
   fi
 
@@ -198,7 +200,8 @@ if [[ -n "$HAS_VERSION_CHANGE" ]]; then
   echo "Sweeping for any remaining '${OLD_VERSION}' references ..."
   stale_hits=$(grep -rn "${OLD_VERSION}" "$SKILL_ROOT" \
     --include="*.md" --include="*.json" --include="*.sh" --include="*.ts" \
-    --exclude-dir=agent --exclude-dir=node_modules \
+    --exclude-dir=agent --exclude-dir=node_modules --exclude-dir=reports --exclude-dir=.git --exclude-dir=tmp \
+    --exclude="README.md" --exclude="CHANGELOG.md" \
     2>/dev/null || true)
 
   if [[ -n "$stale_hits" ]]; then

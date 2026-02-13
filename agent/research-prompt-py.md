@@ -239,6 +239,57 @@ After evaluating each issue, add it to `python.researchedIssues`:
 
 ---
 
+## Part D: Template Audit (on version change only)
+
+**Skip this section if Part A was skipped** (i.e., `python.lastAuditedVersion` already matched the current SDK version — no API changes to catch).
+
+When the SDK version changed, templates may use APIs that were renamed, removed, or had their signatures changed. Audit all `.py` files in `templates/python/` against the current installed package.
+
+### D1: Read all template files
+
+```bash
+ls templates/python/*.py
+```
+
+Read each `.py` file and extract:
+1. **Import names** — what's imported from `claude_agent_sdk` (e.g., `query`, `ClaudeSDKClient`, `ClaudeAgentOptions`, `HookMatcher`, `HookContext`, `ResultMessage`, `tool`, `create_sdk_mcp_server`)
+2. **Function/method call signatures** — how `query()`, `ClaudeSDKClient()`, `@tool()`, `create_sdk_mcp_server()` are called
+3. **Options fields used** — which fields of `ClaudeAgentOptions` are referenced (e.g., `output_format`, `hooks`, `sandbox`, `permission_mode`)
+4. **Callback signatures** — shapes of `can_use_tool`, hook callbacks, and their parameters
+5. **Message type checks** — how messages are accessed (dict-style `msg["type"]` or isinstance checks)
+
+### D2: Compare against installed package
+
+For each template, verify:
+- All imported names still exist in `claude_agent_sdk.__init__` or `claude_agent_sdk.types`
+- `ClaudeAgentOptions` field names match the current dataclass (watch for renames like `output_format` → `output_schema`)
+- Callback parameter types are correct (e.g., `can_use_tool` parameter count and names)
+- `ClaudeSDKClient` methods are still present with correct signatures
+- `HookMatcher`, `HookContext` and other type names haven't been renamed
+
+### D3: Fix broken templates
+
+If a template uses a renamed or removed API:
+1. Read the template file
+2. Use Edit to replace the old API name/pattern with the new one
+3. Verify the fix is consistent with what SKILL-python.md documents
+
+**Do NOT add new features or refactor templates.** Only fix what's broken by the API change.
+
+### D4: Record template audit in state.json
+
+Add to `python.lastAuditSummary`:
+
+```json
+{
+  "templateFilesAudited": 12,
+  "templateFixesApplied": 1,
+  "templateFixDetails": ["hooks_example.py: renamed HookContext → HookCallbackContext"]
+}
+```
+
+---
+
 ## Rules
 
 1. **Do NOT create git branches or commits.** The workflow handles that.

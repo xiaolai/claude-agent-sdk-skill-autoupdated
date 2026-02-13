@@ -177,6 +177,31 @@ jobs:
           fi
 
       # ---------------------------------------------------------------
+      # 4b. Template type-check — always runs (catches API drift)
+      # ---------------------------------------------------------------
+      - name: Type-check templates
+        id: typecheck
+        continue-on-error: true
+        run: |
+          START=$(date +%s)
+          bash scripts/typecheck-templates.sh 2>&1 | tee /tmp/typecheck.log
+          EXIT_CODE=${PIPESTATUS[0]}
+          ELAPSED=$(( $(date +%s) - START ))
+
+          if [ "$EXIT_CODE" -eq 0 ]; then
+            jq --arg s "typecheck" --arg r "success" --arg d "${ELAPSED}s" \
+              '.steps += [{"step":$s,"result":$r,"duration":$d}]' \
+              "$PIPELINE_LOG" > /tmp/pl.tmp && mv /tmp/pl.tmp "$PIPELINE_LOG"
+          else
+            LAST_LINES=$(tail -20 /tmp/typecheck.log | jq -Rs '.')
+            jq --arg s "typecheck" --arg r "failed" --arg d "${ELAPSED}s" \
+              --arg c "$EXIT_CODE" --argjson e "$LAST_LINES" \
+              '.steps += [{"step":$s,"result":$r,"duration":$d,"exitCode":($c|tonumber),"lastOutput":$e}]' \
+              "$PIPELINE_LOG" > /tmp/pl.tmp && mv /tmp/pl.tmp "$PIPELINE_LOG"
+            echo "Template type-check failed — see log above"
+          fi
+
+      # ---------------------------------------------------------------
       # 5. Verify → Mend loop (only when version changed)
       # ---------------------------------------------------------------
       - name: Verify and mend loop
@@ -244,6 +269,7 @@ jobs:
             --arg update_outcome "${{ steps.update.outcome || 'skipped' }}" \
             --arg research_ts_outcome "${{ steps.research_ts.outcome || 'skipped' }}" \
             --arg research_py_outcome "${{ steps.research_py.outcome || 'skipped' }}" \
+            --arg typecheck_outcome "${{ steps.typecheck.outcome || 'skipped' }}" \
             --arg verify_outcome "${{ steps.verify.outcome || 'skipped' }}" \
             --arg finished "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             '. + {
@@ -252,6 +278,7 @@ jobs:
                 "update": $update_outcome,
                 "research_ts": $research_ts_outcome,
                 "research_py": $research_py_outcome,
+                "typecheck": $typecheck_outcome,
                 "verify": $verify_outcome
               }
             }' "$PIPELINE_LOG" > /tmp/pl.tmp && mv /tmp/pl.tmp "$PIPELINE_LOG"
@@ -391,10 +418,11 @@ jobs:
           UPDATE="${{ steps.update.outcome || 'skipped' }}"
           RESEARCH_TS="${{ steps.research_ts.outcome || 'skipped' }}"
           RESEARCH_PY="${{ steps.research_py.outcome || 'skipped' }}"
+          TYPECHECK="${{ steps.typecheck.outcome || 'skipped' }}"
           VERIFY="${{ steps.verify.outcome || 'skipped' }}"
 
-          if [ "$UPDATE" == "failure" ] || [ "$RESEARCH_TS" == "failure" ] || [ "$RESEARCH_PY" == "failure" ] || [ "$VERIFY" == "failure" ]; then
-            echo "Pipeline had failures: update=$UPDATE research_ts=$RESEARCH_TS research_py=$RESEARCH_PY verify=$VERIFY"
+          if [ "$UPDATE" == "failure" ] || [ "$RESEARCH_TS" == "failure" ] || [ "$RESEARCH_PY" == "failure" ] || [ "$TYPECHECK" == "failure" ] || [ "$VERIFY" == "failure" ]; then
+            echo "Pipeline had failures: update=$UPDATE research_ts=$RESEARCH_TS research_py=$RESEARCH_PY typecheck=$TYPECHECK verify=$VERIFY"
             echo "Report and partial changes have been committed."
             exit 1
           fi

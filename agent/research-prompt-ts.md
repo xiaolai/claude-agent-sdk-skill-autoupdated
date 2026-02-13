@@ -234,6 +234,57 @@ After evaluating each issue, add it to `researchedIssues`:
 
 ---
 
+## Part D: Template Audit (on version change only)
+
+**Skip this section if Part A was skipped** (i.e., `lastAuditedVersion` already matched the current SDK version — no API changes to catch).
+
+When the SDK version changed, templates may use APIs that were renamed, removed, or had their signatures changed. Audit all `.ts` files in `templates/typescript/` against the current `sdk.d.ts`.
+
+### D1: Read all template files
+
+```bash
+ls templates/typescript/*.ts
+```
+
+Read each `.ts` file and extract:
+1. **Import paths and names** — what's imported from `@anthropic-ai/claude-agent-sdk`
+2. **Function call signatures** — how `query()`, `tool()`, `createSdkMcpServer()` are called
+3. **Options fields used** — which fields of `Options` are referenced (e.g., `outputFormat`, `hooks`, `sandbox`, `permissionMode`)
+4. **Callback signatures** — shapes of `canUseTool`, hook callbacks, and their parameters
+5. **Message type checks** — how `message.type`, `message.subtype`, `message.structured_output` etc. are accessed
+
+### D2: Compare against sdk.d.ts
+
+For each template, verify:
+- All imported names still exist in the SDK's exports
+- Option field names match the current `Options` interface (watch for renames like `outputFormat` → `outputSchema`)
+- Callback parameter types are correct (e.g., `canUseTool` third parameter shape)
+- Message field accesses match the current message type definitions
+- Enum/union values used (e.g., `permissionMode: "bypassPermissions"`) are still valid
+
+### D3: Fix broken templates
+
+If a template uses a renamed or removed API:
+1. Read the template file
+2. Use Edit to replace the old API name/pattern with the new one
+3. Verify the fix is consistent with what SKILL-typescript.md documents
+
+**Do NOT add new features or refactor templates.** Only fix what's broken by the API change.
+
+### D4: Record template audit in state.json
+
+Add to `typescript.lastAuditSummary`:
+
+```json
+{
+  "templateFilesAudited": 13,
+  "templateFixesApplied": 2,
+  "templateFixDetails": ["hooks-example.ts: renamed outputFormat → outputSchema", "..."]
+}
+```
+
+---
+
 ## Rules
 
 1. **Do NOT create git branches or commits.** The workflow handles that.

@@ -6,6 +6,10 @@ import { fileURLToPath } from "node:url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const CHANGE_REPORT_PATH = process.env.CHANGE_REPORT ?? "/tmp/change-report.json";
+
+// Prevent "cannot be launched inside another Claude Code session" error
+const cleanEnv = { ...process.env };
+delete cleanEnv.CLAUDECODE;
 const SYSTEM_PROMPT_PATH = resolve(__dirname, "system-prompt.md");
 const SKILL_ROOT = resolve(__dirname, "..");
 
@@ -82,6 +86,7 @@ for await (const message of query({
     ],
     settingSources: [],
     cwd: SKILL_ROOT,
+    env: cleanEnv,
   },
 })) {
   if (message.type === "assistant") turns++;

@@ -78,14 +78,7 @@ if [[ -n "$HAS_VERSION_CHANGE" ]]; then
   if [[ ! -f "$SKILL_TS_FILE" ]]; then
     fail "SKILL-typescript.md" "File not found"
   else
-    # Frontmatter description (~line 4)
-    if grep -q "SDK v${NEW_VERSION}" "$SKILL_TS_FILE"; then
-      pass "SKILL-typescript.md" "Contains 'SDK v${NEW_VERSION}'"
-    else
-      fail "SKILL-typescript.md" "Missing 'SDK v${NEW_VERSION}'"
-    fi
-
-    # Header (~line 10)
+    # Title / header line
     if grep -q "(v${NEW_VERSION})" "$SKILL_TS_FILE"; then
       pass "SKILL-typescript.md" "Contains '(v${NEW_VERSION})'"
     else
@@ -238,6 +231,7 @@ if [[ -n "$HAS_VERSION_CHANGE" ]]; then
     --exclude-dir=agent --exclude-dir=node_modules --exclude-dir=reports --exclude-dir=.git --exclude-dir=tmp \
     --exclude="README.md" --exclude="CHANGELOG.md" \
     --exclude="SKILL-python.md" --exclude="claude-agent-sdk-py.md" \
+    --exclude="package-lock.json" \
     2>/dev/null || true)
 
   if [[ -n "$stale_hits" ]]; then

@@ -10,6 +10,10 @@ const SYSTEM_PROMPT_PATH = resolve(__dirname, "research-prompt-py.md");
 const STATE_PATH = resolve(__dirname, "state.json");
 const SKILL_ROOT = resolve(__dirname, "..");
 
+// Prevent "cannot be launched inside another Claude Code session" error
+const cleanEnv = { ...process.env };
+delete cleanEnv.CLAUDECODE;
+
 // ---------------------------------------------------------------------------
 // Load inputs
 // ---------------------------------------------------------------------------
@@ -112,6 +116,7 @@ for await (const message of query({
     ],
     settingSources: [],
     cwd: SKILL_ROOT,
+    env: cleanEnv,
   },
 })) {
   if (message.type === "assistant") turns++;

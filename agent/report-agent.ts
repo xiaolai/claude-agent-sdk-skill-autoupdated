@@ -10,6 +10,10 @@ const STATE_PATH = resolve(__dirname, "state.json");
 const SKILL_ROOT = resolve(__dirname, "..");
 const COST_LOG_PATH = "/tmp/agent-costs.json";
 
+// Prevent "cannot be launched inside another Claude Code session" error
+const cleanEnv = { ...process.env };
+delete cleanEnv.CLAUDECODE;
+
 // ---------------------------------------------------------------------------
 // Load inputs
 // ---------------------------------------------------------------------------
@@ -128,6 +132,7 @@ for await (const message of query({
     ],
     settingSources: [],
     cwd: SKILL_ROOT,
+    env: cleanEnv,
   },
 })) {
   if (message.type === "assistant") turns++;

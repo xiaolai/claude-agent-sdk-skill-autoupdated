@@ -1,7 +1,7 @@
 {
   "typescript": {
     "registry": {
-      "version": "0.2.41",
+      "version": "0.2.42",
       "peerDependencies": {
         "zod": "^4.0.0"
       },
@@ -12,8 +12,8 @@
     "github": {
       "repo": "anthropics/claude-agent-sdk-typescript",
       "latestRelease": {
-        "tag": "",
-        "name": ""
+        "tag": "v0.2.42",
+        "name": "v0.2.42"
       }
     },
     "trackedIssues": {
@@ -142,12 +142,12 @@
       "4850": {
         "repo": "anthropics/claude-code",
         "title": "MCP Python SDK unicode issue",
-        "state": "open",
+        "state": "closed",
         "knownIssueNumber": 5
       }
     },
-    "lastScannedIssueNumber": 172,
-    "lastAuditedVersion": "0.2.41"
+    "lastScannedIssueNumber": 176,
+    "lastAuditedVersion": "0.2.42"
   },
   "python": {
     "registry": {
@@ -156,8 +156,8 @@
     "github": {
       "repo": "anthropics/claude-agent-sdk-python",
       "latestRelease": {
-        "tag": "",
-        "name": ""
+        "tag": "v0.1.36",
+        "name": "v0.1.36"
       }
     },
     "trackedIssues": {},
@@ -165,5 +165,5 @@
     "lastScannedIssueNumber": 571,
     "lastAuditedVersion": "none"
   },
-  "lastUpdated": "2026-02-14T00:00:00Z"
+  "lastUpdated": "2026-02-13T22:49:19Z"
 }

@@ -84,7 +84,7 @@ After auditing, set `lastAuditedVersion` to the current SDK version:
 
 ```json
 {
-  "lastAuditedVersion": "0.2.41"
+  "lastAuditedVersion": "0.2.42"
 }
 ```
 
@@ -94,7 +94,7 @@ Also record what was found in `lastAuditSummary`:
 {
   "lastAuditSummary": {
     "date": "2026-02-13",
-    "sdkVersion": "0.2.41",
+    "sdkVersion": "0.2.42",
     "newOptionsAdded": 3,
     "newMethodsAdded": 1,
     "newMessageTypesAdded": 0,

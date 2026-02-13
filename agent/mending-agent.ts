@@ -10,6 +10,10 @@ const VERIFY_REPORT_PATH = process.env.VERIFY_REPORT ?? "/tmp/verify-report.json
 const SYSTEM_PROMPT_PATH = resolve(__dirname, "mending-prompt.md");
 const SKILL_ROOT = resolve(__dirname, "..");
 
+// Prevent "cannot be launched inside another Claude Code session" error
+const cleanEnv = { ...process.env };
+delete cleanEnv.CLAUDECODE;
+
 // ---------------------------------------------------------------------------
 // Load inputs
 // ---------------------------------------------------------------------------
@@ -91,6 +95,7 @@ for await (const message of query({
     ],
     settingSources: [],
     cwd: SKILL_ROOT,
+    env: cleanEnv,
   },
 })) {
   if (message.type === "assistant") turns++;

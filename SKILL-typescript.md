@@ -1,6 +1,6 @@
-# Claude Agent SDK — TypeScript Reference (v0.2.41)
+# Claude Agent SDK — TypeScript Reference (v0.2.42)
 
-**Package**: `@anthropic-ai/claude-agent-sdk@0.2.41`
+**Package**: `@anthropic-ai/claude-agent-sdk@0.2.42`
 **Docs**: https://platform.claude.com/docs/en/agent-sdk/overview
 **Repo**: https://github.com/anthropics/claude-agent-sdk-typescript
 **Migration**: Renamed from `@anthropic-ai/claude-code`. See [migration guide](https://platform.claude.com/docs/en/agent-sdk/migration-guide).
@@ -638,7 +638,7 @@ const options = {
 
 ### Subagent Cleanup Warning
 
-Subagents don't auto-stop when the parent stops ([#132](https://github.com/anthropics/claude-agent-sdk-typescript/issues/132), [#142](https://github.com/anthropics/claude-agent-sdk-typescript/issues/142)). This causes orphan processes and potential OOM ([#4850](https://github.com/anthropics/claude-code/issues/4850)).
+Subagents don't auto-stop when the parent stops ([#132](https://github.com/anthropics/claude-agent-sdk-typescript/issues/132), [#142](https://github.com/anthropics/claude-agent-sdk-typescript/issues/142)). This causes orphan processes and potential OOM.
 
 Workaround — use a Stop hook:
 
@@ -1018,10 +1018,11 @@ delete schema.$schema;
 
 ---
 
-## Changelog Highlights (v0.2.12 → v0.2.41)
+## Changelog Highlights (v0.2.12 → v0.2.42)
 
 | Version | Change |
 |---------|--------|
+| v0.2.42 | Updated to parity with Claude Code v2.1.42 |
 | v0.2.33 | `TeammateIdle`/`TaskCompleted` hook events; custom `sessionId` option |
 | v0.2.31 | `stop_reason` field on result messages |
 | v0.2.30 | `debug`/`debugFile` options; PDF page reading |
@@ -1032,4 +1033,4 @@ delete schema.$schema;
 
 ---
 
-**Last verified**: 2026-02-13 | **SDK version**: 0.2.41
+**Last verified**: 2026-02-13 | **SDK version**: 0.2.42

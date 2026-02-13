@@ -33,14 +33,31 @@ const alreadyResearched = Object.keys(researchedIssues);
 // Build user message
 // ---------------------------------------------------------------------------
 
+const SDK_TYPES_PATH = resolve(__dirname, "node_modules/@anthropic-ai/claude-agent-sdk/sdk.d.ts");
+const lastAuditedVersion = state.lastAuditedVersion ?? "none";
+
+// Read SDK version from package.json
+let sdkVersion = "unknown";
+try {
+  const pkgPath = resolve(__dirname, "node_modules/@anthropic-ai/claude-agent-sdk/package.json");
+  sdkVersion = JSON.parse(readFileSync(pkgPath, "utf-8")).version;
+} catch {
+  // Will be detected by the agent
+}
+
 const userMessage = `
 You are working in the skill directory: ${SKILL_ROOT}
 The state file is at: ${STATE_PATH}
+The SDK type definitions are at: ${SDK_TYPES_PATH}
+
+Current SDK version: ${sdkVersion}
+Last audited version: ${lastAuditedVersion}
 
 Already-researched issue numbers (skip these): ${alreadyResearched.length > 0 ? alreadyResearched.join(", ") : "none yet"}
 
-Please research recent GitHub issues from the SDK repo, evaluate them,
-and update the skill files and state.json as described in your instructions.
+Run Part A (API Surface Audit) first — compare sdk.d.ts against SKILL.md and add any missing APIs.
+Then run Part B (GitHub Issues Research) — research recent issues and update Known Issues/rules.
+Finally run Part C (Final Checks) — verify consistency.
 
 Do NOT create git branches or commits.
 
@@ -53,6 +70,8 @@ Today's date is: ${new Date().toISOString().split("T")[0]}
 
 console.log("Research Agent starting ...");
 console.log(`  Skill root: ${SKILL_ROOT}`);
+console.log(`  SDK version: ${sdkVersion}`);
+console.log(`  Last audited: ${lastAuditedVersion}`);
 console.log(`  Already researched: ${alreadyResearched.length} issues`);
 console.log();
 
@@ -63,8 +82,8 @@ for await (const message of query({
   prompt: userMessage,
   options: {
     systemPrompt,
-    maxTurns: 40,
-    maxBudgetUsd: 2.0,
+    maxTurns: 60,
+    maxBudgetUsd: 3.0,
     permissionMode: "bypassPermissions",
     allowDangerouslySkipPermissions: true,
     allowedTools: [

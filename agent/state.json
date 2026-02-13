@@ -1,6 +1,6 @@
 {
   "npm": {
-    "version": "0.2.39",
+    "version": "0.2.41",
     "peerDependencies": {
       "zod": "^4.0.0"
     },
@@ -144,104 +144,6 @@
       "knownIssueNumber": 5
     }
   },
-  "researchedIssues": {
-    "170": {
-      "title": "permissionDecision: 'deny' in PreToolUse hook causes missing tool_result",
-      "verdict": "added_known_issue",
-      "reason": "Common hook usage pattern with clear workaround, causes API 400 errors",
-      "researchedAt": "2026-02-11"
-    },
-    "169": {
-      "title": "HTTP MCP Servers Fail Behind Corporate Proxy",
-      "verdict": "added_known_issue",
-      "reason": "Critical blocker for enterprise adoption, no current workaround except switching to SSE/stdio",
-      "researchedAt": "2026-02-11"
-    },
-    "168": {
-      "title": "thinking: { type: 'adaptive' } silently disables thinking",
-      "verdict": "added_known_issue",
-      "reason": "SDK docs recommend using thinking option but it breaks thinking, has clear workaround",
-      "researchedAt": "2026-02-11"
-    },
-    "158": {
-      "title": "Subagents unable to inherit createSdkMcpServer MCPs",
-      "verdict": "skipped",
-      "reason": "Fixed in v0.2.34 per user comment, issue already resolved",
-      "researchedAt": "2026-02-11"
-    },
-    "157": {
-      "title": "ANTHROPIC_LOG=debug corrupts SDK protocol",
-      "verdict": "added_known_issue",
-      "reason": "Breaks standard debugging workflow, has clear workaround via debug option",
-      "researchedAt": "2026-02-11"
-    },
-    "156": {
-      "title": "SDK incompatibility with Claude Code 2.1.x --verbose flag",
-      "verdict": "skipped",
-      "reason": "Closed issue, reporter said it was fly.io specific, not a general SDK bug",
-      "researchedAt": "2026-02-11"
-    },
-    "155": {
-      "title": "Invalid model ID causes opaque schema validation crash",
-      "verdict": "skipped",
-      "reason": "Closed as not reproducible by maintainer",
-      "researchedAt": "2026-02-11"
-    },
-    "151": {
-      "title": "Breaking: Duplicate tool_use IDs in v0.2.19",
-      "verdict": "skipped",
-      "reason": "Fixed in v0.2.20, no longer relevant",
-      "researchedAt": "2026-02-11"
-    },
-    "150": {
-      "title": "SDK fails to discover bundled CLI when bundled with bun build",
-      "verdict": "added_known_issue",
-      "reason": "Clear use case (bundling), known root cause, has workaround",
-      "researchedAt": "2026-02-11"
-    },
-    "147": {
-      "title": "Add support for listing claude code past sessions",
-      "verdict": "skipped",
-      "reason": "Feature request, not a bug or known issue",
-      "researchedAt": "2026-02-11"
-    },
-    "130": {
-      "title": "Async subagents error with 'only prompt commands are supported in streaming mode'",
-      "verdict": "skipped",
-      "reason": "Closed, supposedly fixed in CLI 2.1.7, though one user reported still seeing it in 2.1.16",
-      "researchedAt": "2026-02-11"
-    },
-    "114": {
-      "title": "MCP server responses don't reset lastActivityTime",
-      "verdict": "added_known_issue",
-      "reason": "Well-documented issue with verified community patch, affects query performance and reliability",
-      "researchedAt": "2026-02-11"
-    },
-    "161": {
-      "title": "ReferenceError: Bun is not defined when running with Node.js",
-      "verdict": "skipped",
-      "reason": "False report, closed by author as agentic bug report error",
-      "researchedAt": "2026-02-11"
-    },
-    "171": {
-      "title": "unstable_v2_createSession() Does Not Support plugins Option",
-      "verdict": "added_known_issue",
-      "reason": "Well-documented API limitation affecting v2 sessions with plugins, no workaround except using query() API",
-      "researchedAt": "2026-02-12"
-    },
-    "172": {
-      "title": "AgentDefinition.tools and disallowedTools are not enforced for subagent child processes",
-      "verdict": "added_known_issue",
-      "reason": "Security/isolation issue with subagents, affects common use case, has functional workaround via hooks",
-      "researchedAt": "2026-02-12"
-    },
-    "152": {
-      "title": "Bug: Calling close() before first assistant message makes session non-resumable",
-      "verdict": "skipped",
-      "reason": "Fixed in latest SDK version per user confirmation",
-      "researchedAt": "2026-02-12"
-    }
-  },
   "lastScannedIssueNumber": 172,
-  "lastUpdated": "2026-02-12T00:00:00Z"
+  "lastUpdated": "2026-02-13T08:09:55Z"
 }

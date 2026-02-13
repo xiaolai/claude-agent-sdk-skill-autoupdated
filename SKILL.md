@@ -1,15 +1,15 @@
 ---
 name: claude-agent-sdk
 description: |
-  Build autonomous AI agents with Claude Agent SDK v0.2.39. Covers the complete TypeScript API: query(), hooks, subagents, MCP, permissions, sandbox, structured outputs, and sessions.
+  Build autonomous AI agents with Claude Agent SDK v0.2.41. Covers the complete TypeScript API: query(), hooks, subagents, MCP, permissions, sandbox, structured outputs, and sessions.
 
   Use when: building AI agents, configuring MCP servers, setting up permissions/hooks, using structured outputs, troubleshooting SDK errors, or working with subagents.
 user-invocable: true
 ---
 
-# Claude Agent SDK Reference (v0.2.39)
+# Claude Agent SDK Reference (v0.2.41)
 
-**Package**: `@anthropic-ai/claude-agent-sdk@0.2.39`
+**Package**: `@anthropic-ai/claude-agent-sdk@0.2.41`
 **Docs**: https://platform.claude.com/docs/en/agent-sdk/overview
 **Repo**: https://github.com/anthropics/claude-agent-sdk-typescript
 **Migration**: Renamed from `@anthropic-ai/claude-code`. See [migration guide](https://platform.claude.com/docs/en/agent-sdk/migration-guide).
@@ -459,8 +459,10 @@ Common fields on all hooks: `session_id`, `transcript_path`, `cwd`, `permission_
 | `source` | SessionStart (`'startup' \| 'resume' \| 'clear' \| 'compact'`) |
 | `agent_type`, `model` | SessionStart |
 | `reason` | SessionEnd |
-| `message`, `title` | Notification |
+| `message`, `title`, `notification_type` | Notification |
 | `permission_suggestions` | PermissionRequest |
+| `teammate_name`, `team_name` | TeammateIdle |
+| `task_id`, `task_subject`, `task_description`, `teammate_name`, `team_name` | TaskCompleted |
 
 ---
 
@@ -1012,9 +1014,20 @@ maxThinkingTokens: 10000, effort: 'medium'
 **Cause**: CLI doesn't map `AgentDefinition.tools` to `--allowedTools` / `--disallowedTools` flags when spawning subagent child processes.
 **Workaround**: Use `canUseTool` callback to block disallowed tools (see [Subagents section](#tool-enforcement-warning)).
 
+### #20: Structured output with Zod requires draft-07 target
+**Error**: `structured_output` is `undefined` despite setting `outputFormat` with Zod schema ([#105](https://github.com/anthropics/claude-agent-sdk-typescript/issues/105))
+**Cause**: Zod's `toJSONSchema()` generates draft-2020-12 by default, but Claude requires JSON Schema draft-07.
+**Fix**: Specify `target: "draft-07"` when calling `toJSONSchema()`:
+```typescript
+const schema = z.toJSONSchema(MySchema, { target: "draft-07" });
+// Or manually remove $schema field:
+const schema = z.toJSONSchema(MySchema);
+delete schema.$schema;
+```
+
 ---
 
-## Changelog Highlights (v0.2.12 → v0.2.39)
+## Changelog Highlights (v0.2.12 → v0.2.41)
 
 | Version | Change |
 |---------|--------|
@@ -1028,4 +1041,4 @@ maxThinkingTokens: 10000, effort: 'medium'
 
 ---
 
-**Last verified**: 2026-02-13 | **SDK version**: 0.2.39
+**Last verified**: 2026-02-13 | **SDK version**: 0.2.41

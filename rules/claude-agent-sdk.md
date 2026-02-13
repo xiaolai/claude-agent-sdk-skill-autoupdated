@@ -1,13 +1,13 @@
 ---
 paths: "**/*agent*.ts"
-description: Auto-corrections for Claude Agent SDK v0.2.39
+description: Auto-corrections for Claude Agent SDK v0.2.41
 ---
 
 # Claude Agent SDK Rules
 
 ## Package
 - Package: `@anthropic-ai/claude-agent-sdk` (NOT `@anthropic-ai/claude-code`)
-- Latest: v0.2.39
+- Latest: v0.2.41
 
 ## Common Mistakes
 
@@ -46,7 +46,22 @@ outputFormat: { type: "json_schema", schema: myJsonSchema }
 import { zodToJsonSchema } from "zod-to-json-schema";
 
 // CORRECT (built-in Zod v3.24.1+ / v4+)
-const jsonSchema = z.toJSONSchema(myZodSchema);
+const jsonSchema = z.toJSONSchema(myZodSchema, { target: "draft-07" });
+```
+
+### Structured output with Zod requires draft-07 target
+```typescript
+// WRONG — Claude requires JSON Schema draft-07, but Zod defaults to draft-2020-12
+outputFormat: {
+  type: "json_schema",
+  schema: z.toJSONSchema(MySchema)  // Missing target parameter
+}
+
+// CORRECT — specify draft-07 target
+outputFormat: {
+  type: "json_schema",
+  schema: z.toJSONSchema(MySchema, { target: "draft-07" })
+}
 ```
 
 ### URL-based MCP servers require type field

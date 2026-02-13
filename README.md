@@ -37,6 +37,50 @@ Optional: auto-update daily at 09:00 UTC (after the pipeline runs at 08:00):
 (crontab -l 2>/dev/null; echo "0 9 * * * cd ~/.claude/skills/claude-agent-sdk-skill-autoupdated && git pull -q") | crontab -
 ```
 
+## TypeScript vs Python SDK
+
+Both SDKs wrap the Claude Code CLI and share the same core concepts, but they differ in architecture and feature surface.
+
+### Architecture
+
+| | TypeScript | Python |
+|---|---|---|
+| **Entry point** | `query()` only | `query()` + `ClaudeSDKClient` |
+| **Multi-turn** | Not built-in (new session per call) | `ClaudeSDKClient` keeps conversation alive |
+| **Hooks** | Available via `query()` options | Require `ClaudeSDKClient` (not available with standalone `query()`) |
+| **Custom tools** | Available via `query()` options | Require `ClaudeSDKClient` |
+| **Interrupts** | Not supported | `await client.interrupt()` |
+| **Naming** | camelCase (`systemPrompt`, `maxTurns`) | snake_case (`system_prompt`, `max_turns`) |
+| **Tool definition** | `tool(name, schema, handler)` function | `@tool(name, desc, schema)` decorator |
+| **Options type** | `Options` interface | `ClaudeAgentOptions` dataclass |
+
+### Python-Only Features
+
+- **`ClaudeSDKClient`** — stateful client with `connect()`, `query()`, `receive_response()`, `interrupt()`, `disconnect()` lifecycle
+- **`async with` context manager** — automatic connection cleanup
+- **Multi-turn conversations** — send multiple queries in the same session without losing context
+- **Runtime control** — `set_permission_mode()`, `set_model()`, `rewind_files()` mid-conversation
+- **Extended thinking config** — `ThinkingConfig` types (`adaptive`, `enabled`, `disabled`) and `effort` option (`low`/`medium`/`high`/`max`)
+
+### TypeScript-Only Features
+
+- **V2 Session API** (preview) — `unstable_v2_createSession()` for persistent sessions with resume/fork
+- **MCP tool annotations** — `annotations` field in tool definitions (v0.2.27+)
+- **Plugin support** — `plugins: [{ type: "local", path: "..." }]` option
+- **More known issues documented** — 22 tracked issues vs 5 for Python (reflects the older, larger codebase)
+
+### Maturity
+
+| | TypeScript | Python |
+|---|---|---|
+| **Version** | v0.2.42 | v0.1.36 |
+| **GitHub stars** | ~800 | ~4,800 |
+| **Open issues** | ~176 | ~570 |
+| **Release cadence** | ~daily | ~daily |
+| **Stability** | Pre-1.0, frequent changes | Pre-1.0, frequent changes |
+
+Both SDKs are pre-1.0 and under active development. The Python SDK has a larger community but the TypeScript SDK has been around longer. Neither is "more stable" — expect breaking changes in both.
+
 ## Structure
 
 ```

@@ -142,12 +142,26 @@ while IFS= read -r row; do
 done < <(echo "$bug_issues" | jq -c '.[]')
 
 # ---------------------------------------------------------------------------
-# 5. Compare against state — determine if anything changed
+# 5. Drift check — skill files must match state.json version
+# ---------------------------------------------------------------------------
+
+skill_version=$(grep -oP 'claude-agent-sdk@\K[0-9.]+' "${SCRIPT_DIR}/../SKILL.md" 2>/dev/null || echo "")
+if [[ -n "$skill_version" && "$skill_version" != "$new_version" ]]; then
+  echo "  DRIFT: SKILL.md says $skill_version but npm/state says $new_version — forcing update"
+fi
+
+# ---------------------------------------------------------------------------
+# 6. Compare against state — determine if anything changed
 # ---------------------------------------------------------------------------
 
 changes="[]"
 
-if [[ "$old_version" != "$new_version" ]]; then
+if [[ -n "$skill_version" && "$skill_version" != "$new_version" ]]; then
+  # Skill files are out of sync — treat as version change
+  changes=$(echo "$changes" | jq \
+    --arg old "$skill_version" --arg new "$new_version" \
+    '. + [{"type": "npm_version", "old": $old, "new": $new}]')
+elif [[ "$old_version" != "$new_version" ]]; then
   changes=$(echo "$changes" | jq \
     --arg old "$old_version" --arg new "$new_version" \
     '. + [{"type": "npm_version", "old": $old, "new": $new}]')
@@ -189,7 +203,7 @@ fi
 total_changes=$(echo "$changes" | jq 'length')
 
 # ---------------------------------------------------------------------------
-# 6. Write outputs or exit clean
+# 7. Write outputs or exit clean
 # ---------------------------------------------------------------------------
 
 if (( total_changes == 0 )); then

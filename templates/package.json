@@ -15,7 +15,7 @@
     "workflow": "tsx templates/multi-agent-workflow.ts"
   },
   "dependencies": {
-    "@anthropic-ai/claude-agent-sdk": "^0.2.37",
+    "@anthropic-ai/claude-agent-sdk": "^0.2.39",
     "zod": "^4.0.0"
   },
   "devDependencies": {

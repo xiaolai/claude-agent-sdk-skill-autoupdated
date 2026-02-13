@@ -1,15 +1,15 @@
 ---
 name: claude-agent-sdk
 description: |
-  Build autonomous AI agents with Claude Agent SDK v0.2.37. Covers the complete TypeScript API: query(), hooks, subagents, MCP, permissions, sandbox, structured outputs, and sessions.
+  Build autonomous AI agents with Claude Agent SDK v0.2.39. Covers the complete TypeScript API: query(), hooks, subagents, MCP, permissions, sandbox, structured outputs, and sessions.
 
   Use when: building AI agents, configuring MCP servers, setting up permissions/hooks, using structured outputs, troubleshooting SDK errors, or working with subagents.
 user-invocable: true
 ---
 
-# Claude Agent SDK Reference (v0.2.37)
+# Claude Agent SDK Reference (v0.2.39)
 
-**Package**: `@anthropic-ai/claude-agent-sdk@0.2.37`
+**Package**: `@anthropic-ai/claude-agent-sdk@0.2.39`
 **Docs**: https://platform.claude.com/docs/en/agent-sdk/overview
 **Repo**: https://github.com/anthropics/claude-agent-sdk-typescript
 **Migration**: Renamed from `@anthropic-ai/claude-code`. See [migration guide](https://platform.claude.com/docs/en/agent-sdk/migration-guide).
@@ -675,7 +675,7 @@ const options = {
 
 ---
 
-## Changelog Highlights (v0.2.12 → v0.2.37)
+## Changelog Highlights (v0.2.12 → v0.2.39)
 
 | Version | Change |
 |---------|--------|
@@ -689,4 +689,4 @@ const options = {
 
 ---
 
-**Last verified**: 2026-02-09 | **SDK version**: 0.2.37
+**Last verified**: 2026-02-13 | **SDK version**: 0.2.39

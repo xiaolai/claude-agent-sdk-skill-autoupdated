@@ -22,10 +22,10 @@ hooks: { PreToolUse: [{ matcher: 'Bash', hooks: [myCallback] }] }
 
 ### canUseTool returns PermissionResult, not simple objects
 ```typescript
-// WRONG
+// WRONG — missing updatedInput causes silent failure
 canUseTool: async (tool, input) => ({ behavior: "allow" })
 
-// CORRECT
+// CORRECT — always include updatedInput when allowing
 canUseTool: async (tool, input, { signal }) => ({
   behavior: "allow", updatedInput: input
 })
@@ -91,4 +91,59 @@ options: {
   allowedTools: ["Read", "Glob", "Grep"],
   permissionMode: "default"
 }
+```
+
+### thinking: { type: 'adaptive' } silently disables thinking
+```typescript
+// WRONG — SDK bug: sets maxThinkingTokens=undefined, disabling thinking entirely
+thinking: { type: 'adaptive' }, effort: 'medium'
+
+// CORRECT — use explicit budget
+thinking: { type: 'enabled', budgetTokens: 10000 }, effort: 'medium'
+
+// ALSO WORKS — deprecated but functional
+maxThinkingTokens: 10000, effort: 'medium'
+```
+
+### permissionDecision: 'deny' causes API 400 error
+```typescript
+// WRONG — breaks conversation history, causes "tool_use ids without tool_result" error
+return {
+  hookSpecificOutput: {
+    hookEventName: 'PreToolUse',
+    permissionDecision: 'deny',
+    permissionDecisionReason: 'Not allowed'
+  }
+};
+
+// CORRECT — use 'allow' with modified input that blocks the action
+return {
+  hookSpecificOutput: {
+    hookEventName: 'PreToolUse',
+    permissionDecision: 'allow',
+    updatedInput: { command: `echo "BLOCKED: ${reason}"` }
+  }
+};
+```
+
+### Sanitize MCP tool responses for Unicode line separators
+```typescript
+// WRONG — U+2028/U+2029 in tool results corrupts SDK JSON protocol
+async (args) => ({
+  content: [{ type: "text", text: rawOutput }]
+})
+
+// CORRECT — sanitize before returning
+async (args) => ({
+  content: [{ type: "text", text: rawOutput.replace(/[\u2028\u2029]/g, ' ') }]
+})
+```
+
+### Don't use ANTHROPIC_LOG=debug with SDK
+```typescript
+// WRONG — corrupts JSON protocol between SDK and CLI
+env: { ANTHROPIC_LOG: 'debug' }
+
+// CORRECT — use SDK's built-in debug options
+options: { debug: true, debugFile: '/tmp/agent.log' }
 ```

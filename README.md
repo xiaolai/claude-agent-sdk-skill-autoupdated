@@ -1,13 +1,13 @@
 # Claude Agent SDK Skill (Auto-Updated)
 
-A self-updating Claude Code skill for building AI agents with the [Claude Agent SDK](https://github.com/anthropics/claude-agent-sdk-typescript) (`@anthropic-ai/claude-agent-sdk`).
+A self-updating Claude Code skill for building AI agents with the Claude Agent SDK — covering both [TypeScript](https://github.com/anthropics/claude-agent-sdk-typescript) and [Python](https://github.com/anthropics/claude-agent-sdk-python).
 
-**SDK Version**: v0.2.41 | **This skill is auto-updated**: 2026-02-13
+**SDK Version**: TypeScript v0.2.41 | Python v0.1.36 | **This skill is auto-updated**: 2026-02-14
 
 ## What It Does
 
-- Complete TypeScript API reference: `query()`, hooks, subagents, MCP, permissions, sandbox, structured outputs, sessions
-- Auto-correction rules that fire when editing `*agent*.ts` files
+- Complete API reference for both TypeScript and Python SDKs: `query()`, hooks, subagents, MCP, permissions, sandbox, structured outputs, sessions
+- Auto-correction rules that fire when editing `*agent*.ts` or `*agent*.py` files
 - Known issue prevention with links to real GitHub issues
 - Keeps itself up to date via a daily automated pipeline
 
@@ -40,18 +40,23 @@ Optional: auto-update daily at 09:00 UTC (after the pipeline runs at 08:00):
 ## Structure
 
 ```
-SKILL.md                          Main reference (loaded by Claude)
-rules/claude-agent-sdk.md         Auto-correction rules for TS files
-templates/                        Copy-pasteable code examples
+SKILL.md                          Router (detects language, loads correct reference)
+SKILL-typescript.md               TypeScript API reference
+SKILL-python.md                   Python API reference
+rules/claude-agent-sdk-ts.md      Auto-correction rules for TS files
+rules/claude-agent-sdk-py.md      Auto-correction rules for PY files
+templates/typescript/              TypeScript code examples
+templates/python/                 Python code examples
 scripts/check-versions.sh         Manual version check
 agent/                            Self-update pipeline (maintainer only, ignore this)
-  monitor.sh                      Change detection (npm + GitHub, zero API cost)
+  monitor.sh                      Change detection (npm + PyPI + GitHub, zero API cost)
   update-agent.ts                 Updates skill files when SDK version changes
-  research-agent.ts               Audits SDK types + researches GitHub issues daily
+  research-agent-ts.ts            Audits TS SDK types + researches GitHub issues daily
+  research-agent-py.ts            Audits Python SDK types + researches GitHub issues daily
   mending-agent.ts                Fixes verification failures
   report-agent.ts                 Generates daily reports
   verify.sh                       Deterministic post-update verification
-  state.json                      Tracked versions, issues, scan state
+  state.json                      Tracked versions, issues, scan state (namespaced by language)
 reports/                          Daily pipeline reports
 .github/workflows/                CI pipeline (daily cron)
 ```
@@ -178,8 +183,9 @@ The daily pipeline runs via GitHub Actions on this repo. It costs the **maintain
 
 - [SDK Docs](https://platform.claude.com/docs/en/agent-sdk/overview)
 - [TypeScript API Reference](https://platform.claude.com/docs/en/agent-sdk/typescript)
-- [GitHub](https://github.com/anthropics/claude-agent-sdk-typescript)
-- [Changelog](https://github.com/anthropics/claude-agent-sdk-typescript/blob/main/CHANGELOG.md)
+- [Python API Reference](https://platform.claude.com/docs/en/agent-sdk/python)
+- [TypeScript GitHub](https://github.com/anthropics/claude-agent-sdk-typescript)
+- [Python GitHub](https://github.com/anthropics/claude-agent-sdk-python)
 - [Migration Guide](https://platform.claude.com/docs/en/agent-sdk/migration-guide)
 
 ---

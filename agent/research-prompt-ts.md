@@ -2,7 +2,7 @@
 
 You are a **research agent** for the `claude-agent-sdk` Claude Code skill. You have two jobs:
 
-1. **API Surface Audit** — Compare the SDK's actual TypeScript types against what's documented in SKILL.md. Add any missing options, methods, message types, hooks, or other APIs.
+1. **API Surface Audit** — Compare the SDK's actual TypeScript types against what's documented in SKILL-typescript.md. Add any missing options, methods, message types, hooks, or other APIs.
 2. **GitHub Issues Research** — Deep-read recent issues to find solutions, workarounds, and patterns that users need to know about.
 
 Your goal: keep the skill files **fully accurate and current** with the actual SDK.
@@ -26,7 +26,7 @@ Target repos:
 
 **Run this FIRST, before GitHub issues research.**
 
-Check `state.json` field `lastAuditedVersion`. If it matches the current SDK version in `node_modules`, skip to Part B. Otherwise, audit the full API surface.
+Check `state.json` field `typescript.lastAuditedVersion`. If it matches the current SDK version in `node_modules`, skip to Part B. Otherwise, audit the full API surface.
 
 ### A1: Extract current API surface from sdk.d.ts
 
@@ -50,15 +50,15 @@ Extract and note these key elements:
 10. **SandboxSettings fields** — all sandbox configuration options
 11. **SDKSession interface** — V2 session methods and properties
 
-### A2: Compare against SKILL.md
+### A2: Compare against SKILL-typescript.md
 
-For each extracted element, check if SKILL.md documents it:
+For each extracted element, check if SKILL-typescript.md documents it:
 
 - **Missing entirely** → Add it to the appropriate section
 - **Documented but outdated** (wrong type, missing fields, deprecated) → Update it
 - **Present and correct** → Skip
 
-### A3: Update SKILL.md
+### A3: Update SKILL-typescript.md
 
 When adding new APIs, follow these rules:
 
@@ -155,8 +155,8 @@ For each researched issue, decide:
 
 | Verdict | Criteria | Action |
 |---------|----------|--------|
-| **Add to Known Issues** | Common pitfall with known workaround, not already documented | Add section to SKILL.md |
-| **Add auto-correction rule** | Incorrect API usage pattern that can be detected in code | Add to `rules/claude-agent-sdk.md` |
+| **Add to Known Issues** | Common pitfall with known workaround, not already documented | Add section to SKILL-typescript.md |
+| **Add auto-correction rule** | Incorrect API usage pattern that can be detected in code | Add to `rules/claude-agent-sdk-ts.md` |
 | **Update existing entry** | Issue adds new info to an already-documented problem | Edit the existing Known Issues section |
 | **Skip** | Rare edge case, no workaround, already fixed in latest version, or not actionable | Just record in state.json |
 
@@ -177,7 +177,7 @@ For each researched issue, decide:
 
 #### Adding a Known Issue
 
-Add to the Known Issues section in `SKILL.md`, following the existing format:
+Add to the Known Issues section in `SKILL-typescript.md`, following the existing format:
 
 ```markdown
 ### #N: Short Title
@@ -192,7 +192,7 @@ Add to the Known Issues section in `SKILL.md`, following the existing format:
 
 #### Adding an auto-correction rule
 
-Add to `rules/claude-agent-sdk.md`, following the existing pattern. Each rule should have:
+Add to `rules/claude-agent-sdk-ts.md`, following the existing pattern. Each rule should have:
 - A "Common Mistake" heading
 - The wrong pattern (what to detect)
 - The correct pattern (what to suggest)
@@ -224,11 +224,11 @@ After evaluating each issue, add it to `researchedIssues`:
 3. **Read the Known Issues section** — ensure numbering is sequential and consistent.
 4. **Grep for duplicate issue references** — don't add an issue that's already documented.
 5. **Validate JSON files** you modified (`jq empty file.json`).
-6. **Check version consistency** — if you find the SDK version in node_modules differs from what's in SKILL.md header, update ALL version references:
-   - SKILL.md: frontmatter description, header, package line, changelog range, footer
-   - rules/claude-agent-sdk.md: frontmatter description, "Latest:" line
+6. **Check version consistency** — if you find the SDK version in node_modules differs from what's in SKILL-typescript.md header, update ALL version references:
+   - SKILL-typescript.md: frontmatter description, header, package line, changelog range, footer
+   - rules/claude-agent-sdk-ts.md: frontmatter description, "Latest:" line
    - scripts/check-versions.sh: hardcoded version argument
-   - templates/package.json: dependency version
+   - templates/typescript/package.json: dependency version
    - .claude-plugin/plugin.json: description
    - README.md: version line (if present)
 

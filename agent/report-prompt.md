@@ -26,7 +26,8 @@ Example: "Version update from 0.2.37 to 0.2.38 failed during verification after 
 |------|--------|----------|-------|
 | Monitor | success | 5s | Changes detected |
 | Update | failed | 45s | Exit code 1 — see error below |
-| Research | success | 120s | |
+| Research (TS) | success | 120s | |
+| Research (PY) | success | 90s | |
 | Verify | skipped | — | Skipped due to update failure |
 | Report | running | — | |
 
@@ -82,7 +83,8 @@ For each failed step, include:
 |-------|------|-------|
 | Update | $X.XX | N |
 | Mending (×N) | $X.XX | N |
-| Research | $X.XX | N |
+| Research (TS) | $X.XX | N |
+| Research (PY) | $X.XX | N |
 | Report | $X.XX | N |
 | **Total** | **$X.XX** | |
 
@@ -91,7 +93,8 @@ _Omit rows for agents that didn't run. If cost data is unavailable, note "N/A"._
 ## State
 
 Current tracked state after today's run:
-- SDK version: X.Y.Z
+- TypeScript SDK version: X.Y.Z
+- Python SDK version: X.Y.Z
 - Tracked issues: list with current states
 - Total researched issues: N
 ```
@@ -105,7 +108,7 @@ Collect information from these locations (all are optional — report whatever i
 3. **Verify report** (`/tmp/verify-report.json`) — verification results, may not exist
 4. **State file** (`agent/state.json`) — current state after all agents ran
 5. **Agent cost logs** (`/tmp/agent-costs.json`) — cost tracking file, may not exist
-6. **Agent output logs** — `/tmp/update-agent.log`, `/tmp/research-agent.log`, `/tmp/mending-agent-N.log` — raw output from each agent, useful for diagnosing failures
+6. **Agent output logs** — `/tmp/update-agent.log`, `/tmp/research-ts.log`, `/tmp/research-py.log`, `/tmp/mending-agent-N.log` — raw output from each agent, useful for diagnosing failures
 7. **Git diff** — run `git diff HEAD` to see uncommitted changes from agents that ran
 
 If a data source doesn't exist, note it as unavailable. **Never invent data.**

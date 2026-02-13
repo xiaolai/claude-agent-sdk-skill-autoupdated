@@ -97,6 +97,9 @@ jobs:
         working-directory: agent
         run: npm install
 
+      - name: Install Python SDK for research
+        run: pip install claude-agent-sdk
+
       # ---------------------------------------------------------------
       # 3. Update agent — only when version changes detected
       # ---------------------------------------------------------------
@@ -127,23 +130,46 @@ jobs:
       # ---------------------------------------------------------------
       # 4. Research agent — runs daily
       # ---------------------------------------------------------------
-      - name: Run research agent
-        id: research
+      - name: Run TypeScript research agent
+        id: research_ts
         continue-on-error: true
         working-directory: agent
         run: |
           START=$(date +%s)
-          npx tsx research-agent.ts 2>&1 | tee /tmp/research-agent.log
+          npx tsx research-agent-ts.ts 2>&1 | tee /tmp/research-ts.log
           EXIT_CODE=${PIPESTATUS[0]}
           ELAPSED=$(( $(date +%s) - START ))
 
           if [ "$EXIT_CODE" -eq 0 ]; then
-            jq --arg s "research" --arg r "success" --arg d "${ELAPSED}s" \
+            jq --arg s "research_ts" --arg r "success" --arg d "${ELAPSED}s" \
               '.steps += [{"step":$s,"result":$r,"duration":$d}]' \
               "$PIPELINE_LOG" > /tmp/pl.tmp && mv /tmp/pl.tmp "$PIPELINE_LOG"
           else
-            LAST_LINES=$(tail -20 /tmp/research-agent.log | jq -Rs '.')
-            jq --arg s "research" --arg r "failed" --arg d "${ELAPSED}s" \
+            LAST_LINES=$(tail -20 /tmp/research-ts.log | jq -Rs '.')
+            jq --arg s "research_ts" --arg r "failed" --arg d "${ELAPSED}s" \
+              --arg c "$EXIT_CODE" --argjson e "$LAST_LINES" \
+              '.steps += [{"step":$s,"result":$r,"duration":$d,"exitCode":($c|tonumber),"lastOutput":$e}]' \
+              "$PIPELINE_LOG" > /tmp/pl.tmp && mv /tmp/pl.tmp "$PIPELINE_LOG"
+            exit $EXIT_CODE
+          fi
+
+      - name: Run Python research agent
+        id: research_py
+        continue-on-error: true
+        working-directory: agent
+        run: |
+          START=$(date +%s)
+          npx tsx research-agent-py.ts 2>&1 | tee /tmp/research-py.log
+          EXIT_CODE=${PIPESTATUS[0]}
+          ELAPSED=$(( $(date +%s) - START ))
+
+          if [ "$EXIT_CODE" -eq 0 ]; then
+            jq --arg s "research_py" --arg r "success" --arg d "${ELAPSED}s" \
+              '.steps += [{"step":$s,"result":$r,"duration":$d}]' \
+              "$PIPELINE_LOG" > /tmp/pl.tmp && mv /tmp/pl.tmp "$PIPELINE_LOG"
+          else
+            LAST_LINES=$(tail -20 /tmp/research-py.log | jq -Rs '.')
+            jq --arg s "research_py" --arg r "failed" --arg d "${ELAPSED}s" \
               --arg c "$EXIT_CODE" --argjson e "$LAST_LINES" \
               '.steps += [{"step":$s,"result":$r,"duration":$d,"exitCode":($c|tonumber),"lastOutput":$e}]' \
               "$PIPELINE_LOG" > /tmp/pl.tmp && mv /tmp/pl.tmp "$PIPELINE_LOG"
@@ -216,14 +242,16 @@ jobs:
           # Record final status of each step using GitHub context
           jq \
             --arg update_outcome "${{ steps.update.outcome || 'skipped' }}" \
-            --arg research_outcome "${{ steps.research.outcome || 'skipped' }}" \
+            --arg research_ts_outcome "${{ steps.research_ts.outcome || 'skipped' }}" \
+            --arg research_py_outcome "${{ steps.research_py.outcome || 'skipped' }}" \
             --arg verify_outcome "${{ steps.verify.outcome || 'skipped' }}" \
             --arg finished "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             '. + {
               "finishedAt": $finished,
               "outcomes": {
                 "update": $update_outcome,
-                "research": $research_outcome,
+                "research_ts": $research_ts_outcome,
+                "research_py": $research_py_outcome,
                 "verify": $verify_outcome
               }
             }' "$PIPELINE_LOG" > /tmp/pl.tmp && mv /tmp/pl.tmp "$PIPELINE_LOG"
@@ -258,8 +286,8 @@ jobs:
       - name: Update README auto-updated date
         if: always()
         run: |
-          NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-          sed -i "s/auto-updated\*\*: [0-9T:Z-]\{20\}/auto-updated**: $NOW/" README.md
+          NOW=$(date -u +%Y-%m-%d)
+          sed -i "s/auto-updated\*\*: [0-9T:Z-]*/auto-updated**: $NOW/" README.md
 
       # ---------------------------------------------------------------
       # 8. Single commit — always runs to save report + partial work
@@ -361,11 +389,12 @@ jobs:
         if: always()
         run: |
           UPDATE="${{ steps.update.outcome || 'skipped' }}"
-          RESEARCH="${{ steps.research.outcome || 'skipped' }}"
+          RESEARCH_TS="${{ steps.research_ts.outcome || 'skipped' }}"
+          RESEARCH_PY="${{ steps.research_py.outcome || 'skipped' }}"
           VERIFY="${{ steps.verify.outcome || 'skipped' }}"
 
-          if [ "$UPDATE" == "failure" ] || [ "$RESEARCH" == "failure" ] || [ "$VERIFY" == "failure" ]; then
-            echo "Pipeline had failures: update=$UPDATE research=$RESEARCH verify=$VERIFY"
+          if [ "$UPDATE" == "failure" ] || [ "$RESEARCH_TS" == "failure" ] || [ "$RESEARCH_PY" == "failure" ] || [ "$VERIFY" == "failure" ]; then
+            echo "Pipeline had failures: update=$UPDATE research_ts=$RESEARCH_TS research_py=$RESEARCH_PY verify=$VERIFY"
             echo "Report and partial changes have been committed."
             exit 1
           fi

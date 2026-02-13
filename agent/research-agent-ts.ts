@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-const SYSTEM_PROMPT_PATH = resolve(__dirname, "research-prompt.md");
+const SYSTEM_PROMPT_PATH = resolve(__dirname, "research-prompt-ts.md");
 const STATE_PATH = resolve(__dirname, "state.json");
 const SKILL_ROOT = resolve(__dirname, "..");
 
@@ -26,7 +26,8 @@ const systemPrompt = readRequired(SYSTEM_PROMPT_PATH, "system prompt");
 const stateJson = readRequired(STATE_PATH, "state.json");
 
 const state = JSON.parse(stateJson);
-const researchedIssues = state.researchedIssues ?? {};
+const tsState = state.typescript ?? state;
+const researchedIssues = tsState.researchedIssues ?? {};
 const alreadyResearched = Object.keys(researchedIssues);
 
 // ---------------------------------------------------------------------------
@@ -34,7 +35,7 @@ const alreadyResearched = Object.keys(researchedIssues);
 // ---------------------------------------------------------------------------
 
 const SDK_TYPES_PATH = resolve(__dirname, "node_modules/@anthropic-ai/claude-agent-sdk/sdk.d.ts");
-const lastAuditedVersion = state.lastAuditedVersion ?? "none";
+const lastAuditedVersion = tsState.lastAuditedVersion ?? "none";
 
 // Read SDK version from package.json
 let sdkVersion = "unknown";
@@ -55,7 +56,7 @@ Last audited version: ${lastAuditedVersion}
 
 Already-researched issue numbers (skip these): ${alreadyResearched.length > 0 ? alreadyResearched.join(", ") : "none yet"}
 
-Run Part A (API Surface Audit) first — compare sdk.d.ts against SKILL.md and add any missing APIs.
+Run Part A (API Surface Audit) first — compare sdk.d.ts against SKILL-typescript.md and add any missing APIs.
 Then run Part B (GitHub Issues Research) — research recent issues and update Known Issues/rules.
 Finally run Part C (Final Checks) — verify consistency.
 
@@ -68,7 +69,7 @@ Today's date is: ${new Date().toISOString().split("T")[0]}
 // Run the research agent
 // ---------------------------------------------------------------------------
 
-console.log("Research Agent starting ...");
+console.log("TypeScript Research Agent starting ...");
 console.log(`  Skill root: ${SKILL_ROOT}`);
 console.log(`  SDK version: ${sdkVersion}`);
 console.log(`  Last audited: ${lastAuditedVersion}`);
@@ -117,7 +118,8 @@ if (lastResult) {
 // Check if state.json was updated (research happened)
 try {
   const updatedState = JSON.parse(readFileSync(STATE_PATH, "utf-8"));
-  const newResearched = Object.keys(updatedState.researchedIssues ?? {});
+  const updatedTs = updatedState.typescript ?? updatedState;
+  const newResearched = Object.keys(updatedTs.researchedIssues ?? {});
   const added = newResearched.length - alreadyResearched.length;
   if (added > 0) {
     console.log(`  New issues researched: ${added}`);
@@ -134,7 +136,7 @@ try {
   const existing = existsSync(costLogPath)
     ? JSON.parse(readFileSync(costLogPath, "utf-8"))
     : {};
-  existing.research = {
+  existing.research_ts = {
     costUsd: lastResult?.total_cost_usd ?? 0,
     turns,
   };

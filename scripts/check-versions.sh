@@ -48,4 +48,21 @@ check_package "@types/node" "22.0.0"
 check_package "typescript" "5.7.0"
 
 echo ""
+echo "Python Dependencies:"
+echo -n "Checking claude-agent-sdk (PyPI)... "
+if command -v pip &> /dev/null; then
+    py_latest=$(pip index versions claude-agent-sdk 2>/dev/null | head -1 | grep -oP '\([\d.]+\)' | tr -d '()' || echo "unknown")
+    py_current="0.1.36"
+    if [ "$py_current" = "$py_latest" ]; then
+        echo -e "${GREEN}Up to date ($py_current)${NC}"
+    elif [ "$py_latest" = "unknown" ]; then
+        echo -e "${YELLOW}Could not fetch latest version (current: $py_current)${NC}"
+    else
+        echo -e "${YELLOW}Update available: $py_current -> $py_latest${NC}"
+    fi
+else
+    echo -e "${YELLOW}pip not found, skipping Python checks${NC}"
+fi
+
+echo ""
 echo "Check complete."

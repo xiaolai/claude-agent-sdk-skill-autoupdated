@@ -1,0 +1,27 @@
+"""Custom permission control with Claude Agent SDK."""
+import asyncio
+from claude_agent_sdk import query, ClaudeAgentOptions
+
+async def can_use_tool(tool_name: str, tool_input: dict, options: dict) -> dict:
+    read_only = ["Read", "Grep", "Glob"]
+    if tool_name in read_only:
+        return {"behavior": "allow", "updated_input": tool_input}
+    if tool_name == "Bash" and any(
+        cmd in tool_input.get("command", "")
+        for cmd in ["rm -rf", "dd if=", "mkfs"]
+    ):
+        return {"behavior": "deny", "message": "Destructive command blocked"}
+    return {"behavior": "allow", "updated_input": tool_input}
+
+async def main():
+    options = ClaudeAgentOptions(
+        can_use_tool=can_use_tool,
+        permission_mode="default",
+        max_turns=10,
+    )
+
+    async for msg in query(prompt="List files in the current directory", options=options):
+        if msg["type"] == "result" and msg["subtype"] == "success":
+            print(msg["result"])
+
+asyncio.run(main())

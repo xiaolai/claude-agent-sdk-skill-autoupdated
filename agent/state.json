@@ -1,149 +1,169 @@
 {
-  "npm": {
-    "version": "0.2.41",
-    "peerDependencies": {
-      "zod": "^4.0.0"
+  "typescript": {
+    "registry": {
+      "version": "0.2.41",
+      "peerDependencies": {
+        "zod": "^4.0.0"
+      },
+      "engines": {
+        "node": ">=18.0.0"
+      }
     },
-    "engines": {
-      "node": ">=18.0.0"
-    }
+    "github": {
+      "repo": "anthropics/claude-agent-sdk-typescript",
+      "latestRelease": {
+        "tag": "",
+        "name": ""
+      }
+    },
+    "trackedIssues": {
+      "131": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "MCP Config Missing type Field",
+        "state": "open",
+        "knownIssueNumber": 3
+      },
+      "132": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "Orphan Subagents",
+        "state": "open",
+        "knownIssueNumber": 4
+      },
+      "137": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "Unicode Line Separators Break JSON",
+        "state": "open",
+        "knownIssueNumber": 5
+      },
+      "138": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "Context Length Exceeded",
+        "state": "open",
+        "knownIssueNumber": 2
+      },
+      "142": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "Orphan Subagents (duplicate)",
+        "state": "open",
+        "knownIssueNumber": 4
+      },
+      "144": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "ANTHROPIC_BASE_URL via env option broken",
+        "state": "open",
+        "knownIssueNumber": 6
+      },
+      "122": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "SDK MCP servers fail from concurrent query() calls",
+        "state": "open",
+        "knownIssueNumber": 7
+      },
+      "121": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "Missing @anthropic-ai/sdk dependency",
+        "state": "open",
+        "knownIssueNumber": 8
+      },
+      "129": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "Ripgrep binary lacks execute permission on Remote SSH",
+        "state": "open",
+        "knownIssueNumber": 9
+      },
+      "118": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "MCP tool calls timeout at 5 minutes",
+        "state": "open",
+        "knownIssueNumber": 10
+      },
+      "106": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "Opaque process exited with code 1 errors",
+        "state": "open",
+        "knownIssueNumber": 11
+      },
+      "170": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "permissionDecision: 'deny' causes missing tool_result",
+        "state": "open",
+        "knownIssueNumber": 12
+      },
+      "168": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "thinking: { type: 'adaptive' } silently disables thinking",
+        "state": "open",
+        "knownIssueNumber": 13
+      },
+      "169": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "HTTP MCP servers fail behind corporate proxies",
+        "state": "open",
+        "knownIssueNumber": 14
+      },
+      "157": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "ANTHROPIC_LOG=debug corrupts SDK protocol",
+        "state": "open",
+        "knownIssueNumber": 15
+      },
+      "114": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "MCP server responses don't reset activity timer",
+        "state": "open",
+        "knownIssueNumber": 16
+      },
+      "150": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "SDK fails to discover CLI when bundled with bun build",
+        "state": "open",
+        "knownIssueNumber": 17
+      },
+      "171": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "unstable_v2_createSession() doesn't support plugins option",
+        "state": "open",
+        "knownIssueNumber": 18
+      },
+      "172": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "AgentDefinition.tools and disallowedTools not enforced for subagents",
+        "state": "open",
+        "knownIssueNumber": 19
+      },
+      "163": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "AgentDefinition.tools is intersected with Options.tools",
+        "state": "open",
+        "knownIssueNumber": 19
+      }
+    },
+    "trackedIssuesExternal": {
+      "4850": {
+        "repo": "anthropics/claude-code",
+        "title": "MCP Python SDK unicode issue",
+        "state": "open",
+        "knownIssueNumber": 5
+      }
+    },
+    "lastScannedIssueNumber": 172,
+    "lastAuditedVersion": "0.2.41"
   },
-  "github": {
-    "latestRelease": {
-      "tag": "",
-      "name": ""
-    }
+  "python": {
+    "registry": {
+      "version": "0.1.36"
+    },
+    "github": {
+      "repo": "anthropics/claude-agent-sdk-python",
+      "latestRelease": {
+        "tag": "",
+        "name": ""
+      }
+    },
+    "trackedIssues": {},
+    "trackedIssuesExternal": {},
+    "lastScannedIssueNumber": 571,
+    "lastAuditedVersion": "none"
   },
-  "trackedIssues": {
-    "131": {
-      "repo": "anthropics/claude-agent-sdk-typescript",
-      "title": "MCP Config Missing type Field",
-      "state": "open",
-      "knownIssueNumber": 3
-    },
-    "132": {
-      "repo": "anthropics/claude-agent-sdk-typescript",
-      "title": "Orphan Subagents",
-      "state": "open",
-      "knownIssueNumber": 4
-    },
-    "137": {
-      "repo": "anthropics/claude-agent-sdk-typescript",
-      "title": "Unicode Line Separators Break JSON",
-      "state": "open",
-      "knownIssueNumber": 5
-    },
-    "138": {
-      "repo": "anthropics/claude-agent-sdk-typescript",
-      "title": "Context Length Exceeded",
-      "state": "open",
-      "knownIssueNumber": 2
-    },
-    "142": {
-      "repo": "anthropics/claude-agent-sdk-typescript",
-      "title": "Orphan Subagents (duplicate)",
-      "state": "open",
-      "knownIssueNumber": 4
-    },
-    "144": {
-      "repo": "anthropics/claude-agent-sdk-typescript",
-      "title": "ANTHROPIC_BASE_URL via env option broken",
-      "state": "open",
-      "knownIssueNumber": 6
-    },
-    "122": {
-      "repo": "anthropics/claude-agent-sdk-typescript",
-      "title": "SDK MCP servers fail from concurrent query() calls",
-      "state": "open",
-      "knownIssueNumber": 7
-    },
-    "121": {
-      "repo": "anthropics/claude-agent-sdk-typescript",
-      "title": "Missing @anthropic-ai/sdk dependency",
-      "state": "open",
-      "knownIssueNumber": 8
-    },
-    "129": {
-      "repo": "anthropics/claude-agent-sdk-typescript",
-      "title": "Ripgrep binary lacks execute permission on Remote SSH",
-      "state": "open",
-      "knownIssueNumber": 9
-    },
-    "118": {
-      "repo": "anthropics/claude-agent-sdk-typescript",
-      "title": "MCP tool calls timeout at 5 minutes",
-      "state": "open",
-      "knownIssueNumber": 10
-    },
-    "106": {
-      "repo": "anthropics/claude-agent-sdk-typescript",
-      "title": "Opaque process exited with code 1 errors",
-      "state": "open",
-      "knownIssueNumber": 11
-    },
-    "170": {
-      "repo": "anthropics/claude-agent-sdk-typescript",
-      "title": "permissionDecision: 'deny' causes missing tool_result",
-      "state": "open",
-      "knownIssueNumber": 12
-    },
-    "168": {
-      "repo": "anthropics/claude-agent-sdk-typescript",
-      "title": "thinking: { type: 'adaptive' } silently disables thinking",
-      "state": "open",
-      "knownIssueNumber": 13
-    },
-    "169": {
-      "repo": "anthropics/claude-agent-sdk-typescript",
-      "title": "HTTP MCP servers fail behind corporate proxies",
-      "state": "open",
-      "knownIssueNumber": 14
-    },
-    "157": {
-      "repo": "anthropics/claude-agent-sdk-typescript",
-      "title": "ANTHROPIC_LOG=debug corrupts SDK protocol",
-      "state": "open",
-      "knownIssueNumber": 15
-    },
-    "114": {
-      "repo": "anthropics/claude-agent-sdk-typescript",
-      "title": "MCP server responses don't reset activity timer",
-      "state": "open",
-      "knownIssueNumber": 16
-    },
-    "150": {
-      "repo": "anthropics/claude-agent-sdk-typescript",
-      "title": "SDK fails to discover CLI when bundled with bun build",
-      "state": "open",
-      "knownIssueNumber": 17
-    },
-    "171": {
-      "repo": "anthropics/claude-agent-sdk-typescript",
-      "title": "unstable_v2_createSession() doesn't support plugins option",
-      "state": "open",
-      "knownIssueNumber": 18
-    },
-    "172": {
-      "repo": "anthropics/claude-agent-sdk-typescript",
-      "title": "AgentDefinition.tools and disallowedTools not enforced for subagents",
-      "state": "open",
-      "knownIssueNumber": 19
-    },
-    "163": {
-      "repo": "anthropics/claude-agent-sdk-typescript",
-      "title": "AgentDefinition.tools is intersected with Options.tools",
-      "state": "open",
-      "knownIssueNumber": 19
-    }
-  },
-  "trackedIssuesExternal": {
-    "4850": {
-      "repo": "anthropics/claude-code",
-      "title": "MCP Python SDK unicode issue",
-      "state": "open",
-      "knownIssueNumber": 5
-    }
-  },
-  "lastScannedIssueNumber": 172,
-  "lastUpdated": "2026-02-13T08:09:55Z"
+  "lastUpdated": "2026-02-14T00:00:00Z"
 }

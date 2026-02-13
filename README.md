@@ -44,7 +44,7 @@ SKILL.md                          Main reference (loaded by Claude)
 rules/claude-agent-sdk.md         Auto-correction rules for TS files
 templates/                        Copy-pasteable code examples
 scripts/check-versions.sh         Manual version check
-agent/                            Self-update pipeline agents
+agent/                            Self-update pipeline (maintainer only, ignore this)
   monitor.sh                      Change detection (npm + GitHub, zero API cost)
   update-agent.ts                 Updates skill files when SDK version changes
   research-agent.ts               Researches new GitHub issues daily
@@ -102,7 +102,7 @@ _Last 7 days only. Updated automatically by the report agent. See [reports/](rep
 
 The daily pipeline runs via GitHub Actions on this repo. It costs the **maintainer** a few dollars per day in LLM usage. The pipeline commits updated skill files directly to this repo.
 
-**As a user**, you just `git pull` to get the latest. You never run the pipeline yourself and pay nothing.
+**As a user**, you just `git pull` to get the latest. You never run the pipeline yourself and pay nothing. You don't need Node.js, npm, or anything in the `agent/` directory — that's maintainer-only infrastructure.
 
 | Role | What you do | Cost |
 |------|------------|------|

@@ -47,7 +47,7 @@ scripts/check-versions.sh         Manual version check
 agent/                            Self-update pipeline (maintainer only, ignore this)
   monitor.sh                      Change detection (npm + GitHub, zero API cost)
   update-agent.ts                 Updates skill files when SDK version changes
-  research-agent.ts               Researches new GitHub issues daily
+  research-agent.ts               Audits SDK types + researches GitHub issues daily
   mending-agent.ts                Fixes verification failures
   report-agent.ts                 Generates daily reports
   verify.sh                       Deterministic post-update verification
@@ -60,32 +60,90 @@ reports/                          Daily pipeline reports
 
 Runs via GitHub Actions at 08:00 UTC, or manually via `workflow_dispatch`.
 
-```mermaid
-flowchart TD
-    M["Monitor (bash, $0)"] --> C{Changes?}
-    C -- No --> R1["Research Agent ($2.00)"]
-    C -- Yes --> U["Update Agent ($1.00)"]
-    U --> R2["Research Agent ($2.00)"]
-    R2 --> V{"Verify (bash, $0)"}
-    V -- Pass --> RP["Report Agent ($0.25)"]
-    V -- Fail --> ME["Mending Agent ($0.50)"]
-    ME --> V
-    R1 --> RP
-    RP --> CO["Commit + Push"]
+### Pipeline Overview
 
+The daily run has two paths depending on whether the SDK version changed.
+
+```mermaid
+flowchart LR
+    M["Monitor<br/>bash · $0"]:::bash --> C{Version<br/>changed?}
+    C -- Yes --> U["Update Agent<br/>LLM · ~$1"]:::llm
+    U --> R["Research Agent<br/>LLM · ~$3"]:::llm
+    C -- No --> R
+    R --> V{"Verify<br/>bash · $0"}:::bash
+    V -- Pass --> RP["Report Agent<br/>LLM · ~$0.25"]:::llm
+    V -- Fail --> ME["Mending Agent<br/>LLM · ~$0.50"]:::llm
+    ME --> V
+    RP --> CO["Commit + Push"]:::bash
+
+    classDef bash fill:#e8f5e9,stroke:#43a047,color:#1b5e20
+    classDef llm fill:#e3f2fd,stroke:#1e88e5,color:#0d47a1
 ```
 
-**Monitor** checks npm registry and GitHub for version bumps, issue state changes, and new bugs — no LLM cost.
+### What the Research Agent Does
 
-**Update Agent** reads the change report and updates version strings across all skill files.
+The research agent is the core of the pipeline. It runs daily and has three phases:
 
-**Research Agent** browses new SDK repo issues, evaluates relevance, and updates Known Issues or rules.
+```mermaid
+flowchart TB
+    NI["npm install<br/><i>fetches latest SDK package</i>"]:::bash --> A
 
-**Verify** does deterministic grep/jq checks to confirm all version strings were updated correctly.
+    subgraph A ["Part A — API Surface Audit"]
+        direction LR
+        A1["Read sdk.d.ts<br/>type definitions"]:::read --> A2["Extract options, methods,<br/>message types, hooks"]
+        A2 --> A3["Compare against<br/>SKILL.md"]:::read
+        A3 --> A4{"Missing<br/>APIs?"}
+        A4 -- Yes --> A5["Add to SKILL.md"]:::write
+        A4 -- No --> A6["Skip — already<br/>documented"]
+    end
 
-**Mending Agent** reads verification failures and fixes specifically what broke.
+    A --> B
 
-**Report Agent** generates a markdown summary of the day's pipeline run.
+    subgraph B ["Part B — GitHub Issues Research"]
+        direction LR
+        B1["Fetch recent issues<br/>from SDK repo"]:::read --> B2["Deep-read body<br/>+ all comments"]
+        B2 --> B3{"Actionable<br/>workaround?"}
+        B3 -- Yes --> B4["Add Known Issue<br/>or auto-correction rule"]:::write
+        B3 -- No --> B5["Skip — record<br/>in state.json"]:::write
+    end
+
+    B --> D
+
+    subgraph D ["Part C — Final Checks"]
+        direction LR
+        D1["Verify option tables<br/>match sdk.d.ts"]:::read --> D2["Verify hook event<br/>count matches"]
+        D2 --> D3["Verify version strings<br/>consistent across files"]
+    end
+
+    classDef bash fill:#e8f5e9,stroke:#43a047,color:#1b5e20
+    classDef read fill:#fff3e0,stroke:#f57c00,color:#e65100
+    classDef write fill:#e3f2fd,stroke:#1e88e5,color:#0d47a1
+```
+
+### What Gets Updated
+
+```mermaid
+flowchart LR
+    SDK["sdk.d.ts<br/><i>source of truth</i>"]:::source --> |"Part A"| SKILL["SKILL.md<br/><i>API reference</i>"]:::target
+    GH["GitHub Issues<br/><i>bug reports</i>"]:::source --> |"Part B"| SKILL
+    GH --> |"Part B"| RULES["rules/claude-agent-sdk.md<br/><i>auto-correction rules</i>"]:::target
+    SDK --> |"Part A"| RULES
+    SKILL --> |"Part C"| STATE["state.json<br/><i>audit + issue tracking</i>"]:::target
+
+    classDef source fill:#f3e5f5,stroke:#8e24aa,color:#4a148c
+    classDef target fill:#e8f5e9,stroke:#43a047,color:#1b5e20
+```
+
+### Step Details
+
+| Step | What it does | Cost |
+|------|-------------|------|
+| **Monitor** | Checks npm registry + GitHub for version bumps, issue state changes, new bugs | $0 (bash) |
+| **Update Agent** | Reads change report, updates version strings across all skill files | ~$1 (version bump only) |
+| **Research Agent** | **Part A** reads `sdk.d.ts`, compares against SKILL.md, adds missing APIs. **Part B** scans GitHub issues, adds Known Issues or rules. **Part C** validates consistency. | ~$3 |
+| **Verify** | Deterministic grep/jq checks on version strings and structure | $0 (bash) |
+| **Mending Agent** | Reads verification failures, fixes what broke (up to 2 retries) | ~$0.50/attempt |
+| **Report Agent** | Generates pipeline summary, updates cost log in README | ~$0.25 |
 
 ## Cost Log
 
@@ -107,7 +165,7 @@ The daily pipeline runs via GitHub Actions on this repo. It costs the **maintain
 | Role | What you do | Cost |
 |------|------------|------|
 | **User** | `git clone` / `git pull` | Free |
-| **Maintainer** | Runs the CI pipeline | ~$2–5/day |
+| **Maintainer** | Runs the CI pipeline | ~$3–6/day |
 
 ## Pipeline Prerequisites (maintainer only)
 

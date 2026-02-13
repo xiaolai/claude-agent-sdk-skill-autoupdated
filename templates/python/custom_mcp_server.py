@@ -27,11 +27,11 @@ async def main():
         mcp_servers={"docs": server},
         system_prompt="You help users search documentation.",
         permission_mode="bypassPermissions",
-        allow_dangerously_skip_permissions=True,
     )
 
     async for msg in query(prompt="Search for authentication docs", options=options):
-        if msg["type"] == "result" and msg["subtype"] == "success":
-            print(msg["result"])
+        from claude_agent_sdk import ResultMessage
+        if isinstance(msg, ResultMessage) and msg.subtype == "success":
+            print(msg.result)
 
 asyncio.run(main())

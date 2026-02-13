@@ -13,7 +13,7 @@
 - [Core API](#core-api) — `query()`, `tool()`, `createSdkMcpServer()`
 - [Options](#options) — Core, Tools & Permissions, Models & Output, Sessions, MCP & Agents, Advanced
 - [Query Object Methods](#query-object-methods)
-- [Message Types](#message-types) — All 15 SDKMessage types
+- [Message Types](#message-types) — All 16 SDKMessage types
 - [Hooks](#hooks) — 15 hook events, matchers, return values, async hooks
 - [Permissions](#permissions) — 6 modes, `canUseTool` callback
 - [MCP Servers](#mcp-servers) — stdio, HTTP, SSE, SDK, claudeai-proxy
@@ -206,17 +206,52 @@ await q.setMcpServers(newServersConfig);    // Replace MCP servers mid-session
 await q.rewindFiles(userMessageUuid, { dryRun?: boolean }); // Rewind to checkpoint
 ```
 
+### Initialization Result Type
+
+The `initializationResult()` method returns detailed session initialization data:
+
+```typescript
+type SDKControlInitializeResponse = {
+  commands: SlashCommand[];              // Available skills/slash commands
+  output_style: string;                  // Current output style setting
+  available_output_styles: string[];     // All available output style options
+  models: ModelInfo[];                   // Available models
+  account: AccountInfo;                  // User account information
+};
+
+type SlashCommand = {
+  name: string;           // Command name (without leading slash)
+  description: string;    // What the command does
+  argumentHint: string;   // Hint for arguments (e.g., "<file>")
+};
+
+type ModelInfo = {
+  value: string;          // Model identifier for API calls
+  displayName: string;    // Human-readable name
+  description: string;    // Model capabilities description
+};
+
+type AccountInfo = {
+  email?: string;
+  organization?: string;
+  subscriptionType?: string;
+  tokenSource?: string;
+  apiKeySource?: string;
+};
+```
+
 ---
 
 ## Message Types
 
-The SDK emits 15 message types through the async generator:
+The SDK emits 16 message types through the async generator:
 
 ```typescript
 type SDKMessage =
   // Core messages
   | SDKAssistantMessage           // type: 'assistant' — agent responses
   | SDKUserMessage                // type: 'user' — user input
+  | SDKUserMessageReplay          // type: 'user', isReplay: true — replayed messages on resume
   | SDKResultMessage              // type: 'result' — final result
   | SDKSystemMessage              // type: 'system', subtype: 'init' — session init
   | SDKPartialAssistantMessage    // type: 'stream_event' (includePartialMessages)
@@ -1015,6 +1050,30 @@ const schema = z.toJSONSchema(MySchema, { target: "draft-07" });
 const schema = z.toJSONSchema(MySchema);
 delete schema.$schema;
 ```
+
+### #21: unstable_v2_createSession() ignores critical options
+**Error**: V2 session API silently ignores `permissionMode`, `cwd`, `settingSources`, `allowedTools`, `disallowedTools` ([#176](https://github.com/anthropics/claude-agent-sdk-typescript/issues/176))
+**Cause**: `SessionImpl` constructor hardcodes these values instead of passing them from `SDKSessionOptions` to the `ProcessTransport`.
+**Impact**: Breaks headless/server deployments requiring permission bypass, custom working directories, or CLAUDE.md loading.
+**Workaround**: Manually patch `sdk.mjs` (~line 8597) to use `options` values with nullish coalescing:
+```typescript
+const transport = new ProcessTransport({
+  permissionMode: options.permissionMode ?? "default",
+  allowDangerouslySkipPermissions: options.allowDangerouslySkipPermissions ?? false,
+  settingSources: options.settingSources ?? [],
+  allowedTools: options.allowedTools ?? [],
+  disallowedTools: options.disallowedTools ?? [],
+  mcpServers: options.mcpServers ?? {},
+  cwd: options.cwd,
+  // ... rest of config
+});
+```
+
+### #22: Large MCP tool output forces filesystem tool dependency
+**Error**: When MCP tools return ≥180KB output, SDK truncates response and saves full output to local file, then agent attempts to read file using `Bash`/filesystem tools ([#175](https://github.com/anthropics/claude-agent-sdk-typescript/issues/175))
+**Impact**: Breaks security-hardened deployments where filesystem tools are intentionally disabled. No configuration to prevent this behavior.
+**Current behavior**: Output message shows: `Output too large (182.9KB). Full output saved to: ~/.claude/projects/.../tool-results/<id>.json`
+**Status**: No workaround available. Feature request for configuration option to disable file persistence or handle large outputs without filesystem tools.
 
 ---
 

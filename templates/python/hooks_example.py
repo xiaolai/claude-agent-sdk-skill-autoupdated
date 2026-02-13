@@ -82,12 +82,13 @@ async def main():
     async with ClaudeSDKClient(options=options) as client:
         await client.query("Refactor the auth module to use bcrypt")
         async for message in client.receive_response():
-            if message.get("type") == "result":
-                if message.get("subtype") == "success":
-                    print(f"\nDone: {message.get('result')}")
-                    print(f"Cost: ${message.get('total_cost_usd', 0):.4f}")
+            from claude_agent_sdk import ResultMessage
+            if isinstance(message, ResultMessage):
+                if message.subtype == "success":
+                    print(f"\nDone: {message.result}")
+                    print(f"Cost: ${message.total_cost_usd or 0:.4f}")
                 else:
-                    print(f"Error: {message.get('subtype')}")
+                    print(f"Error: {message.subtype}")
 
 
 asyncio.run(main())

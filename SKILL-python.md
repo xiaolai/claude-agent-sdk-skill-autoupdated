@@ -19,6 +19,7 @@
 - [Permissions](#permissions) — 4 modes, `can_use_tool` callback
 - [MCP Servers](#mcp-servers) — stdio, HTTP, SSE, SDK in-process
 - [Subagents](#subagents) — `AgentDefinition`, tool enforcement
+- [Extended Thinking](#extended-thinking) — `ThinkingConfig`, `effort`
 - [Structured Outputs](#structured-outputs)
 - [Sandbox](#sandbox)
 - [Sessions](#sessions)
@@ -100,6 +101,10 @@ class ClaudeSDKClient:
     async def receive_response(self) -> AsyncIterator[Message]: ...
     async def interrupt(self) -> None: ...
     async def rewind_files(self, user_message_uuid: str) -> None: ...
+    async def set_permission_mode(self, mode: str) -> None: ...
+    async def set_model(self, model: str | None = None) -> None: ...
+    async def get_mcp_status(self) -> dict[str, Any]: ...
+    async def get_server_info(self) -> dict[str, Any] | None: ...
     async def disconnect(self) -> None: ...
 ```
 
@@ -132,11 +137,13 @@ Decorator for defining MCP tools.
 ```python
 from claude_agent_sdk import tool
 from typing import Any
+from mcp.types import ToolAnnotations
 
 def tool(
     name: str,
     description: str,
-    input_schema: type | dict[str, Any]
+    input_schema: type | dict[str, Any],
+    annotations: ToolAnnotations | None = None
 ) -> Callable[[Callable[[Any], Awaitable[dict[str, Any]]]], SdkMcpTool[Any]]: ...
 ```
 
@@ -216,7 +223,9 @@ server = create_sdk_mcp_server(name="calculator", version="2.0.0", tools=[add, m
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `output_format` | `OutputFormat \| None` | `None` | `{"type": "json_schema", "schema": dict}` |
-| `max_thinking_tokens` | `int \| None` | `None` | Maximum tokens for thinking blocks |
+| `max_thinking_tokens` | `int \| None` | `None` | **Deprecated** — use `thinking` instead |
+| `thinking` | `ThinkingConfig \| None` | `None` | Extended thinking configuration (adaptive/enabled/disabled) |
+| `effort` | `Literal["low", "medium", "high", "max"] \| None` | `None` | Effort level for thinking depth |
 | `fallback_model` | `str \| None` | `None` | Fallback model on failure |
 | `betas` | `list[SdkBeta]` | `[]` | Beta features (e.g., `["context-1m-2025-08-07"]`) |
 | `include_partial_messages` | `bool` | `False` | Include streaming partial `StreamEvent` messages |
@@ -287,6 +296,10 @@ async with ClaudeSDKClient(options) as client:
 ```python
 await client.interrupt()                            # Interrupt current execution
 await client.rewind_files(user_message_uuid)        # Rewind files to checkpoint
+await client.set_permission_mode(mode)              # Change permission mode mid-conversation
+await client.set_model(model)                       # Switch AI model mid-conversation
+status = await client.get_mcp_status()              # Get MCP server connection status
+info = await client.get_server_info()               # Get server initialization info
 ```
 
 ### Iteration methods
@@ -350,6 +363,9 @@ Message = UserMessage | AssistantMessage | SystemMessage | ResultMessage | Strea
 @dataclass
 class UserMessage:
     content: str | list[ContentBlock]
+    uuid: str | None = None
+    parent_tool_use_id: str | None = None
+    tool_use_result: dict[str, Any] | None = None
 ```
 
 ### `AssistantMessage`
@@ -359,6 +375,18 @@ class UserMessage:
 class AssistantMessage:
     content: list[ContentBlock]
     model: str
+    parent_tool_use_id: str | None = None
+    error: AssistantMessageError | None = None
+
+# AssistantMessageError type
+AssistantMessageError = Literal[
+    "authentication_failed",
+    "billing_error",
+    "rate_limit",
+    "invalid_request",
+    "server_error",
+    "unknown",
+]
 ```
 
 ### `SystemMessage`
@@ -487,12 +515,16 @@ Hooks use **callback matchers**: an optional regex `matcher` for tool names and 
 |-------|-----------|-----------|
 | `PreToolUse` | Before tool execution | Yes |
 | `PostToolUse` | After tool execution | Yes |
+| `PostToolUseFailure` | After tool execution failure | Yes |
 | `UserPromptSubmit` | User prompt received | Yes |
 | `Stop` | Agent stopping | Yes |
 | `SubagentStop` | Subagent completed | Yes |
+| `SubagentStart` | Subagent starting | Yes |
 | `PreCompact` | Before context compaction | Yes |
+| `Notification` | Notification event | Yes |
+| `PermissionRequest` | Permission requested | Yes |
 
-**Not supported in Python SDK**: `Setup`, `PostToolUseFailure`, `SubagentStart`, `PermissionRequest`, `SessionStart`, `SessionEnd`, `Notification`, `TeammateIdle`, `TaskCompleted`.
+**Not supported in Python SDK**: `Setup`, `SessionStart`, `SessionEnd`, `TeammateIdle`, `TaskCompleted`.
 
 ### Hook Callback Signature
 
@@ -618,12 +650,17 @@ Common fields on all hooks: `session_id`, `transcript_path`, `cwd`, `permission_
 
 | Field | Hooks |
 |-------|-------|
-| `tool_name`, `tool_input` | PreToolUse, PostToolUse |
+| `tool_name`, `tool_input`, `tool_use_id` | PreToolUse, PostToolUse, PostToolUseFailure |
 | `tool_response` | PostToolUse |
+| `error`, `is_interrupt` | PostToolUseFailure |
 | `prompt` | UserPromptSubmit |
 | `stop_hook_active` | Stop, SubagentStop |
+| `agent_id`, `agent_type` | SubagentStart, SubagentStop |
+| `agent_transcript_path` | SubagentStop |
 | `trigger` (`"manual" \| "auto"`) | PreCompact |
 | `custom_instructions` | PreCompact |
+| `message`, `title`, `notification_type` | Notification |
+| `permission_suggestions` | PermissionRequest |
 
 ### Full Hook Example
 
@@ -725,6 +762,30 @@ class PermissionResultDeny:
 class ToolPermissionContext:
     signal: Any | None = None            # Reserved for future abort signal
     suggestions: list[PermissionUpdate] = field(default_factory=list)
+```
+
+#### PermissionUpdate
+
+```python
+from claude_agent_sdk.types import PermissionUpdate, PermissionRuleValue, PermissionBehavior
+
+PermissionBehavior = Literal["allow", "deny", "ask"]
+
+@dataclass
+class PermissionRuleValue:
+    tool_name: str
+    rule_content: str | None = None
+
+@dataclass
+class PermissionUpdate:
+    type: Literal["addRules", "replaceRules", "removeRules", "setMode", "addDirectories", "removeDirectories"]
+    rules: list[PermissionRuleValue] | None = None
+    behavior: PermissionBehavior | None = None
+    mode: PermissionMode | None = None
+    directories: list[str] | None = None
+    destination: Literal["userSettings", "projectSettings", "localSettings", "session"] | None = None
+
+    def to_dict(self) -> dict[str, Any]: ...  # Converts to TypeScript control protocol format
 ```
 
 #### Example
@@ -864,6 +925,55 @@ async for msg in query(prompt="Use the reviewer to check this code", options=opt
 ### Tool Enforcement Warning
 
 **`AgentDefinition.tools` is NOT enforced at the API level** — subagents can call tools they should not have access to, potentially causing infinite recursion. Use `can_use_tool` callback to block disallowed tools in subagents (same workaround as TypeScript SDK).
+
+---
+
+## Extended Thinking
+
+Control Claude's extended thinking behavior with the `thinking` and `effort` options.
+
+### ThinkingConfig Types
+
+```python
+from claude_agent_sdk.types import ThinkingConfig
+
+# Adaptive mode - Claude decides when to think
+ThinkingConfigAdaptive = {"type": "adaptive"}
+
+# Enabled mode - budget-limited thinking
+ThinkingConfigEnabled = {"type": "enabled", "budget_tokens": int}
+
+# Disabled mode - no thinking blocks
+ThinkingConfigDisabled = {"type": "disabled"}
+```
+
+### Examples
+
+```python
+from claude_agent_sdk import query, ClaudeAgentOptions
+
+# Adaptive thinking (recommended)
+options = ClaudeAgentOptions(
+    thinking={"type": "adaptive"},
+    effort="high"
+)
+
+# Budget-limited thinking
+options = ClaudeAgentOptions(
+    thinking={"type": "enabled", "budget_tokens": 10000},
+    effort="medium"
+)
+
+# Disabled thinking
+options = ClaudeAgentOptions(
+    thinking={"type": "disabled"}
+)
+
+async for msg in query(prompt="Solve this complex problem", options=options):
+    print(msg)
+```
+
+**Note**: `thinking` takes precedence over the deprecated `max_thinking_tokens` option.
 
 ---
 
@@ -1107,7 +1217,34 @@ async for msg in query(
 <!-- This section is populated by the research agent. -->
 <!-- Add confirmed, reproducible issues with workarounds below. -->
 
-_No known issues documented yet for Python SDK v0.1.36. Issues will be added as they are verified._
+### #1: Hook Callback Errors in bypassPermissions Mode
+**Error**: `Error in hook callback hook_0: Stream closed` followed by ~50 lines of minified CLI source ([#554](https://github.com/anthropics/claude-agent-sdk-python/issues/554))
+**Cause**: Since v0.1.29, new hook events (`SubagentStop`, `Notification`, `PermissionRequest`) attempt to communicate over a closed stream when operating in `bypassPermissions` mode.
+**Fix**: Downgrade to v0.1.28 (CLI v2.1.30) or wait for fix. The errors are cosmetic—tools execute successfully despite the noise.
+
+### #2: Empty `allowed_tools=[]` Allows All Tools
+**Error**: Passing `allowed_tools=[]` to restrict all tools fails silently; all tools become available instead ([#523](https://github.com/anthropics/claude-agent-sdk-python/issues/523))
+**Cause**: Empty list is treated as falsy in Python, causing `--allowedTools` flag to be omitted from CLI command.
+**Fix**: Use `allowed_tools=None` for default behavior, or pass a dummy tool name if you need to restrict tools programmatically. A proper fix would check `if allowed_tools is not None` instead of truthiness.
+
+### #3: Sub-agents Not Registered When Command Exceeds 100k Chars
+**Error**: Custom agents silently fail to register when CLI command string exceeds Linux's 100k character limit ([#567](https://github.com/anthropics/claude-agent-sdk-python/issues/567))
+**Cause**: SDK writes agents to temp file (`@/tmp/xxx.json`) but CLI doesn't support `@filepath` syntax, attempting to parse it as JSON directly.
+**Fix**: Reduce system prompt size, use fewer/smaller agents, or wait for CLI fix. Monitor init messages to verify agents registered.
+
+### #4: StructuredOutput Validation Fails When Agent Wraps Output
+**Error**: `Output does not match required schema: root: must have required property 'X'` followed by `error_max_structured_output_retries` ([#571](https://github.com/anthropics/claude-agent-sdk-python/issues/571))
+**Cause**: Agent non-deterministically wraps JSON in `{"output": {...}}` instead of providing schema directly, breaking root-level validation.
+**Fix**: Add explicit prompt instruction:
+```python
+system_prompt = "**CRITICAL**: When using StructuredOutput tool, provide the JSON object directly - do NOT wrap in {\"output\": {...}}"
+```
+Note: This workaround is fragile due to agent non-determinism. Prefer using `output_format` option instead of relying on agent to call StructuredOutput tool.
+
+### #5: Thinking Blocks Missing with Opus 4.6 (Fixed in v0.1.36)
+**Error**: No thinking blocks returned when using `claude-opus-4-6` with `max_thinking_tokens` ([#553](https://github.com/anthropics/claude-agent-sdk-python/issues/553))
+**Cause**: Opus 4.6 deprecated `budget_tokens` in favor of adaptive thinking.
+**Fix**: Use `thinking={"type": "adaptive"}` and `effort="high"` instead of `max_thinking_tokens`. Fixed in v0.1.36 with addition of `thinking` and `effort` options.
 
 ---
 

@@ -22,7 +22,6 @@ async def main():
     options = ClaudeAgentOptions(
         allowed_tools=["Read", "Grep", "Glob"],
         permission_mode="bypassPermissions",
-        allow_dangerously_skip_permissions=True,
         output_format={
             "type": "json_schema",
             "schema": CodeReview.model_json_schema(),

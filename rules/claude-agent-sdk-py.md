@@ -131,3 +131,24 @@ options = ClaudeAgentOptions(
 )
 ```
 **Why**: Agent non-deterministically wraps JSON in `{"output": {...}}`, breaking root-level schema validation. Issue [#571](https://github.com/anthropics/claude-agent-sdk-python/issues/571).
+
+### Wrap client.disconnect() in timeout to prevent hangs
+```python
+# WRONG — can hang indefinitely with 100% CPU
+async with ClaudeSDKClient(options) as client:
+    await client.query("...")
+    # exit might hang forever
+
+# CORRECT — add timeout wrapper
+import asyncio
+
+async with asyncio.timeout(10):
+    async with ClaudeSDKClient(options) as client:
+        await client.query("...")
+        # or manually disconnect with timeout
+
+# ALTERNATIVE — set environment variable for graceful shutdown
+import os
+os.environ["CLAUDE_CODE_STREAM_CLOSE_TIMEOUT"] = "10000"  # milliseconds
+```
+**Why**: `Query.close()` has no timeout on task group cleanup. If subprocess is killed or tasks don't respond to cancellation, `anyio._deliver_cancellation()` spins at 100% CPU forever. Issue [#378](https://github.com/anthropics/claude-agent-sdk-python/issues/378).

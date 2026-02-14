@@ -1241,7 +1241,33 @@ system_prompt = "**CRITICAL**: When using StructuredOutput tool, provide the JSO
 ```
 Note: This workaround is fragile due to agent non-determinism. Prefer using `output_format` option instead of relying on agent to call StructuredOutput tool.
 
-### #5: Thinking Blocks Missing with Opus 4.6 (Fixed in v0.1.36)
+### #5: `cwd` Option Ignored or Overridden
+**Error**: Setting `cwd="/path/to/app"` is ignored; Claude uses random paths or symlink-resolved paths like `/private/path/to/app` ([#10](https://github.com/anthropics/claude-agent-sdk-python/issues/10))
+**Cause**: Combination of macOS symlink resolution, Claude's path heuristics, and potential model-specific behavior.
+**Workaround**: Explicitly specify the working directory in your prompt: `"Work in /path/to/app directory"`. Some users report this works correctly with Opus but not Sonnet. Monitor `SystemMessage` init data for actual `cwd` value.
+
+### #6: Query.close() Hangs Indefinitely with 100% CPU
+**Error**: Calling `client.disconnect()` or context manager exit hangs forever, consuming 100% CPU in `anyio._deliver_cancellation()` ([#378](https://github.com/anthropics/claude-agent-sdk-python/issues/378))
+**Cause**: No timeout on `Query.close()` task group cleanup. If tasks don't respond to cancellation (e.g., subprocess killed by OOM), anyio spins forever trying to deliver cancellation.
+**Workaround**: Wrap disconnect in asyncio timeout:
+```python
+async with asyncio.timeout(10):
+    await client.disconnect()
+```
+Or set `CLAUDE_CODE_STREAM_CLOSE_TIMEOUT=10000` (milliseconds) environment variable.
+
+### #7: FastAPI/Uvicorn Context Issue - Only Init Message Returned
+**Error**: SDK query works in tests but fails in FastAPI handlers; only `SystemMessage(subtype="init")` is returned, no assistant response ([#462](https://github.com/anthropics/claude-agent-sdk-python/issues/462))
+**Cause**: Asyncio event loop context mismatch between FastAPI and SDK subprocess transport.
+**Workaround**: Unknown. Issue has 5 reactions but no confirmed fix yet. May be related to anyio task group context isolation.
+
+### #8: PreToolUse Hooks Not Called When File Doesn't Exist
+**Error**: PreToolUse hooks are skipped when `Read` tool is called with a non-existent file path ([#316](https://github.com/anthropics/claude-agent-sdk-python/issues/316))
+**Cause**: File existence validation happens before hook invocation, contradicting documentation.
+**Impact**: Breaks path translation hooks that need to modify file paths before validation.
+**Workaround**: None. Avoid relying on PreToolUse hooks for Read path modification.
+
+### #9: Thinking Blocks Missing with Opus 4.6 (Fixed in v0.1.36)
 **Error**: No thinking blocks returned when using `claude-opus-4-6` with `max_thinking_tokens` ([#553](https://github.com/anthropics/claude-agent-sdk-python/issues/553))
 **Cause**: Opus 4.6 deprecated `budget_tokens` in favor of adaptive thinking.
 **Fix**: Use `thinking={"type": "adaptive"}` and `effort="high"` instead of `max_thinking_tokens`. Fixed in v0.1.36 with addition of `thinking` and `effort` options.

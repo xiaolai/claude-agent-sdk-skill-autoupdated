@@ -21,11 +21,12 @@ async def main():
             },
         },
         permission_mode="bypassPermissions",
-        allow_dangerously_skip_permissions=True,
     )
 
+    from claude_agent_sdk import ResultMessage
+
     async for msg in query(prompt="Use the reviewer to check main.py", options=options):
-        if msg["type"] == "result":
-            print(msg.get("result", msg.get("errors", "Unknown")))
+        if isinstance(msg, ResultMessage):
+            print(msg.result if msg.result else f"Error: {msg.subtype}")
 
 asyncio.run(main())

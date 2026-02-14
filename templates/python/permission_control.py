@@ -14,6 +14,8 @@ async def can_use_tool(tool_name: str, tool_input: dict, options: dict) -> dict:
     return {"behavior": "allow", "updated_input": tool_input}
 
 async def main():
+    from claude_agent_sdk import ResultMessage
+
     options = ClaudeAgentOptions(
         can_use_tool=can_use_tool,
         permission_mode="default",
@@ -21,7 +23,7 @@ async def main():
     )
 
     async for msg in query(prompt="List files in the current directory", options=options):
-        if msg["type"] == "result" and msg["subtype"] == "success":
-            print(msg["result"])
+        if isinstance(msg, ResultMessage) and msg.subtype == "success":
+            print(msg.result)
 
 asyncio.run(main())

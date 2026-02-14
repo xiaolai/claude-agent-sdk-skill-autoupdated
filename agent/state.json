@@ -160,10 +160,148 @@
         "name": ""
       }
     },
-    "trackedIssues": {},
+    "trackedIssues": {
+      "554": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "Hook callback errors (Stream closed) on every tool call since v0.1.29",
+        "state": "open",
+        "knownIssueNumber": 1,
+        "researchedAt": "2026-02-14",
+        "verdict": "added_known_issue",
+        "reason": "Cosmetic error affecting bypassPermissions mode since v0.1.29, workaround exists"
+      },
+      "523": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "allowed_tools=[] (empty list) is treated as falsy",
+        "state": "open",
+        "knownIssueNumber": 2,
+        "researchedAt": "2026-02-14",
+        "verdict": "added_known_issue",
+        "reason": "Common pitfall with clear workaround (use None instead of [])"
+      },
+      "567": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "sub-agents not getting registered",
+        "state": "open",
+        "knownIssueNumber": 3,
+        "researchedAt": "2026-02-14",
+        "verdict": "added_known_issue",
+        "reason": "Affects large system prompts/many agents, silent failure"
+      },
+      "571": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "StructuredOutput tool fails when agent wraps output",
+        "state": "open",
+        "knownIssueNumber": 4,
+        "researchedAt": "2026-02-14",
+        "verdict": "added_known_issue",
+        "reason": "Common structured output validation issue with workaround"
+      },
+      "10": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "cwd in ClaudeCodeOptions does not seem to be honored",
+        "state": "open",
+        "knownIssueNumber": 5,
+        "researchedAt": "2026-02-14",
+        "verdict": "added_known_issue",
+        "reason": "High reaction count (13), affects users broadly, workaround exists"
+      },
+      "378": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "Query.close() can hang indefinitely causing 100% CPU",
+        "state": "open",
+        "knownIssueNumber": 6,
+        "researchedAt": "2026-02-14",
+        "verdict": "added_known_issue",
+        "reason": "Production issue with clear workaround (asyncio.timeout or env var)"
+      },
+      "462": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "Subprocess Transport Only Returns Init Message in FastAPI Context",
+        "state": "open",
+        "knownIssueNumber": 7,
+        "researchedAt": "2026-02-14",
+        "verdict": "added_known_issue",
+        "reason": "High reaction count (5), affects FastAPI users, no workaround yet"
+      },
+      "316": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "PreToolUse hooks not called for Read tool when file doesn't exist",
+        "state": "open",
+        "knownIssueNumber": 8,
+        "researchedAt": "2026-02-14",
+        "verdict": "added_known_issue",
+        "reason": "Contradicts documentation, breaks legitimate hook use cases"
+      },
+      "553": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "Thinking blocks missing when using Opus 4.6",
+        "state": "open",
+        "knownIssueNumber": 9,
+        "researchedAt": "2026-02-14",
+        "verdict": "added_known_issue",
+        "reason": "Fixed in v0.1.36 - documented for historical reference"
+      },
+      "337": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "Bug: @filepath syntax not supported, agents silently dropped",
+        "state": "open",
+        "knownIssueNumber": 3,
+        "researchedAt": "2026-02-14",
+        "verdict": "updated_existing",
+        "reason": "Related to #567, same root cause (agents not registered)"
+      },
+      "374": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "Structured outputs seems to be flaky",
+        "state": "open",
+        "knownIssueNumber": 4,
+        "researchedAt": "2026-02-14",
+        "verdict": "updated_existing",
+        "reason": "Related to #571, same StructuredOutput validation issue"
+      },
+      "502": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "StructuredOutput tool wraps data in 'output' field",
+        "state": "open",
+        "researchedAt": "2026-02-14",
+        "verdict": "skipped",
+        "reason": "Duplicate of #571"
+      },
+      "510": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "Model serializes arrays as JSON strings in StructuredOutput",
+        "state": "closed",
+        "researchedAt": "2026-02-14",
+        "verdict": "skipped",
+        "reason": "Closed, likely fixed"
+      }
+    },
     "trackedIssuesExternal": {},
-    "lastScannedIssueNumber": 571,
-    "lastAuditedVersion": "none"
+    "lastScannedIssueNumber": 572,
+    "lastAuditedVersion": "0.1.36",
+    "lastAuditSummary": {
+      "date": "2026-02-14",
+      "sdkVersion": "0.1.36",
+      "newOptionsAdded": 0,
+      "newMethodsAdded": 0,
+      "newMessageTypesAdded": 0,
+      "newHookEventsAdded": 0,
+      "updatedEntries": 0,
+      "noChanges": true,
+      "issuesResearched": 14,
+      "knownIssuesAdded": 5,
+      "knownIssuesUpdated": 0,
+      "templateFilesAudited": 12,
+      "templateFixesApplied": 5,
+      "templateFixDetails": [
+        "permission_control.py: replaced dict-style message access with isinstance checks",
+        "error_handling.py: replaced dict-style message access with isinstance checks",
+        "multi_agent_workflow.py: replaced dict-style message access with isinstance checks",
+        "session_management.py: replaced dict-style message access with isinstance checks",
+        "subagents_orchestration.py: replaced dict-style message access with isinstance checks"
+      ]
+    }
   },
-  "lastUpdated": "2026-02-13T23:01:19Z"
+  "lastUpdated": "2026-02-14T00:00:00Z"
 }

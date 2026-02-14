@@ -1,6 +1,6 @@
 """Session management with Claude Agent SDK."""
 import asyncio
-from claude_agent_sdk import query, ClaudeAgentOptions
+from claude_agent_sdk import query, ClaudeAgentOptions, SystemMessage, ResultMessage
 
 async def main():
     # First query — capture session ID
@@ -8,13 +8,12 @@ async def main():
     options = ClaudeAgentOptions(
         max_turns=5,
         permission_mode="bypassPermissions",
-        allow_dangerously_skip_permissions=True,
     )
 
     async for msg in query(prompt="Read the README.md file", options=options):
-        if msg["type"] == "system" and msg.get("subtype") == "init":
-            session_id = msg["session_id"]
-        if msg["type"] == "result" and msg["subtype"] == "success":
+        if isinstance(msg, SystemMessage) and msg.subtype == "init":
+            session_id = msg.data.get("session_id")
+        if isinstance(msg, ResultMessage) and msg.subtype == "success":
             print(f"First query done. Session: {session_id}")
 
     if not session_id:
@@ -26,12 +25,11 @@ async def main():
         resume=session_id,
         max_turns=5,
         permission_mode="bypassPermissions",
-        allow_dangerously_skip_permissions=True,
     )
 
     async for msg in query(prompt="Now summarize what you read", options=resume_options):
-        if msg["type"] == "result" and msg["subtype"] == "success":
-            print(f"Resume result: {msg['result'][:200]}")
+        if isinstance(msg, ResultMessage) and msg.subtype == "success":
+            print(f"Resume result: {msg.result[:200] if msg.result else ''}")
 
     # Fork session
     fork_options = ClaudeAgentOptions(
@@ -39,11 +37,10 @@ async def main():
         fork_session=True,
         max_turns=5,
         permission_mode="bypassPermissions",
-        allow_dangerously_skip_permissions=True,
     )
 
     async for msg in query(prompt="Try a different approach", options=fork_options):
-        if msg["type"] == "result" and msg["subtype"] == "success":
-            print(f"Fork result: {msg['result'][:200]}")
+        if isinstance(msg, ResultMessage) and msg.subtype == "success":
+            print(f"Fork result: {msg.result[:200] if msg.result else ''}")
 
 asyncio.run(main())

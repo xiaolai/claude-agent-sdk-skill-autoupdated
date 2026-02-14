@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-02-14
+
+- Research only, no version change (TypeScript v0.2.42, Python v0.1.36)
+- Python SDK: Added 9 known issues (#1–#9), applied 5 template fixes
+- Key additions: Query.close() hang fix, FastAPI compatibility issue, allowed_tools=[] pitfall
+- [Full report](reports/2026-02-14.md)
+
 ## 2026-02-13
 
 - SDK v0.2.39 → v0.2.41 (verification failed on stale version in historical report)

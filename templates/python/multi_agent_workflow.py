@@ -69,20 +69,22 @@ async def main():
         allow_dangerously_skip_permissions=True,
     )
 
+    from claude_agent_sdk import AssistantMessage, ResultMessage, TextBlock
+
     async for msg in query(
         prompt="Deploy v2.5.0 with security check and health monitoring",
         options=options,
     ):
-        if msg["type"] == "assistant":
-            for block in msg.get("message", {}).get("content", []):
-                if block.get("type") == "text":
-                    print(block["text"])
-        elif msg["type"] == "result":
-            if msg["subtype"] == "success":
-                print(f"\nDone: {msg['result']}")
-                print(f"Cost: ${msg.get('total_cost_usd', 0):.4f}")
+        if isinstance(msg, AssistantMessage):
+            for block in msg.content:
+                if isinstance(block, TextBlock):
+                    print(block.text)
+        elif isinstance(msg, ResultMessage):
+            if msg.subtype == "success":
+                print(f"\nDone: {msg.result}")
+                print(f"Cost: ${msg.total_cost_usd or 0:.4f}")
             else:
-                print(f"Error: {msg['subtype']} {msg.get('errors', [])}")
+                print(f"Error: {msg.subtype}")
 
 
 asyncio.run(main())

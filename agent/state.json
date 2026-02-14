@@ -12,8 +12,8 @@
     "github": {
       "repo": "anthropics/claude-agent-sdk-typescript",
       "latestRelease": {
-        "tag": "",
-        "name": ""
+        "tag": "v0.2.42",
+        "name": "v0.2.42"
       }
     },
     "trackedIssues": {
@@ -156,8 +156,8 @@
     "github": {
       "repo": "anthropics/claude-agent-sdk-python",
       "latestRelease": {
-        "tag": "",
-        "name": ""
+        "tag": "v0.1.36",
+        "name": "v0.1.36"
       }
     },
     "trackedIssues": {
@@ -303,5 +303,5 @@
       ]
     }
   },
-  "lastUpdated": "2026-02-14T00:00:00Z"
+  "lastUpdated": "2026-02-14T11:16:37Z"
 }

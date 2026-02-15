@@ -12,8 +12,8 @@
     "github": {
       "repo": "anthropics/claude-agent-sdk-typescript",
       "latestRelease": {
-        "tag": "v0.2.42",
-        "name": "v0.2.42"
+        "tag": "",
+        "name": ""
       }
     },
     "trackedIssues": {
@@ -156,8 +156,8 @@
     "github": {
       "repo": "anthropics/claude-agent-sdk-python",
       "latestRelease": {
-        "tag": "v0.1.36",
-        "name": "v0.1.36"
+        "tag": "",
+        "name": ""
       }
     },
     "trackedIssues": {
@@ -279,29 +279,7 @@
     },
     "trackedIssuesExternal": {},
     "lastScannedIssueNumber": 572,
-    "lastAuditedVersion": "0.1.36",
-    "lastAuditSummary": {
-      "date": "2026-02-14",
-      "sdkVersion": "0.1.36",
-      "newOptionsAdded": 0,
-      "newMethodsAdded": 0,
-      "newMessageTypesAdded": 0,
-      "newHookEventsAdded": 0,
-      "updatedEntries": 0,
-      "noChanges": true,
-      "issuesResearched": 14,
-      "knownIssuesAdded": 5,
-      "knownIssuesUpdated": 0,
-      "templateFilesAudited": 12,
-      "templateFixesApplied": 5,
-      "templateFixDetails": [
-        "permission_control.py: replaced dict-style message access with isinstance checks",
-        "error_handling.py: replaced dict-style message access with isinstance checks",
-        "multi_agent_workflow.py: replaced dict-style message access with isinstance checks",
-        "session_management.py: replaced dict-style message access with isinstance checks",
-        "subagents_orchestration.py: replaced dict-style message access with isinstance checks"
-      ]
-    }
+    "lastAuditedVersion": "0.1.36"
   },
-  "lastUpdated": "2026-02-14T11:16:37Z"
+  "lastUpdated": "2026-02-15T08:03:34Z"
 }

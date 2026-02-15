@@ -162,3 +162,20 @@ env: { ANTHROPIC_LOG: 'debug' }
 // CORRECT — use SDK's built-in debug options
 options: { debug: true, debugFile: '/tmp/agent.log' }
 ```
+
+### tool() requires ZodRawShape, not ZodObject
+```typescript
+// WRONG — passing ZodObject makes inputSchema undefined, handler receives only metadata
+import { z } from 'zod';
+const MySchema = z.object({ query: z.string() });
+const myTool = tool("search", "Search", MySchema, handler);
+// handler receives: (args={signal, _meta, requestId}, extra=undefined)
+
+// CORRECT — pass the shape property, not the ZodObject instance
+const MySchema = z.object({ query: z.string() });
+const myTool = tool("search", "Search", MySchema.shape, handler);
+// handler receives: (args={query: "..."}, extra=transportContext)
+
+// ALSO CORRECT — define shape inline
+const myTool = tool("search", "Search", { query: z.string() }, handler);
+```

@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-02-15
+
+- Research only, no version change (TypeScript v0.2.42, Python v0.1.36)
+- Added 1 TypeScript rule for tool() API (requires ZodRawShape, not ZodObject)
+- State maintenance: synced GitHub release tags
+- [Full report](reports/2026-02-15.md)
+
 ## 2026-02-14
 
 - Research only, no version change (TypeScript v0.2.42, Python v0.1.36)

@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-02-16
+
+- Research only, no version change (TypeScript v0.2.42, Python v0.1.36)
+- Python SDK: Added 5 new known issues (#10–#14), updated #3 with v0.1.35 fix
+- Key additions: CLAUDECODE=1 env inheritance, search_result blocks dropped, FastAPI hanging, session fork failure, SDK MCP string prompts crash
+- [Full report](reports/2026-02-16.md)
+
 ## 2026-02-15
 
 - Research only, no version change (TypeScript v0.2.42, Python v0.1.36)

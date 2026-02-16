@@ -859,6 +859,8 @@ interface SDKSession {
 ### V2 Limitations
 
 `SDKSessionOptions` is a subset of `Options`. The V2 API does **NOT** support:
+- `cwd` ([#176](https://github.com/anthropics/claude-agent-sdk-typescript/issues/176))
+- `settingSources` ([#176](https://github.com/anthropics/claude-agent-sdk-typescript/issues/176))
 - `plugins` ([#171](https://github.com/anthropics/claude-agent-sdk-typescript/issues/171))
 - `systemPrompt` ([#160](https://github.com/anthropics/claude-agent-sdk-typescript/issues/160))
 - `mcpServers` ([#154](https://github.com/anthropics/claude-agent-sdk-typescript/issues/154))

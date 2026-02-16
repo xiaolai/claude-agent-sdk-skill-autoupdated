@@ -1227,10 +1227,10 @@ async for msg in query(
 **Cause**: Empty list is treated as falsy in Python, causing `--allowedTools` flag to be omitted from CLI command.
 **Fix**: Use `allowed_tools=None` for default behavior, or pass a dummy tool name if you need to restrict tools programmatically. A proper fix would check `if allowed_tools is not None` instead of truthiness.
 
-### #3: Sub-agents Not Registered When Command Exceeds 100k Chars
+### #3: Sub-agents Not Registered When Command Exceeds 100k Chars (Fixed in v0.1.35)
 **Error**: Custom agents silently fail to register when CLI command string exceeds Linux's 100k character limit ([#567](https://github.com/anthropics/claude-agent-sdk-python/issues/567))
-**Cause**: SDK writes agents to temp file (`@/tmp/xxx.json`) but CLI doesn't support `@filepath` syntax, attempting to parse it as JSON directly.
-**Fix**: Reduce system prompt size, use fewer/smaller agents, or wait for CLI fix. Monitor init messages to verify agents registered.
+**Cause**: SDK writes agents to temp file (`@/tmp/xxx.json`) but CLI didn't support `@filepath` syntax, attempting to parse it as JSON directly.
+**Fix**: Fixed in v0.1.35. If using older versions, reduce system prompt size, use fewer/smaller agents, or upgrade.
 
 ### #4: StructuredOutput Validation Fails When Agent Wraps Output
 **Error**: `Output does not match required schema: root: must have required property 'X'` followed by `error_max_structured_output_retries` ([#571](https://github.com/anthropics/claude-agent-sdk-python/issues/571))
@@ -1271,6 +1271,63 @@ Or set `CLAUDE_CODE_STREAM_CLOSE_TIMEOUT=10000` (milliseconds) environment varia
 **Error**: No thinking blocks returned when using `claude-opus-4-6` with `max_thinking_tokens` ([#553](https://github.com/anthropics/claude-agent-sdk-python/issues/553))
 **Cause**: Opus 4.6 deprecated `budget_tokens` in favor of adaptive thinking.
 **Fix**: Use `thinking={"type": "adaptive"}` and `effort="high"` instead of `max_thinking_tokens`. Fixed in v0.1.36 with addition of `thinking` and `effort` options.
+
+### #10: SDK Usage Blocked Inside Claude Code Sessions (Hooks/Plugins)
+**Error**: `Error: Claude Code cannot be launched inside another Claude Code session.` when using SDK from hooks, plugins, or subagents ([#573](https://github.com/anthropics/claude-agent-sdk-python/issues/573))
+**Cause**: Subprocess inherits `CLAUDECODE=1` environment variable from parent Claude Code process. The spawned CLI detects this and refuses to start.
+**Fix**: Override the variable via the `env` option:
+```python
+options = ClaudeAgentOptions(
+    env={"CLAUDECODE": ""},
+    # ... other options
+)
+```
+
+### #11: `search_result` Content Blocks Silently Dropped
+**Error**: Custom MCP tools returning `search_result` content blocks have those blocks silently dropped before reaching Claude, breaking RAG citations ([#574](https://github.com/anthropics/claude-agent-sdk-python/issues/574))
+**Cause**: SDK's MCP tool result handler only recognizes `text` and `image` content types; `search_result` blocks fall through and are discarded.
+**Impact**: Cannot use [native citations](https://platform.claude.com/docs/en/build-with-claude/search-results) with custom RAG tools in the Agent SDK.
+**Workaround**: None. Bypass SDK and use `anthropic.AsyncAnthropic` directly for RAG workflows requiring citations.
+
+### #12: Session Forking Fails with ClaudeSDKClient Since v0.1.28
+**Error**: `ProcessError: Command failed with exit code 1` when calling `ClaudeSDKClient` with `resume=session_id, fork_session=True` ([#575](https://github.com/anthropics/claude-agent-sdk-python/issues/575))
+**Cause**: Regression introduced in v0.1.28 affecting fork workflow when MCP servers are configured.
+**Workaround**: Downgrade to v0.1.27, or avoid forking with MCP servers until fixed.
+
+### #13: ClaudeSDKClient Hangs in FastAPI/Starlette (ASGI Frameworks)
+**Error**: `ClaudeSDKClient` hangs silently on second `receive_response()` when reused across different ASGI request tasks. No error raised—messages never arrive ([#576](https://github.com/anthropics/claude-agent-sdk-python/issues/576))
+**Cause**: SDK's internal anyio task group (created during `connect()`) cannot deliver messages across asyncio task boundaries. FastAPI handles each HTTP request in a separate task.
+**Impact**: SDK cannot be used for multi-turn conversations in web servers without workaround.
+**Workaround**: Create a dedicated `asyncio.Task` per session that owns the SDK client, with `asyncio.Queue` bridges to HTTP handlers:
+```python
+class SessionWorker:
+    async def _run(self):
+        client = ClaudeSDKClient(options=...)
+        await client.connect()  # Task W
+        while True:
+            message, out_q = await self._input.get()
+            await client.query(message)  # Task W
+            async for msg in client.receive_response():  # Task W
+                await out_q.put(msg)
+
+    async def query_and_stream(self, message):
+        out_q = asyncio.Queue()
+        await self._input.put((message, out_q))
+        while True:
+            yield await out_q.get()  # HTTP handler reads from queue
+```
+
+### #14: SDK MCP Servers Crash with String Prompts
+**Error**: `CLIConnectionError: ProcessTransport is not ready for writing` when using in-process MCP servers (from `create_sdk_mcp_server()`) with string prompts ([#578](https://github.com/anthropics/claude-agent-sdk-python/issues/578))
+**Cause**: String prompt code path closes stdin immediately after sending user message. SDK MCP servers require bidirectional communication (CLI sends `control_request` via stdout, SDK responds via stdin), but stdin is already closed.
+**Workaround**: Use `AsyncIterable` prompt instead of string:
+```python
+async def prompt_gen():
+    yield {"type": "text", "text": "Your prompt here"}
+
+async for msg in query(prompt=prompt_gen(), options=options):
+    ...
+```
 
 ---
 

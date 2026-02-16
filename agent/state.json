@@ -136,6 +136,40 @@
         "title": "AgentDefinition.tools is intersected with Options.tools",
         "state": "open",
         "knownIssueNumber": 19
+      },
+      "173": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "Task exception during SDK cleanup: ProcessError exit code -15 (SIGTERM)",
+        "state": "open",
+        "researchedAt": "2026-02-16",
+        "verdict": "skipped",
+        "reason": "Python-specific error, cosmetic cleanup issue, no functional impact"
+      },
+      "174": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "No MCP Server Instructions support",
+        "state": "open",
+        "researchedAt": "2026-02-16",
+        "verdict": "skipped",
+        "reason": "Enhancement request, not a bug with workaround"
+      },
+      "175": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "Agent truncates large MCP tool output to local file and later requires filesystem tools (fails when bash/fs tools are disabled)",
+        "state": "open",
+        "knownIssueNumber": 22,
+        "researchedAt": "2026-02-16",
+        "verdict": "already_documented",
+        "reason": "Already documented as Known Issue #22"
+      },
+      "176": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "V2 Session API (unstable_v2_createSession) ignores permissionMode, cwd, settingSources, allowedTools options",
+        "state": "open",
+        "knownIssueNumber": 21,
+        "researchedAt": "2026-02-16",
+        "verdict": "already_documented",
+        "reason": "Already documented as Known Issue #21 and V2 Limitations section updated"
       }
     },
     "trackedIssuesExternal": {
@@ -275,11 +309,88 @@
         "researchedAt": "2026-02-14",
         "verdict": "skipped",
         "reason": "Closed, likely fixed"
+      },
+      "567": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "sub-agents not getting registered",
+        "state": "closed",
+        "researchedAt": "2026-02-16",
+        "verdict": "updated_existing",
+        "reason": "Fixed in v0.1.35 - updated Known Issue #3 to reflect fix"
+      },
+      "573": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "Bug: Subprocess inherits CLAUDECODE=1 env var, preventing SDK usage from Claude Code hooks/plugins",
+        "state": "open",
+        "knownIssueNumber": 10,
+        "researchedAt": "2026-02-16",
+        "verdict": "added_known_issue",
+        "reason": "Clear workaround exists, affects legitimate SDK use case (hooks/plugins)"
+      },
+      "574": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "search_result content blocks silently dropped by MCP tool result handler",
+        "state": "open",
+        "knownIssueNumber": 11,
+        "researchedAt": "2026-02-16",
+        "verdict": "added_known_issue",
+        "reason": "Blocks important RAG citations feature, no workaround except bypassing SDK"
+      },
+      "575": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "Fork session fails with ClaudeSDKClient since v0.1.28",
+        "state": "open",
+        "knownIssueNumber": 12,
+        "researchedAt": "2026-02-16",
+        "verdict": "added_known_issue",
+        "reason": "Clear regression, blocks forking workflow with MCP servers"
+      },
+      "576": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "ClaudeSDKClient silently hangs when reused across ASGI request tasks (FastAPI/Starlette)",
+        "state": "open",
+        "knownIssueNumber": 13,
+        "researchedAt": "2026-02-16",
+        "verdict": "added_known_issue",
+        "reason": "Silent failure is dangerous, workaround exists but complex, high impact for server deployments"
+      },
+      "577": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "Agent Teams: Subagent SendMessage not delivered to team lead in SDK mode",
+        "state": "open",
+        "researchedAt": "2026-02-16",
+        "verdict": "skipped",
+        "reason": "Experimental feature, workarounds exist (sleep/polling), not widespread issue yet"
+      },
+      "578": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "CLIConnectionError: ProcessTransport is not ready for writing when using SDK MCP servers with string prompts",
+        "state": "open",
+        "knownIssueNumber": 14,
+        "researchedAt": "2026-02-16",
+        "verdict": "added_known_issue",
+        "reason": "Clear bug with specific trigger, workaround is to use AsyncIterable prompts"
+      },
+      "579": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "ResultMessage shows total_usd_cost even though anthropic api key was never set",
+        "state": "open",
+        "researchedAt": "2026-02-16",
+        "verdict": "skipped",
+        "reason": "Documentation/clarification issue, not a bug with workaround"
+      },
+      "580": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "fix: keep stdin open for hooks during multi-turn agent execution",
+        "state": "open",
+        "researchedAt": "2026-02-16",
+        "verdict": "skipped",
+        "reason": "PR to fix #554, not an issue to document"
       }
     },
     "trackedIssuesExternal": {},
-    "lastScannedIssueNumber": 572,
+    "lastScannedIssueNumber": 580,
     "lastAuditedVersion": "0.1.36"
   },
-  "lastUpdated": "2026-02-15T08:03:34Z"
+  "lastUpdated": "2026-02-16T12:00:00Z"
 }

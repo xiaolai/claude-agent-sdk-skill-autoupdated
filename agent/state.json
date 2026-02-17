@@ -1,7 +1,7 @@
 {
   "typescript": {
     "registry": {
-      "version": "0.2.42",
+      "version": "0.2.44",
       "peerDependencies": {
         "zod": "^4.0.0"
       },
@@ -181,11 +181,11 @@
       }
     },
     "lastScannedIssueNumber": 176,
-    "lastAuditedVersion": "0.2.42"
+    "lastAuditedVersion": "0.2.44"
   },
   "python": {
     "registry": {
-      "version": "0.1.36"
+      "version": "0.1.37"
     },
     "github": {
       "repo": "anthropics/claude-agent-sdk-python",
@@ -216,11 +216,10 @@
       "567": {
         "repo": "anthropics/claude-agent-sdk-python",
         "title": "sub-agents not getting registered",
-        "state": "open",
-        "knownIssueNumber": 3,
-        "researchedAt": "2026-02-14",
-        "verdict": "added_known_issue",
-        "reason": "Affects large system prompts/many agents, silent failure"
+        "state": "closed",
+        "researchedAt": "2026-02-16",
+        "verdict": "updated_existing",
+        "reason": "Fixed in v0.1.35 - updated Known Issue #3 to reflect fix"
       },
       "571": {
         "repo": "anthropics/claude-agent-sdk-python",
@@ -310,14 +309,6 @@
         "verdict": "skipped",
         "reason": "Closed, likely fixed"
       },
-      "567": {
-        "repo": "anthropics/claude-agent-sdk-python",
-        "title": "sub-agents not getting registered",
-        "state": "closed",
-        "researchedAt": "2026-02-16",
-        "verdict": "updated_existing",
-        "reason": "Fixed in v0.1.35 - updated Known Issue #3 to reflect fix"
-      },
       "573": {
         "repo": "anthropics/claude-agent-sdk-python",
         "title": "Bug: Subprocess inherits CLAUDECODE=1 env var, preventing SDK usage from Claude Code hooks/plugins",
@@ -392,5 +383,5 @@
     "lastScannedIssueNumber": 580,
     "lastAuditedVersion": "0.1.36"
   },
-  "lastUpdated": "2026-02-16T12:00:00Z"
+  "lastUpdated": "2026-02-17T08:10:02Z"
 }

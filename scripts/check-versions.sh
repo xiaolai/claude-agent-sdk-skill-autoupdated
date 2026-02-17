@@ -39,7 +39,7 @@ check_package() {
 }
 
 echo "Dependencies:"
-check_package "@anthropic-ai/claude-agent-sdk" "0.2.42"
+check_package "@anthropic-ai/claude-agent-sdk" "0.2.44"
 check_package "zod" "3.24.1"
 
 echo ""
@@ -52,7 +52,7 @@ echo "Python Dependencies:"
 echo -n "Checking claude-agent-sdk (PyPI)... "
 if command -v pip &> /dev/null; then
     py_latest=$(pip index versions claude-agent-sdk 2>/dev/null | head -1 | grep -oP '\([\d.]+\)' | tr -d '()' || echo "unknown")
-    py_current="0.1.36"
+    py_current="0.1.37"
     if [ "$py_current" = "$py_latest" ]; then
         echo -e "${GREEN}Up to date ($py_current)${NC}"
     elif [ "$py_latest" = "unknown" ]; then

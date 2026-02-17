@@ -1,6 +1,6 @@
-# Claude Agent SDK — TypeScript Reference (v0.2.42)
+# Claude Agent SDK — TypeScript Reference (v0.2.44)
 
-**Package**: `@anthropic-ai/claude-agent-sdk@0.2.42`
+**Package**: `@anthropic-ai/claude-agent-sdk@0.2.44`
 **Docs**: https://platform.claude.com/docs/en/agent-sdk/overview
 **Repo**: https://github.com/anthropics/claude-agent-sdk-typescript
 **Migration**: Renamed from `@anthropic-ai/claude-code`. See [migration guide](https://platform.claude.com/docs/en/agent-sdk/migration-guide).
@@ -513,23 +513,30 @@ type PermissionMode =
 ```typescript
 type CanUseTool = (
   toolName: string,
-  input: ToolInput,
-  options: { signal: AbortSignal; suggestions?: PermissionUpdate[] }
+  input: Record<string, unknown>,
+  options: {
+    signal: AbortSignal;
+    suggestions?: PermissionUpdate[];  // Permission suggestions from Claude
+    blockedPath?: string;              // Path that triggered a permission check
+    decisionReason?: string;           // Why this permission check was triggered
+    toolUseID: string;                 // ID of the tool use block
+    agentID?: string;                  // Subagent ID (if called from a subagent)
+  }
 ) => Promise<PermissionResult>;
 
 type PermissionResult =
-  | { behavior: 'allow'; updatedInput: ToolInput; updatedPermissions?: PermissionUpdate[] }
-  | { behavior: 'deny'; message: string; interrupt?: boolean };
+  | { behavior: 'allow'; updatedInput?: Record<string, unknown>; updatedPermissions?: PermissionUpdate[]; toolUseID?: string; }
+  | { behavior: 'deny'; message: string; interrupt?: boolean; toolUseID?: string; };
 ```
 
 Example:
 
 ```typescript
-canUseTool: async (toolName, input, { signal }) => {
+canUseTool: async (toolName, input, { signal, toolUseID, agentID }) => {
   if (['Read', 'Grep', 'Glob'].includes(toolName)) {
     return { behavior: 'allow', updatedInput: input };
   }
-  if (toolName === 'Bash' && /rm -rf|dd if=|mkfs/.test(input.command)) {
+  if (toolName === 'Bash' && /rm -rf|dd if=|mkfs/.test(String(input.command ?? ''))) {
     return { behavior: 'deny', message: 'Destructive command blocked' };
   }
   return { behavior: 'allow', updatedInput: input };
@@ -1079,11 +1086,12 @@ const transport = new ProcessTransport({
 
 ---
 
-## Changelog Highlights (v0.2.12 → v0.2.42)
+## Changelog Highlights (v0.2.12 → v0.2.44)
 
 | Version | Change |
 |---------|--------|
-| v0.2.42 | Updated to parity with Claude Code v2.1.42 |
+| v0.2.44 | Updated to parity with Claude Code v2.1.44 |
+| v0.2.43 | Previous release (2026-02-14) |
 | v0.2.33 | `TeammateIdle`/`TaskCompleted` hook events; custom `sessionId` option |
 | v0.2.31 | `stop_reason` field on result messages |
 | v0.2.30 | `debug`/`debugFile` options; PDF page reading |
@@ -1094,4 +1102,4 @@ const transport = new ProcessTransport({
 
 ---
 
-**Last verified**: 2026-02-13 | **SDK version**: 0.2.42
+**Last verified**: 2026-02-17 | **SDK version**: 0.2.44

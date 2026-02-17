@@ -1,13 +1,13 @@
 ---
 paths: "**/*agent*.py"
-description: Auto-corrections for Claude Agent SDK (Python) v0.1.36
+description: Auto-corrections for Claude Agent SDK (Python) v0.1.37
 ---
 
 # Claude Agent SDK Rules (Python)
 
 ## Package
 - Package: `claude-agent-sdk` (PyPI, NOT `anthropic-sdk-python`)
-- Latest: v0.1.36
+- Latest: v0.1.37
 
 ## Common Mistakes
 
@@ -43,14 +43,14 @@ options = ClaudeAgentOptions(
 
 ### Use @tool decorator for tool definitions
 ```python
-# WRONG — bare function
+# WRONG — bare function, wrong signature
 def get_weather(city: str) -> dict:
     return {"content": [{"type": "text", "text": f"Weather in {city}: sunny"}]}
 
-# CORRECT — use @tool decorator
-@tool("get_weather", "Get weather for a city", {"city": {"type": "string"}})
-async def get_weather(city: str) -> dict:
-    return {"content": [{"type": "text", "text": f"Weather in {city}: sunny"}]}
+# CORRECT — use @tool decorator; handler receives a dict of args
+@tool("get_weather", "Get weather for a city", {"city": str})
+async def get_weather(args: dict) -> dict:
+    return {"content": [{"type": "text", "text": f"Weather in {args['city']}: sunny"}]}
 ```
 
 ### Import from claude_agent_sdk, not anthropic
@@ -79,8 +79,12 @@ async def can_use_tool(tool_name, tool_input, options):
 # WRONG — corrupts JSON protocol between SDK and CLI
 env={"ANTHROPIC_LOG": "debug"}
 
-# CORRECT — use SDK's built-in debug options
-options = ClaudeAgentOptions(debug=True, debug_file="/tmp/agent.log")
+# CORRECT — use SDK's stderr callback for debug output
+import logging
+logger = logging.getLogger("claude-sdk")
+options = ClaudeAgentOptions(
+    stderr=lambda data: logger.debug(f"CLI stderr: {data}")
+)
 ```
 
 ### Use allowed_tools=None to disable tools, not []

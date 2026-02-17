@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-02-17
+
+- SDK v0.2.42 → v0.2.44 (TypeScript) and v0.1.36 → v0.1.37 (Python), verify passed after 1 mending run
+- TypeScript: `canUseTool` API expanded with `toolUseID`, `agentID`, `blockedPath`, `decisionReason` fields
+- Python: Known Issue #9 fix version corrected to v0.1.37; hook events count updated (6→10)
+- [Full report](reports/2026-02-17.md)
+
 ## 2026-02-16
 
 - Research only, no version change (TypeScript v0.2.42, Python v0.1.36)

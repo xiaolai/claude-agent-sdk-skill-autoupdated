@@ -1,6 +1,6 @@
-# Claude Agent SDK — Python Reference (v0.1.36)
+# Claude Agent SDK — Python Reference (v0.1.37)
 
-**Package**: `claude-agent-sdk==0.1.36` (PyPI)
+**Package**: `claude-agent-sdk==0.1.37` (PyPI)
 **Docs**: https://platform.claude.com/docs/en/agent-sdk/python
 **Repo**: https://github.com/anthropics/claude-agent-sdk-python
 **Requires**: Python 3.10+
@@ -15,7 +15,7 @@
 - [Options](#options) — Core, Tools & Permissions, Models & Output, Sessions, MCP & Agents, Advanced
 - [Client Methods](#client-methods) — `ClaudeSDKClient` lifecycle and control
 - [Message Types](#message-types) — `Message` union, content blocks, errors
-- [Hooks](#hooks) — 6 hook events, matchers, return values, async hooks
+- [Hooks](#hooks) — 10 hook events, matchers, return values, async hooks
 - [Permissions](#permissions) — 4 modes, `can_use_tool` callback
 - [MCP Servers](#mcp-servers) — stdio, HTTP, SSE, SDK in-process
 - [Subagents](#subagents) — `AgentDefinition`, tool enforcement
@@ -1267,10 +1267,10 @@ Or set `CLAUDE_CODE_STREAM_CLOSE_TIMEOUT=10000` (milliseconds) environment varia
 **Impact**: Breaks path translation hooks that need to modify file paths before validation.
 **Workaround**: None. Avoid relying on PreToolUse hooks for Read path modification.
 
-### #9: Thinking Blocks Missing with Opus 4.6 (Fixed in v0.1.36)
+### #9: Thinking Blocks Missing with Opus 4.6 (Fixed in v0.1.37)
 **Error**: No thinking blocks returned when using `claude-opus-4-6` with `max_thinking_tokens` ([#553](https://github.com/anthropics/claude-agent-sdk-python/issues/553))
 **Cause**: Opus 4.6 deprecated `budget_tokens` in favor of adaptive thinking.
-**Fix**: Use `thinking={"type": "adaptive"}` and `effort="high"` instead of `max_thinking_tokens`. Fixed in v0.1.36 with addition of `thinking` and `effort` options.
+**Fix**: Use `thinking={"type": "adaptive"}` and `effort="high"` instead of `max_thinking_tokens`. Fixed in v0.1.37 with addition of `thinking` and `effort` options.
 
 ### #10: SDK Usage Blocked Inside Claude Code Sessions (Hooks/Plugins)
 **Error**: `Error: Claude Code cannot be launched inside another Claude Code session.` when using SDK from hooks, plugins, or subagents ([#573](https://github.com/anthropics/claude-agent-sdk-python/issues/573))
@@ -1335,9 +1335,10 @@ async for msg in query(prompt=prompt_gen(), options=options):
 
 | Version | Change |
 |---------|--------|
-| v0.1.36 | Latest release (2026-02-13) |
+| v0.1.37 | Latest release (2026-02-17) |
+| v0.1.35 | Pre-previous release (2026-02-13) |
 | v0.1.0 | Breaking: `ClaudeCodeOptions` renamed to `ClaudeAgentOptions`; no default system prompt; no filesystem settings loaded by default |
 
 ---
 
-**Last verified**: 2026-02-14 | **SDK version**: 0.1.36
+**Last verified**: 2026-02-17 | **SDK version**: 0.1.37

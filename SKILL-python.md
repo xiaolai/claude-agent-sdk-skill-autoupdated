@@ -49,7 +49,8 @@ from claude_agent_sdk import query, ClaudeAgentOptions
 async def query(
     *,
     prompt: str | AsyncIterable[dict[str, Any]],
-    options: ClaudeAgentOptions | None = None
+    options: ClaudeAgentOptions | None = None,
+    transport: Transport | None = None,  # Custom transport (advanced, for testing)
 ) -> AsyncIterator[Message]: ...
 ```
 
@@ -100,7 +101,7 @@ class ClaudeSDKClient:
     async def receive_messages(self) -> AsyncIterator[Message]: ...
     async def receive_response(self) -> AsyncIterator[Message]: ...
     async def interrupt(self) -> None: ...
-    async def rewind_files(self, user_message_uuid: str) -> None: ...
+    async def rewind_files(self, user_message_id: str) -> None: ...
     async def set_permission_mode(self, mode: str) -> None: ...
     async def set_model(self, model: str | None = None) -> None: ...
     async def get_mcp_status(self) -> dict[str, Any]: ...
@@ -222,7 +223,7 @@ server = create_sdk_mcp_server(name="calculator", version="2.0.0", tools=[add, m
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `output_format` | `OutputFormat \| None` | `None` | `{"type": "json_schema", "schema": dict}` |
+| `output_format` | `dict[str, Any] \| None` | `None` | `{"type": "json_schema", "schema": dict}` |
 | `max_thinking_tokens` | `int \| None` | `None` | **Deprecated** — use `thinking` instead |
 | `thinking` | `ThinkingConfig \| None` | `None` | Extended thinking configuration (adaptive/enabled/disabled) |
 | `effort` | `Literal["low", "medium", "high", "max"] \| None` | `None` | Effort level for thinking depth |
@@ -295,7 +296,7 @@ async with ClaudeSDKClient(options) as client:
 
 ```python
 await client.interrupt()                            # Interrupt current execution
-await client.rewind_files(user_message_uuid)        # Rewind files to checkpoint
+await client.rewind_files(user_message_id)          # Rewind files to checkpoint
 await client.set_permission_mode(mode)              # Change permission mode mid-conversation
 await client.set_model(model)                       # Switch AI model mid-conversation
 status = await client.get_mcp_status()              # Get MCP server connection status
@@ -529,15 +530,36 @@ Hooks use **callback matchers**: an optional regex `matcher` for tool names and 
 ### Hook Callback Signature
 
 ```python
-from claude_agent_sdk import HookContext
+from claude_agent_sdk import HookContext, HookInput, BaseHookInput
 from typing import Any
 
 async def my_hook(
-    input_data: dict[str, Any],
+    input_data: HookInput,   # Strongly-typed union of all hook input types
     tool_use_id: str | None,
     context: HookContext
 ) -> dict[str, Any]:
     ...
+```
+
+**Hook input types** — use `input_data["hook_event_name"]` to discriminate:
+
+```python
+# All hook inputs share these base fields (BaseHookInput):
+# session_id, transcript_path, cwd, permission_mode (optional)
+
+# HookInput is a union of all event-specific input types:
+HookInput = (
+    PreToolUseHookInput        # + tool_name, tool_input, tool_use_id
+    | PostToolUseHookInput     # + tool_name, tool_input, tool_use_id, tool_response
+    | PostToolUseFailureHookInput  # + tool_name, tool_input, tool_use_id, error, is_interrupt
+    | UserPromptSubmitHookInput    # + prompt
+    | StopHookInput            # + stop_hook_active
+    | SubagentStopHookInput    # + stop_hook_active, agent_id, agent_transcript_path, agent_type
+    | PreCompactHookInput      # + trigger ("manual"|"auto"), custom_instructions
+    | NotificationHookInput    # + message, title (optional), notification_type
+    | SubagentStartHookInput   # + agent_id, agent_type
+    | PermissionRequestHookInput  # + tool_name, tool_input, permission_suggestions
+)
 ```
 
 ### Hook Configuration
@@ -635,6 +657,22 @@ return {"systemMessage": "Remember: /etc is protected"}
 
 # Suppress hook output
 return {"suppressOutput": True}
+```
+
+### Hook Output Types
+
+The SDK exports typed output types for `hookSpecificOutput`:
+
+```python
+from claude_agent_sdk import (
+    NotificationHookSpecificOutput,      # hookEventName, additionalContext
+    SubagentStartHookSpecificOutput,     # hookEventName, additionalContext
+    PermissionRequestHookSpecificOutput, # hookEventName, decision (dict)
+    PostToolUseFailureHookSpecificOutput, # hookEventName, additionalContext
+)
+# SyncHookJSONOutput covers: continue_, suppressOutput, stopReason,
+#                             decision, systemMessage, reason, hookSpecificOutput
+# AsyncHookJSONOutput covers: async_ (True), asyncTimeout (int, optional)
 ```
 
 ### Async Hooks
@@ -1137,7 +1175,7 @@ async with ClaudeSDKClient(
     async for msg in client.receive_response():
         pass
     # Rewind to a specific user message checkpoint
-    await client.rewind_files(user_message_uuid)
+    await client.rewind_files(user_message_id)
 ```
 
 ---

@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-02-18
+
+- SDK TS v0.2.44 → v0.2.45; verify passed after 2 mending runs (attempt 3 of 3)
+- API docs updated: 2 new message types (task_started, RateLimitEvent), hook types fully typed, tool_progress field renamed elapsed_ms→elapsed_time_seconds
+- Python: transport param added to query(), rewind_files() param renamed, output_format type corrected
+- [Full report](reports/2026-02-18.md)
+
 ## 2026-02-17
 
 - SDK v0.2.42 → v0.2.44 (TypeScript) and v0.1.36 → v0.1.37 (Python), verify passed after 1 mending run

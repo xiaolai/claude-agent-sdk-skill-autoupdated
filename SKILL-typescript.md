@@ -1,6 +1,6 @@
-# Claude Agent SDK — TypeScript Reference (v0.2.44)
+# Claude Agent SDK — TypeScript Reference (v0.2.45)
 
-**Package**: `@anthropic-ai/claude-agent-sdk@0.2.44`
+**Package**: `@anthropic-ai/claude-agent-sdk@0.2.45`
 **Docs**: https://platform.claude.com/docs/en/agent-sdk/overview
 **Repo**: https://github.com/anthropics/claude-agent-sdk-typescript
 **Migration**: Renamed from `@anthropic-ai/claude-code`. See [migration guide](https://platform.claude.com/docs/en/agent-sdk/migration-guide).
@@ -13,7 +13,7 @@
 - [Core API](#core-api) — `query()`, `tool()`, `createSdkMcpServer()`
 - [Options](#options) — Core, Tools & Permissions, Models & Output, Sessions, MCP & Agents, Advanced
 - [Query Object Methods](#query-object-methods)
-- [Message Types](#message-types) — All 16 SDKMessage types
+- [Message Types](#message-types) — All 18 SDKMessage types
 - [Hooks](#hooks) — 15 hook events, matchers, return values, async hooks
 - [Permissions](#permissions) — 6 modes, `canUseTool` callback
 - [MCP Servers](#mcp-servers) — stdio, HTTP, SSE, SDK, claudeai-proxy
@@ -115,7 +115,7 @@ function createSdkMcpServer(options: {
 | `tools` | `string[] \| { type: 'preset', preset: 'claude_code' }` | — | Tool configuration |
 | `allowedTools` | `string[]` | All tools | Allowed tool names |
 | `disallowedTools` | `string[]` | `[]` | Blocked tool names |
-| `permissionMode` | `PermissionMode` | `'default'` | See [Permissions](#permissions) for all 6 modes |
+| `permissionMode` | `PermissionMode` | `'default'` | `'default' \| 'acceptEdits' \| 'bypassPermissions' \| 'plan' \| 'delegate' \| 'dontAsk'` — see [Permissions](#permissions) |
 | `canUseTool` | `CanUseTool` | — | Custom permission callback |
 | `allowDangerouslySkipPermissions` | `boolean` | `false` | Required with `bypassPermissions` |
 | `permissionPromptToolName` | `string` | — | Route permission prompts through a named MCP tool |
@@ -244,7 +244,7 @@ type AccountInfo = {
 
 ## Message Types
 
-The SDK emits 16 message types through the async generator:
+The SDK emits 18 message types through the async generator:
 
 ```typescript
 type SDKMessage =
@@ -266,8 +266,10 @@ type SDKMessage =
   | SDKHookProgressMessage        // type: 'system', subtype: 'hook_progress' — hook stdout/stderr
   | SDKHookResponseMessage        // type: 'system', subtype: 'hook_response' — hook outcome
   // Task & persistence
+  | SDKTaskStartedMessage         // type: 'system', subtype: 'task_started' — emitted when background task begins
   | SDKTaskNotificationMessage    // type: 'system', subtype: 'task_notification' — background task events
   | SDKFilesPersistedEvent        // type: 'system', subtype: 'files_persisted'
+  | SDKRateLimitEvent             // in union type — shape definition not yet published
 ```
 
 ### SDKResultMessage
@@ -326,13 +328,14 @@ for await (const message of query({ prompt: "...", options })) {
       if (message.subtype === 'init') sessionId = message.session_id;
       if (message.subtype === 'status') console.log('Status:', message.status);
       if (message.subtype === 'hook_progress') console.log('Hook:', message.data);
-      if (message.subtype === 'task_notification') console.log('Task:', message.task_id);
+      if (message.subtype === 'task_started') console.log('Task started:', message.task_id, message.description);
+      if (message.subtype === 'task_notification') console.log('Task done:', message.task_id, message.status);
       break;
     case 'assistant':
       console.log(message.message);
       break;
     case 'tool_progress':
-      console.log(`Tool running: ${message.tool_name} (${message.elapsed_ms}ms)`);
+      console.log(`Tool running: ${message.tool_name} (${message.elapsed_time_seconds}s)`);
       break;
     case 'result':
       if (message.subtype === 'success') {
@@ -502,7 +505,7 @@ type PermissionMode =
   | 'acceptEdits'        // Auto-allow file edits, prompt for others
   | 'bypassPermissions'  // Skip all prompts (requires allowDangerouslySkipPermissions)
   | 'plan'               // Read-only planning mode — no writes/execution
-  | 'delegate'           // Delegate permission decisions to a handler
+  | 'delegate'           // Delegate mode — restricts team leader to only Teammate and Task tools
   | 'dontAsk';           // Don't prompt — deny if not pre-approved
 ```
 
@@ -746,6 +749,11 @@ type SandboxSettings = {
     socksProxyPort?: number;
     allowedDomains?: string[];          // Restrict network to specific domains
     allowManagedDomainsOnly?: boolean;  // Only allow managed domains
+  };
+  filesystem?: {
+    allowWrite?: string[];          // Paths allowed for writing (glob patterns)
+    denyWrite?: string[];           // Paths denied for writing (glob patterns)
+    denyRead?: string[];            // Paths denied for reading (glob patterns)
   };
   ignoreViolations?: Record<string, string[]>;  // Generic violation categories
   enableWeakerNestedSandbox?: boolean;
@@ -1086,11 +1094,11 @@ const transport = new ProcessTransport({
 
 ---
 
-## Changelog Highlights (v0.2.12 → v0.2.44)
+## Changelog Highlights (v0.2.12 → v0.2.45)
 
 | Version | Change |
 |---------|--------|
-| v0.2.44 | Updated to parity with Claude Code v2.1.44 |
+| v0.2.45 | Updated to parity with Claude Code v2.1.45 |
 | v0.2.43 | Previous release (2026-02-14) |
 | v0.2.33 | `TeammateIdle`/`TaskCompleted` hook events; custom `sessionId` option |
 | v0.2.31 | `stop_reason` field on result messages |
@@ -1102,4 +1110,4 @@ const transport = new ProcessTransport({
 
 ---
 
-**Last verified**: 2026-02-17 | **SDK version**: 0.2.44
+**Last verified**: 2026-02-18 | **SDK version**: 0.2.45

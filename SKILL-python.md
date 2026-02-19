@@ -1,6 +1,6 @@
-# Claude Agent SDK — Python Reference (v0.1.37)
+# Claude Agent SDK — Python Reference (v0.1.38)
 
-**Package**: `claude-agent-sdk==0.1.37` (PyPI)
+**Package**: `claude-agent-sdk==0.1.38` (PyPI)
 **Docs**: https://platform.claude.com/docs/en/agent-sdk/python
 **Repo**: https://github.com/anthropics/claude-agent-sdk-python
 **Requires**: Python 3.10+
@@ -1305,10 +1305,10 @@ Or set `CLAUDE_CODE_STREAM_CLOSE_TIMEOUT=10000` (milliseconds) environment varia
 **Impact**: Breaks path translation hooks that need to modify file paths before validation.
 **Workaround**: None. Avoid relying on PreToolUse hooks for Read path modification.
 
-### #9: Thinking Blocks Missing with Opus 4.6 (Fixed in v0.1.37)
+### #9: Thinking Blocks Missing with Opus 4.6 (Fixed in v0.1.36)
 **Error**: No thinking blocks returned when using `claude-opus-4-6` with `max_thinking_tokens` ([#553](https://github.com/anthropics/claude-agent-sdk-python/issues/553))
 **Cause**: Opus 4.6 deprecated `budget_tokens` in favor of adaptive thinking.
-**Fix**: Use `thinking={"type": "adaptive"}` and `effort="high"` instead of `max_thinking_tokens`. Fixed in v0.1.37 with addition of `thinking` and `effort` options.
+**Fix**: Use `thinking={"type": "adaptive"}` and `effort="high"` instead of `max_thinking_tokens`. Fixed in v0.1.36 with addition of `thinking` and `effort` options.
 
 ### #10: SDK Usage Blocked Inside Claude Code Sessions (Hooks/Plugins)
 **Error**: `Error: Claude Code cannot be launched inside another Claude Code session.` when using SDK from hooks, plugins, or subagents ([#573](https://github.com/anthropics/claude-agent-sdk-python/issues/573))
@@ -1367,16 +1367,61 @@ async for msg in query(prompt=prompt_gen(), options=options):
     ...
 ```
 
+### #15: `rate_limit_event` Messages Crash `receive_messages()` Generator
+**Error**: `MessageParseError: Unknown message type: rate_limit_event` kills the async generator; no further messages are received from that session ([#583](https://github.com/anthropics/claude-agent-sdk-python/issues/583))
+**Cause**: `message_parser.py` uses a strict allowlist of message types. When the CLI emits a `rate_limit_event` (a new informational message), the strict match raises `MessageParseError` inside `yield`, terminating the generator permanently.
+**Impact**: Any rate-limited response crashes the session. Affects `receive_messages()` and `receive_response()`.
+**Workaround**: Monkey-patch the message parser to swallow unknown message types:
+```python
+import claude_agent_sdk._internal.message_parser as _mp
+
+_original_parse = _mp.parse_message
+
+def _tolerant_parse(data):
+    try:
+        return _original_parse(data)
+    except _mp.MessageParseError as e:
+        if "Unknown message type" in str(e):
+            return None  # Skip unknown types
+        raise
+
+_mp.parse_message = _tolerant_parse
+# Apply to client module too
+import claude_agent_sdk.client as _client_mod
+if hasattr(_client_mod, 'parse_message'):
+    _client_mod.parse_message = _tolerant_parse
+```
+Then filter `None` messages in your consumer: `if msg is not None: ...`
+
+### #16: Session File Not Flushed Before Disconnect — Resume Fails
+**Error**: Session resume fails silently; session file is only a 139-byte stub instead of full session data ([#584](https://github.com/anthropics/claude-agent-sdk-python/issues/584))
+**Cause**: The CLI writes session `.jsonl` files asynchronously. `ClaudeSDKClient.disconnect()` and the `async with` context manager exit before the write completes, leaving an incomplete file.
+**Workaround**: Add a 1-second sleep before disconnecting to let the file flush:
+```python
+import asyncio, time
+from claude_agent_sdk import ClaudeSDKClient, ClaudeAgentOptions
+
+client = ClaudeSDKClient(options=ClaudeAgentOptions(...))
+await client.connect()
+await client.query("Do some work")
+async for msg in client.receive_response():
+    pass
+time.sleep(1)  # Wait for session file to flush
+await client.disconnect()
+```
+**Note**: The `async with` context manager does NOT apply this workaround automatically — use manual lifecycle if you need to resume the session.
+
 ---
 
 ## Changelog Highlights
 
 | Version | Change |
 |---------|--------|
-| v0.1.37 | Latest release (2026-02-17) |
-| v0.1.35 | Pre-previous release (2026-02-13) |
+| v0.1.38 | Bundled CLI updated to v2.1.47 |
+| v0.1.36 | Added `thinking` (`ThinkingConfig` types: adaptive/enabled/disabled) and `effort` options; deprecated `max_thinking_tokens` |
+| v0.1.35 | Sub-agent registration via `@filepath` syntax fixed; agents now reliably registered |
 | v0.1.0 | Breaking: `ClaudeCodeOptions` renamed to `ClaudeAgentOptions`; no default system prompt; no filesystem settings loaded by default |
 
 ---
 
-**Last verified**: 2026-02-17 | **SDK version**: 0.1.37
+**Last verified**: 2026-02-19 | **SDK version**: 0.1.38

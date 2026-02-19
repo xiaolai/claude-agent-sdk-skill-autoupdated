@@ -1,13 +1,13 @@
 ---
 paths: "**/*agent*.ts"
-description: Auto-corrections for Claude Agent SDK v0.2.45
+description: Auto-corrections for Claude Agent SDK v0.2.47
 ---
 
 # Claude Agent SDK Rules
 
 ## Package
 - Package: `@anthropic-ai/claude-agent-sdk` (NOT `@anthropic-ai/claude-code`)
-- Latest: v0.2.45
+- Latest: v0.2.47
 
 ## Common Mistakes
 
@@ -161,6 +161,21 @@ env: { ANTHROPIC_LOG: 'debug' }
 
 // CORRECT — use SDK's built-in debug options
 options: { debug: true, debugFile: '/tmp/agent.log' }
+```
+
+### MCP server type: "url" is not a valid transport type
+```typescript
+// WRONG — type: "url" doesn't exist, causes silent failure (no error, no output)
+mcpServers: {
+  "my-server": { type: "url", url: "https://mcp.example.com/mcp" }
+}
+
+// CORRECT — use "http" for HTTP/Streamable HTTP servers
+mcpServers: {
+  "my-server": { type: "http", url: "https://mcp.example.com/mcp" }
+}
+
+// Valid MCP server types: (none/'stdio'), 'http', 'sse', 'sdk', 'claudeai-proxy'
 ```
 
 ### tool() requires ZodRawShape, not ZodObject

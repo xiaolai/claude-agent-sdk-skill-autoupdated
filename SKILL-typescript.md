@@ -1,6 +1,6 @@
-# Claude Agent SDK — TypeScript Reference (v0.2.45)
+# Claude Agent SDK — TypeScript Reference (v0.2.47)
 
-**Package**: `@anthropic-ai/claude-agent-sdk@0.2.45`
+**Package**: `@anthropic-ai/claude-agent-sdk@0.2.47`
 **Docs**: https://platform.claude.com/docs/en/agent-sdk/overview
 **Repo**: https://github.com/anthropics/claude-agent-sdk-typescript
 **Migration**: Renamed from `@anthropic-ai/claude-code`. See [migration guide](https://platform.claude.com/docs/en/agent-sdk/migration-guide).
@@ -24,7 +24,7 @@
 - [V2 Session API (Preview)](#v2-session-api-preview) — `unstable_v2_createSession`, `unstable_v2_prompt`
 - [Debugging & Error Handling](#debugging--error-handling)
 - [Known Issues](#known-issues)
-- [Changelog Highlights](#changelog-highlights-v0212--v0239)
+- [Changelog Highlights](#changelog-highlights-v0212--v0247)
 
 ---
 
@@ -115,7 +115,7 @@ function createSdkMcpServer(options: {
 | `tools` | `string[] \| { type: 'preset', preset: 'claude_code' }` | — | Tool configuration |
 | `allowedTools` | `string[]` | All tools | Allowed tool names |
 | `disallowedTools` | `string[]` | `[]` | Blocked tool names |
-| `permissionMode` | `PermissionMode` | `'default'` | `'default' \| 'acceptEdits' \| 'bypassPermissions' \| 'plan' \| 'delegate' \| 'dontAsk'` — see [Permissions](#permissions) |
+| `permissionMode` | `PermissionMode` | `'default'` | `'default' \| 'acceptEdits' \| 'bypassPermissions' \| 'plan' \| 'dontAsk'` — see [Permissions](#permissions) |
 | `canUseTool` | `CanUseTool` | — | Custom permission callback |
 | `allowDangerouslySkipPermissions` | `boolean` | `false` | Required with `bypassPermissions` |
 | `permissionPromptToolName` | `string` | — | Route permission prompts through a named MCP tool |
@@ -269,7 +269,7 @@ type SDKMessage =
   | SDKTaskStartedMessage         // type: 'system', subtype: 'task_started' — emitted when background task begins
   | SDKTaskNotificationMessage    // type: 'system', subtype: 'task_notification' — background task events
   | SDKFilesPersistedEvent        // type: 'system', subtype: 'files_persisted'
-  | SDKRateLimitEvent             // in union type — shape definition not yet published
+  | SDKRateLimitEvent             // in union type — type not exported (causes SDKMessage → any, see Known Issue #24)
 ```
 
 ### SDKResultMessage
@@ -329,7 +329,7 @@ for await (const message of query({ prompt: "...", options })) {
       if (message.subtype === 'status') console.log('Status:', message.status);
       if (message.subtype === 'hook_progress') console.log('Hook:', message.data);
       if (message.subtype === 'task_started') console.log('Task started:', message.task_id, message.description);
-      if (message.subtype === 'task_notification') console.log('Task done:', message.task_id, message.status);
+      if (message.subtype === 'task_notification') console.log('Task done:', message.task_id, message.status, message.tool_use_id);
       break;
     case 'assistant':
       console.log(message.message);
@@ -505,7 +505,6 @@ type PermissionMode =
   | 'acceptEdits'        // Auto-allow file edits, prompt for others
   | 'bypassPermissions'  // Skip all prompts (requires allowDangerouslySkipPermissions)
   | 'plan'               // Read-only planning mode — no writes/execution
-  | 'delegate'           // Delegate mode — restricts team leader to only Teammate and Task tools
   | 'dontAsk';           // Don't prompt — deny if not pre-approved
 ```
 
@@ -1012,20 +1011,10 @@ return {
 };
 ```
 
-### #13: thinking: { type: 'adaptive' } silently disables thinking
+### #13: thinking: { type: 'adaptive' } silently disables thinking ✅ Fixed in v0.2.40
 **Error**: Zero thinking blocks despite `thinking: { type: 'adaptive' }` configured ([#168](https://github.com/anthropics/claude-agent-sdk-typescript/issues/168))
-**Cause**: SDK sets `maxThinkingTokens = undefined` for adaptive mode, preventing `--max-thinking-tokens` CLI flag from being passed.
-**Fix**: Use `thinking: { type: 'enabled', budgetTokens: 10000 }` or deprecated `maxThinkingTokens` option:
-```typescript
-// WRONG (silently disables thinking)
-thinking: { type: 'adaptive' }, effort: 'medium'
-
-// CORRECT (explicit budget)
-thinking: { type: 'enabled', budgetTokens: 10000 }, effort: 'medium'
-
-// ALSO WORKS (deprecated but functional)
-maxThinkingTokens: 10000, effort: 'medium'
-```
+**Cause**: SDK was setting `maxThinkingTokens = undefined` for adaptive mode, preventing `--max-thinking-tokens` CLI flag from being passed.
+**Status**: Fixed in v0.2.40. `thinking: { type: 'adaptive' }` and `effort` options now work correctly.
 
 ### #14: HTTP MCP servers fail behind corporate proxies
 **Error**: "The socket connection was closed unexpectedly" when HTTP MCP servers used behind corporate proxy with SSL inspection ([#169](https://github.com/anthropics/claude-agent-sdk-typescript/issues/169))
@@ -1087,18 +1076,41 @@ const transport = new ProcessTransport({
 ```
 
 ### #22: Large MCP tool output forces filesystem tool dependency
-**Error**: When MCP tools return ≥180KB output, SDK truncates response and saves full output to local file, then agent attempts to read file using `Bash`/filesystem tools ([#175](https://github.com/anthropics/claude-agent-sdk-typescript/issues/175))
+**Error**: When MCP tools return ≥180KB output, SDK truncates response and saves full output to local file, then agent attempts to read file using `Bash`/filesystem tools ([#175](https://github.com/anthropics/claude-agent-sdk-typescript/issues/175), [#187](https://github.com/anthropics/claude-agent-sdk-typescript/issues/187))
 **Impact**: Breaks security-hardened deployments where filesystem tools are intentionally disabled. No configuration to prevent this behavior.
 **Current behavior**: Output message shows: `Output too large (182.9KB). Full output saved to: ~/.claude/projects/.../tool-results/<id>.json`
+**Note**: Affects both `content` array and `structuredContent` responses; `structuredContent` produces single-line JSON that is harder for the model to navigate.
 **Status**: No workaround available. Feature request for configuration option to disable file persistence or handle large outputs without filesystem tools.
+
+### #23: Query.promptSuggestion() announced but missing from published package
+**Error**: `q.promptSuggestion is not a function` ([#185](https://github.com/anthropics/claude-agent-sdk-typescript/issues/185))
+**Cause**: The v0.2.47 release notes describe a new `Query.promptSuggestion()` method to request prompt suggestions based on conversation context, but the published npm package's `sdk.d.ts` does not expose this method.
+**Workaround**: Method is not available in the current package. Monitor future releases for the fix.
+
+### #24: SDKRateLimitEvent undefined causes SDKMessage to resolve to `any`
+**Error**: TypeScript reports no type errors on `SDKMessage` values; full type safety is lost ([#181](https://github.com/anthropics/claude-agent-sdk-typescript/issues/181), [#184](https://github.com/anthropics/claude-agent-sdk-typescript/issues/184))
+**Cause**: `SDKRateLimitEvent` is referenced in the `SDKMessage` union type in `sdk.d.ts` but is never declared or exported anywhere in the file. A union containing an undefined type resolves to `any` in TypeScript.
+**Impact**: All pattern matching on `SDKMessage` values loses type safety (no compiler errors for wrong field names, etc.).
+**Workaround**: Add a local ambient declaration until the SDK ships the type:
+```typescript
+declare module "@anthropic-ai/claude-agent-sdk" {
+  type SDKRateLimitEvent = { type: 'system'; subtype: 'rate_limit_event'; [key: string]: unknown };
+}
+```
+Or cast messages explicitly: `const msg = message as Exclude<SDKMessage, { type: never }>`.
+
+### #25: unstable_v2 close() breaks session persistence
+**Error**: Resuming a v2 session after `close()` starts a fresh session with no conversation context ([#177](https://github.com/anthropics/claude-agent-sdk-typescript/issues/177))
+**Cause**: `session.close()` sends `SIGTERM` to the subprocess immediately, before it can flush session data to disk. The v1 `query()` API doesn't have this problem — the subprocess exits naturally after the `AsyncGenerator` completes, giving it time to write session data.
+**Workaround**: Use the v1 `query()` API if session persistence/resumability is required. If using v2, avoid `close()` and prefer `await using` disposal which may allow more graceful shutdown.
 
 ---
 
-## Changelog Highlights (v0.2.12 → v0.2.45)
+## Changelog Highlights (v0.2.12 → v0.2.47)
 
 | Version | Change |
 |---------|--------|
-| v0.2.45 | Updated to parity with Claude Code v2.1.45 |
+| v0.2.47 | Updated to parity with Claude Code v2.1.47; added `tool_use_id` to `task_notification` events; `promptSuggestion()` announced but missing from types (see [#23](#23-querypromptsuggestion-announced-but-missing-from-published-package)) |
 | v0.2.43 | Previous release (2026-02-14) |
 | v0.2.33 | `TeammateIdle`/`TaskCompleted` hook events; custom `sessionId` option |
 | v0.2.31 | `stop_reason` field on result messages |
@@ -1110,4 +1122,4 @@ const transport = new ProcessTransport({
 
 ---
 
-**Last verified**: 2026-02-18 | **SDK version**: 0.2.45
+**Last verified**: 2026-02-19 | **SDK version**: 0.2.47

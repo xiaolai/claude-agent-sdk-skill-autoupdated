@@ -1,13 +1,13 @@
 ---
 paths: "**/*agent*.ts"
-description: Auto-corrections for Claude Agent SDK v0.2.47
+description: Auto-corrections for Claude Agent SDK v0.2.49
 ---
 
 # Claude Agent SDK Rules
 
 ## Package
 - Package: `@anthropic-ai/claude-agent-sdk` (NOT `@anthropic-ai/claude-code`)
-- Latest: v0.2.47
+- Latest: v0.2.49
 
 ## Common Mistakes
 
@@ -108,15 +108,15 @@ options: {
 }
 ```
 
-### thinking: { type: 'adaptive' } silently disables thinking
+### thinking: { type: 'adaptive' } — now fixed (v0.2.40+)
 ```typescript
-// WRONG — SDK bug: sets maxThinkingTokens=undefined, disabling thinking entirely
+// CORRECT (v0.2.40+) — adaptive thinking works as expected
 thinking: { type: 'adaptive' }, effort: 'medium'
 
-// CORRECT — use explicit budget
-thinking: { type: 'enabled', budgetTokens: 10000 }, effort: 'medium'
+// Also valid — explicit budget for older models or fine-grained control
+thinking: { type: 'enabled', budgetTokens: 10000 }
 
-// ALSO WORKS — deprecated but functional
+// Deprecated but functional
 maxThinkingTokens: 10000, effort: 'medium'
 ```
 

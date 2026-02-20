@@ -1,6 +1,6 @@
-# Claude Agent SDK — Python Reference (v0.1.38)
+# Claude Agent SDK — Python Reference (v0.1.39)
 
-**Package**: `claude-agent-sdk==0.1.38` (PyPI)
+**Package**: `claude-agent-sdk==0.1.39` (PyPI)
 **Docs**: https://platform.claude.com/docs/en/agent-sdk/python
 **Repo**: https://github.com/anthropics/claude-agent-sdk-python
 **Requires**: Python 3.10+
@@ -1394,9 +1394,9 @@ if hasattr(_client_mod, 'parse_message'):
 Then filter `None` messages in your consumer: `if msg is not None: ...`
 
 ### #16: Session File Not Flushed Before Disconnect — Resume Fails
-**Error**: Session resume fails silently; session file is only a 139-byte stub instead of full session data ([#584](https://github.com/anthropics/claude-agent-sdk-python/issues/584))
-**Cause**: The CLI writes session `.jsonl` files asynchronously. `ClaudeSDKClient.disconnect()` and the `async with` context manager exit before the write completes, leaving an incomplete file.
-**Workaround**: Add a 1-second sleep before disconnecting to let the file flush:
+**Error**: Session resume fails silently — resume creates a new session instead of continuing the expected one, or session file is only a 139-byte stub ([#584](https://github.com/anthropics/claude-agent-sdk-python/issues/584), [#555](https://github.com/anthropics/claude-agent-sdk-python/issues/555))
+**Cause**: The CLI writes session `.jsonl` files asynchronously. `ClaudeSDKClient.disconnect()` and the `async with` context manager exit before the write completes, leaving an incomplete or missing file. On NFS/shared storage, flush timing may require a longer sleep.
+**Workaround**: Add a sleep before disconnecting to let the file flush (use 3+ seconds on NFS):
 ```python
 import asyncio, time
 from claude_agent_sdk import ClaudeSDKClient, ClaudeAgentOptions
@@ -1406,10 +1406,31 @@ await client.connect()
 await client.query("Do some work")
 async for msg in client.receive_response():
     pass
-time.sleep(1)  # Wait for session file to flush
+time.sleep(1)  # Wait for session file to flush (use 3+ on NFS)
 await client.disconnect()
 ```
 **Note**: The `async with` context manager does NOT apply this workaround automatically — use manual lifecycle if you need to resume the session.
+
+### #17: `ProcessError.stderr` Contains Hardcoded String, Not Actual Error
+**Error**: When catching `ProcessError`, `e.stderr` is always `"Check stderr output for details"` rather than the actual CLI error output ([#529](https://github.com/anthropics/claude-agent-sdk-python/issues/529))
+**Cause**: The subprocess transport raises `ProcessError` with a hardcoded `stderr` string instead of the captured stderr content. Real error messages (e.g., `"No conversation found with session ID"`) are never surfaced in the exception.
+**Workaround**: Use the `stderr` callback option to capture actual CLI stderr output:
+```python
+import logging
+logger = logging.getLogger("claude-sdk")
+stderr_lines = []
+
+options = ClaudeAgentOptions(
+    stderr=lambda data: stderr_lines.append(data)
+)
+
+try:
+    async for msg in query(prompt="...", options=options):
+        pass
+except ProcessError as e:
+    # e.stderr is useless — use captured lines instead
+    print("Actual error:", "\n".join(stderr_lines))
+```
 
 ---
 
@@ -1417,11 +1438,11 @@ await client.disconnect()
 
 | Version | Change |
 |---------|--------|
-| v0.1.38 | Bundled CLI updated to v2.1.47 |
+| v0.1.39 | Bundled CLI updated to v2.1.49 |
 | v0.1.36 | Added `thinking` (`ThinkingConfig` types: adaptive/enabled/disabled) and `effort` options; deprecated `max_thinking_tokens` |
 | v0.1.35 | Sub-agent registration via `@filepath` syntax fixed; agents now reliably registered |
 | v0.1.0 | Breaking: `ClaudeCodeOptions` renamed to `ClaudeAgentOptions`; no default system prompt; no filesystem settings loaded by default |
 
 ---
 
-**Last verified**: 2026-02-19 | **SDK version**: 0.1.38
+**Last verified**: 2026-02-20 | **SDK version**: 0.1.39

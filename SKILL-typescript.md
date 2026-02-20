@@ -1,6 +1,6 @@
-# Claude Agent SDK — TypeScript Reference (v0.2.47)
+# Claude Agent SDK — TypeScript Reference (v0.2.49)
 
-**Package**: `@anthropic-ai/claude-agent-sdk@0.2.47`
+**Package**: `@anthropic-ai/claude-agent-sdk@0.2.49`
 **Docs**: https://platform.claude.com/docs/en/agent-sdk/overview
 **Repo**: https://github.com/anthropics/claude-agent-sdk-typescript
 **Migration**: Renamed from `@anthropic-ai/claude-code`. See [migration guide](https://platform.claude.com/docs/en/agent-sdk/migration-guide).
@@ -13,8 +13,8 @@
 - [Core API](#core-api) — `query()`, `tool()`, `createSdkMcpServer()`
 - [Options](#options) — Core, Tools & Permissions, Models & Output, Sessions, MCP & Agents, Advanced
 - [Query Object Methods](#query-object-methods)
-- [Message Types](#message-types) — All 18 SDKMessage types
-- [Hooks](#hooks) — 15 hook events, matchers, return values, async hooks
+- [Message Types](#message-types) — All 19 SDKMessage types
+- [Hooks](#hooks) — 16 hook events, matchers, return values, async hooks
 - [Permissions](#permissions) — 6 modes, `canUseTool` callback
 - [MCP Servers](#mcp-servers) — stdio, HTTP, SSE, SDK, claudeai-proxy
 - [Subagents](#subagents) — AgentDefinition, tool enforcement workaround
@@ -131,6 +131,7 @@ function createSdkMcpServer(options: {
 | `fallbackModel` | `string` | — | Fallback model on failure |
 | `betas` | `SdkBeta[]` | `[]` | Beta features (e.g., `['context-1m-2025-08-07']`) |
 | `includePartialMessages` | `boolean` | `false` | Include streaming partial messages |
+| `promptSuggestions` | `boolean` | `false` | Emit `SDKPromptSuggestionMessage` after each turn with a predicted next user prompt (arrives after result; suppressed on first turn, after errors, in plan mode) |
 
 ### Sessions
 
@@ -229,6 +230,9 @@ type ModelInfo = {
   value: string;          // Model identifier for API calls
   displayName: string;    // Human-readable name
   description: string;    // Model capabilities description
+  supportsEffort?: boolean;                              // Whether this model supports effort levels
+  supportedEffortLevels?: ('low' | 'medium' | 'high' | 'max')[];  // Available effort levels
+  supportsAdaptiveThinking?: boolean;                   // Whether this model supports adaptive thinking
 };
 
 type AccountInfo = {
@@ -244,7 +248,7 @@ type AccountInfo = {
 
 ## Message Types
 
-The SDK emits 18 message types through the async generator:
+The SDK emits 19 message types through the async generator:
 
 ```typescript
 type SDKMessage =
@@ -269,7 +273,9 @@ type SDKMessage =
   | SDKTaskStartedMessage         // type: 'system', subtype: 'task_started' — emitted when background task begins
   | SDKTaskNotificationMessage    // type: 'system', subtype: 'task_notification' — background task events
   | SDKFilesPersistedEvent        // type: 'system', subtype: 'files_persisted'
-  | SDKRateLimitEvent             // in union type — type not exported (causes SDKMessage → any, see Known Issue #24)
+  // Undefined types (cause SDKMessage → any, see Known Issue #24)
+  | SDKRateLimitEvent             // referenced in union but not exported in sdk.d.ts
+  | SDKPromptSuggestionMessage    // referenced in union but not exported in sdk.d.ts
 ```
 
 ### SDKResultMessage
@@ -374,6 +380,7 @@ Hooks use **callback matchers**: an optional regex `matcher` for tool names and 
 | `Notification` | Agent status message | Yes | No |
 | `TeammateIdle` | Teammate agent is idle (v0.2.33) | Yes | No |
 | `TaskCompleted` | Background task completed (v0.2.33) | Yes | No |
+| `ConfigChange` | Settings file changed (user/project/local/policy/skills) | Yes | No |
 
 ### Hook Callback Signature
 
@@ -480,11 +487,11 @@ Common fields on all hooks: `session_id`, `transcript_path`, `cwd`, `permission_
 | `error`, `is_interrupt` | PostToolUseFailure |
 | `prompt` | UserPromptSubmit |
 | `stop_hook_active` | Stop, SubagentStop |
+| `last_assistant_message` | Stop, SubagentStop (text of last assistant message, avoids parsing transcript) |
 | `agent_id`, `agent_type` | SubagentStart |
 | `agent_id`, `agent_type`, `agent_transcript_path` | SubagentStop |
 | `trigger` (`'init' \| 'maintenance'`) | Setup |
-| `custom_instructions` | Setup |
-| `trigger`, `custom_instructions` | PreCompact |
+| `trigger` (`'manual' \| 'auto'`), `custom_instructions` | PreCompact |
 | `source` | SessionStart (`'startup' \| 'resume' \| 'clear' \| 'compact'`) |
 | `agent_type`, `model` | SessionStart |
 | `reason` | SessionEnd |
@@ -492,6 +499,7 @@ Common fields on all hooks: `session_id`, `transcript_path`, `cwd`, `permission_
 | `permission_suggestions` | PermissionRequest |
 | `teammate_name`, `team_name` | TeammateIdle |
 | `task_id`, `task_subject`, `task_description`, `teammate_name`, `team_name` | TaskCompleted |
+| `source` (`'user_settings' \| 'project_settings' \| 'local_settings' \| 'policy_settings' \| 'skills'`), `file_path?` | ConfigChange |
 
 ---
 
@@ -1084,17 +1092,18 @@ const transport = new ProcessTransport({
 
 ### #23: Query.promptSuggestion() announced but missing from published package
 **Error**: `q.promptSuggestion is not a function` ([#185](https://github.com/anthropics/claude-agent-sdk-typescript/issues/185))
-**Cause**: The v0.2.47 release notes describe a new `Query.promptSuggestion()` method to request prompt suggestions based on conversation context, but the published npm package's `sdk.d.ts` does not expose this method.
+**Cause**: The v0.2.49 release notes describe a new `Query.promptSuggestion()` method to request prompt suggestions based on conversation context, but the published npm package's `sdk.d.ts` does not expose this method.
 **Workaround**: Method is not available in the current package. Monitor future releases for the fix.
 
-### #24: SDKRateLimitEvent undefined causes SDKMessage to resolve to `any`
+### #24: SDKRateLimitEvent and SDKPromptSuggestionMessage undefined cause SDKMessage to resolve to `any`
 **Error**: TypeScript reports no type errors on `SDKMessage` values; full type safety is lost ([#181](https://github.com/anthropics/claude-agent-sdk-typescript/issues/181), [#184](https://github.com/anthropics/claude-agent-sdk-typescript/issues/184))
-**Cause**: `SDKRateLimitEvent` is referenced in the `SDKMessage` union type in `sdk.d.ts` but is never declared or exported anywhere in the file. A union containing an undefined type resolves to `any` in TypeScript.
+**Cause**: Both `SDKRateLimitEvent` and `SDKPromptSuggestionMessage` are referenced in the `SDKMessage` union type in `sdk.d.ts` but are never declared or exported anywhere in the file. A union containing an undefined type resolves to `any` in TypeScript.
 **Impact**: All pattern matching on `SDKMessage` values loses type safety (no compiler errors for wrong field names, etc.).
-**Workaround**: Add a local ambient declaration until the SDK ships the type:
+**Workaround**: Add local ambient declarations until the SDK ships the types:
 ```typescript
 declare module "@anthropic-ai/claude-agent-sdk" {
   type SDKRateLimitEvent = { type: 'system'; subtype: 'rate_limit_event'; [key: string]: unknown };
+  type SDKPromptSuggestionMessage = { type: 'system'; subtype: 'prompt_suggestion'; suggestion: string; [key: string]: unknown };
 }
 ```
 Or cast messages explicitly: `const msg = message as Exclude<SDKMessage, { type: never }>`.
@@ -1106,11 +1115,11 @@ Or cast messages explicitly: `const msg = message as Exclude<SDKMessage, { type:
 
 ---
 
-## Changelog Highlights (v0.2.12 → v0.2.47)
+## Changelog Highlights (v0.2.12 → v0.2.49)
 
 | Version | Change |
 |---------|--------|
-| v0.2.47 | Updated to parity with Claude Code v2.1.47; added `tool_use_id` to `task_notification` events; `promptSuggestion()` announced but missing from types (see [#23](#23-querypromptsuggestion-announced-but-missing-from-published-package)) |
+| v0.2.49 | `SDKPromptSuggestionMessage` and `promptSuggestions` option added to SDK (type undefined, see [#24](#24-sdkratelimitevent-and-sdkpromptsuggestionmessage-undefined-cause-sdkmessage-to-resolve-to-any)); `ConfigChange` hook event added |
 | v0.2.43 | Previous release (2026-02-14) |
 | v0.2.33 | `TeammateIdle`/`TaskCompleted` hook events; custom `sessionId` option |
 | v0.2.31 | `stop_reason` field on result messages |
@@ -1122,4 +1131,4 @@ Or cast messages explicitly: `const msg = message as Exclude<SDKMessage, { type:
 
 ---
 
-**Last verified**: 2026-02-19 | **SDK version**: 0.2.47
+**Last verified**: 2026-02-20 | **SDK version**: 0.2.49

@@ -1,7 +1,13 @@
 """Multi-agent workflow with custom MCP tools (Python)."""
 import asyncio
 from typing import Any
-from claude_agent_sdk import query, ClaudeAgentOptions, create_sdk_mcp_server, tool
+from claude_agent_sdk import (
+    query, ClaudeAgentOptions, create_sdk_mcp_server, tool,
+    AssistantMessage, ResultMessage, TextBlock,
+)
+from claude_agent_sdk.types import (
+    ToolPermissionContext, PermissionResultAllow, PermissionResultDeny,
+)
 
 
 @tool("send_notification", "Send notification to a team", {"message": str, "priority": str})
@@ -26,13 +32,15 @@ app_tools = create_sdk_mcp_server(
 )
 
 
-async def can_use_tool(tool_name: str, tool_input: dict, options: dict) -> dict:
+async def can_use_tool(
+    tool_name: str, tool_input: dict, context: ToolPermissionContext
+) -> PermissionResultAllow | PermissionResultDeny:
     """Block destructive commands."""
     if tool_name == "Bash":
         dangerous = ["rm -rf", "dd if=", "mkfs", "shutdown"]
         if any(p in tool_input.get("command", "") for p in dangerous):
-            return {"behavior": "deny", "message": f"Blocked: {tool_input['command']}"}
-    return {"behavior": "allow", "updated_input": tool_input}
+            return PermissionResultDeny(message=f"Blocked: {tool_input['command']}")
+    return PermissionResultAllow(updated_input=tool_input)
 
 
 async def main():
@@ -66,10 +74,7 @@ async def main():
         ],
         can_use_tool=can_use_tool,
         permission_mode="bypassPermissions",
-        allow_dangerously_skip_permissions=True,
     )
-
-    from claude_agent_sdk import AssistantMessage, ResultMessage, TextBlock
 
     async for msg in query(
         prompt="Deploy v2.5.0 with security check and health monitoring",

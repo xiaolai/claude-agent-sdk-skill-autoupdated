@@ -1,24 +1,23 @@
 """Subagent orchestration with Claude Agent SDK."""
 import asyncio
-from claude_agent_sdk import query, ClaudeAgentOptions
+from claude_agent_sdk import query, ClaudeAgentOptions, AgentDefinition
 
 async def main():
     options = ClaudeAgentOptions(
         allowed_tools=["Read", "Glob", "Grep", "Task"],
         agents={
-            "reviewer": {
-                "description": "Code review specialist",
-                "prompt": "Review code for bugs and best practices.",
-                "tools": ["Read", "Glob", "Grep"],
-                "model": "haiku",
-                "max_turns": 10,
-            },
-            "writer": {
-                "description": "Code writing specialist",
-                "prompt": "Write clean, well-documented code.",
-                "tools": ["Read", "Write", "Edit"],
-                "model": "sonnet",
-            },
+            "reviewer": AgentDefinition(
+                description="Code review specialist",
+                prompt="Review code for bugs and best practices.",
+                tools=["Read", "Glob", "Grep"],
+                model="haiku",
+            ),
+            "writer": AgentDefinition(
+                description="Code writing specialist",
+                prompt="Write clean, well-documented code.",
+                tools=["Read", "Write", "Edit"],
+                model="sonnet",
+            ),
         },
         permission_mode="bypassPermissions",
     )

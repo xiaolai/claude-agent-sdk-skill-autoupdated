@@ -1,6 +1,6 @@
-# Claude Agent SDK — TypeScript Reference (v0.2.49)
+# Claude Agent SDK — TypeScript Reference (v0.2.50)
 
-**Package**: `@anthropic-ai/claude-agent-sdk@0.2.49`
+**Package**: `@anthropic-ai/claude-agent-sdk@0.2.50`
 **Docs**: https://platform.claude.com/docs/en/agent-sdk/overview
 **Repo**: https://github.com/anthropics/claude-agent-sdk-typescript
 **Migration**: Renamed from `@anthropic-ai/claude-code`. See [migration guide](https://platform.claude.com/docs/en/agent-sdk/migration-guide).
@@ -13,8 +13,8 @@
 - [Core API](#core-api) — `query()`, `tool()`, `createSdkMcpServer()`
 - [Options](#options) — Core, Tools & Permissions, Models & Output, Sessions, MCP & Agents, Advanced
 - [Query Object Methods](#query-object-methods)
-- [Message Types](#message-types) — All 19 SDKMessage types
-- [Hooks](#hooks) — 16 hook events, matchers, return values, async hooks
+- [Message Types](#message-types) — All 19 SDKMessage types (2 undefined, see Known Issue #24)
+- [Hooks](#hooks) — 18 hook events, matchers, return values, async hooks
 - [Permissions](#permissions) — 6 modes, `canUseTool` callback
 - [MCP Servers](#mcp-servers) — stdio, HTTP, SSE, SDK, claudeai-proxy
 - [Subagents](#subagents) — AgentDefinition, tool enforcement workaround
@@ -381,6 +381,8 @@ Hooks use **callback matchers**: an optional regex `matcher` for tool names and 
 | `TeammateIdle` | Teammate agent is idle (v0.2.33) | Yes | No |
 | `TaskCompleted` | Background task completed (v0.2.33) | Yes | No |
 | `ConfigChange` | Settings file changed (user/project/local/policy/skills) | Yes | No |
+| `WorktreeCreate` | Git worktree created | Yes | No |
+| `WorktreeRemove` | Git worktree removed | Yes | No |
 
 ### Hook Callback Signature
 
@@ -500,6 +502,8 @@ Common fields on all hooks: `session_id`, `transcript_path`, `cwd`, `permission_
 | `teammate_name`, `team_name` | TeammateIdle |
 | `task_id`, `task_subject`, `task_description`, `teammate_name`, `team_name` | TaskCompleted |
 | `source` (`'user_settings' \| 'project_settings' \| 'local_settings' \| 'policy_settings' \| 'skills'`), `file_path?` | ConfigChange |
+| `name` | WorktreeCreate (worktree name) |
+| `worktree_path` | WorktreeRemove (path of removed worktree) |
 
 ---
 
@@ -1052,6 +1056,7 @@ return {
 ### #19: AgentDefinition.tools and disallowedTools not enforced for subagents
 **Error**: Subagents can call tools they shouldn't have access to, leading to infinite recursion ([#172](https://github.com/anthropics/claude-agent-sdk-typescript/issues/172), [#163](https://github.com/anthropics/claude-agent-sdk-typescript/issues/163))
 **Cause**: CLI doesn't map `AgentDefinition.tools` to `--allowedTools` / `--disallowedTools` flags when spawning subagent child processes.
+**Additional bug**: The `Task` tool is force-allowed for subagents even when `disallowedTools: ['Task']` is set ([#189](https://github.com/anthropics/claude-agent-sdk-typescript/issues/189)). The CLI unconditionally returns `true` for the Task tool in subagent contexts before evaluating `disallowedTools`, enabling subagents to recursively spawn other subagents.
 **Workaround**: Use `canUseTool` callback to block disallowed tools (see [Subagents section](#tool-enforcement-warning)).
 
 ### #20: Structured output with Zod requires draft-07 target
@@ -1092,7 +1097,7 @@ const transport = new ProcessTransport({
 
 ### #23: Query.promptSuggestion() announced but missing from published package
 **Error**: `q.promptSuggestion is not a function` ([#185](https://github.com/anthropics/claude-agent-sdk-typescript/issues/185))
-**Cause**: The v0.2.49 release notes describe a new `Query.promptSuggestion()` method to request prompt suggestions based on conversation context, but the published npm package's `sdk.d.ts` does not expose this method.
+**Cause**: The release notes describe a new `Query.promptSuggestion()` method to request prompt suggestions based on conversation context, but the published npm package's `sdk.d.ts` does not expose this method.
 **Workaround**: Method is not available in the current package. Monitor future releases for the fix.
 
 ### #24: SDKRateLimitEvent and SDKPromptSuggestionMessage undefined cause SDKMessage to resolve to `any`
@@ -1113,13 +1118,31 @@ Or cast messages explicitly: `const msg = message as Exclude<SDKMessage, { type:
 **Cause**: `session.close()` sends `SIGTERM` to the subprocess immediately, before it can flush session data to disk. The v1 `query()` API doesn't have this problem — the subprocess exits naturally after the `AsyncGenerator` completes, giving it time to write session data.
 **Workaround**: Use the v1 `query()` API if session persistence/resumability is required. If using v2, avoid `close()` and prefer `await using` disposal which may allow more graceful shutdown.
 
+### #26: Slash command output lost since v0.2.45
+**Error**: `/context`, `/clear`, and other slash commands no longer emit output in the message stream since v0.2.45 ([#186](https://github.com/anthropics/claude-agent-sdk-typescript/issues/186))
+**Behavior**: Previous behavior (v0.2.5): `system init → user (has output) → result success`. Current behavior (v0.2.45+): `rate_limit_event → system init → result success` (no output). Additionally, `/clear` is missing from `SDKSystemMessage.slash_commands` and returns `"Unknown skill: clear"`.
+**Cause**: Slash command output is no longer surfaced in the message stream.
+**Status**: A fix has been submitted (pending release). Downgrade to v0.2.44 as a temporary workaround.
+
+### #27: Cloud MCP servers auto-discovered from claude.ai account with no way to disable
+**Error**: SDK automatically connects to MCP servers from the user's Anthropic cloud account (Figma, Canva, Bright Data, etc.) in every session, with no option to disable ([#190](https://github.com/anthropics/claude-agent-sdk-typescript/issues/190))
+**Cause**: A dead environment variable guard in `cli.js` (`if (rY(void 0))`) always evaluates to `false` because the env var name is compiled as `undefined` in the minified bundle. The guard never fires, so cloud MCP discovery cannot be suppressed.
+**Impact**: Headless/automated pipelines see unwanted failed/auth-needed connections on every session. No SDK option or working env var to disable.
+**Workaround**: No clean workaround. Some users patch the minified `sdk.mjs` in a `postinstall` script (fragile, breaks on updates). Setting `settingSources: []` does not affect cloud MCP discovery.
+
+### #28: Model shorthands ('opus', 'sonnet', 'haiku') silently upgrade to latest model versions
+**Error**: The `model` shorthands in `AgentDefinition.model` and `options.model` resolve to the current latest model, which can change across SDK releases without notice ([#182](https://github.com/anthropics/claude-agent-sdk-typescript/issues/182))
+**Example**: In SDK v0.2.44, `model: 'opus'` silently upgraded from `claude-opus-4-5-20251101` to `claude-opus-4-6`. Opus 4.6 removes assistant prefilling support and uses adaptive thinking, breaking pipelines that relied on Opus 4.5 behavior.
+**Impact**: Production pipelines using model shorthands may change behavior silently on SDK upgrade with no deprecation warning or changelog callout.
+**Fix**: Pin to full model IDs (e.g., `'claude-opus-4-5-20251101'`) in `AgentDefinition.model` when specific model behavior is required. Use shorthands only when "latest" is acceptable.
+
 ---
 
-## Changelog Highlights (v0.2.12 → v0.2.49)
+## Changelog Highlights (v0.2.12 → v0.2.50)
 
 | Version | Change |
 |---------|--------|
-| v0.2.49 | `SDKPromptSuggestionMessage` and `promptSuggestions` option added to SDK (type undefined, see [#24](#24-sdkratelimitevent-and-sdkpromptsuggestionmessage-undefined-cause-sdkmessage-to-resolve-to-any)); `ConfigChange` hook event added |
+| v0.2.50 | Current release; `SDKPromptSuggestionMessage` and `promptSuggestions` option added (type undefined, see [#24](#24-sdkratelimitevent-and-sdkpromptsuggestionmessage-undefined-cause-sdkmessage-to-resolve-to-any)); `ConfigChange` hook event added; slash command output regression (#26 — fix pending); `WorktreeCreate`/`WorktreeRemove` hook events available |
 | v0.2.43 | Previous release (2026-02-14) |
 | v0.2.33 | `TeammateIdle`/`TaskCompleted` hook events; custom `sessionId` option |
 | v0.2.31 | `stop_reason` field on result messages |
@@ -1131,4 +1154,4 @@ Or cast messages explicitly: `const msg = message as Exclude<SDKMessage, { type:
 
 ---
 
-**Last verified**: 2026-02-20 | **SDK version**: 0.2.49
+**Last verified**: 2026-02-21 | **SDK version**: 0.2.50

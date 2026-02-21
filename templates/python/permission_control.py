@@ -1,17 +1,22 @@
 """Custom permission control with Claude Agent SDK."""
 import asyncio
 from claude_agent_sdk import query, ClaudeAgentOptions
+from claude_agent_sdk.types import (
+    ToolPermissionContext, PermissionResultAllow, PermissionResultDeny,
+)
 
-async def can_use_tool(tool_name: str, tool_input: dict, options: dict) -> dict:
+async def can_use_tool(
+    tool_name: str, tool_input: dict, context: ToolPermissionContext
+) -> PermissionResultAllow | PermissionResultDeny:
     read_only = ["Read", "Grep", "Glob"]
     if tool_name in read_only:
-        return {"behavior": "allow", "updated_input": tool_input}
+        return PermissionResultAllow(updated_input=tool_input)
     if tool_name == "Bash" and any(
         cmd in tool_input.get("command", "")
         for cmd in ["rm -rf", "dd if=", "mkfs"]
     ):
-        return {"behavior": "deny", "message": "Destructive command blocked"}
-    return {"behavior": "allow", "updated_input": tool_input}
+        return PermissionResultDeny(message="Destructive command blocked")
+    return PermissionResultAllow(updated_input=tool_input)
 
 async def main():
     from claude_agent_sdk import ResultMessage

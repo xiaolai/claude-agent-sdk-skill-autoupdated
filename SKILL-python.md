@@ -689,6 +689,7 @@ Common fields on all hooks: `session_id`, `transcript_path`, `cwd`, `permission_
 | Field | Hooks |
 |-------|-------|
 | `tool_name`, `tool_input`, `tool_use_id` | PreToolUse, PostToolUse, PostToolUseFailure |
+| `tool_name`, `tool_input` | PermissionRequest |
 | `tool_response` | PostToolUse |
 | `error`, `is_interrupt` | PostToolUseFailure |
 | `prompt` | UserPromptSubmit |
@@ -1445,4 +1446,4 @@ except ProcessError as e:
 
 ---
 
-**Last verified**: 2026-02-20 | **SDK version**: 0.1.39
+**Last verified**: 2026-02-21 | **SDK version**: 0.1.39

@@ -170,6 +170,161 @@
         "researchedAt": "2026-02-16",
         "verdict": "already_documented",
         "reason": "Already documented as Known Issue #21 and V2 Limitations section updated"
+      },
+      "177": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "unstable_v2 session API: close() breaks session persistence",
+        "state": "open",
+        "knownIssueNumber": 25,
+        "researchedAt": "2026-02-22",
+        "verdict": "already_documented",
+        "reason": "Already documented as Known Issue #25"
+      },
+      "178": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "Is there a way to run POST /v1/messages asynchronously?",
+        "state": "closed",
+        "researchedAt": "2026-02-22",
+        "verdict": "skipped",
+        "reason": "General question/feature request, closed, not actionable for SDK docs"
+      },
+      "179": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "Missing dependency on @anthropic-ai/sdk",
+        "state": "open",
+        "knownIssueNumber": 8,
+        "researchedAt": "2026-02-22",
+        "verdict": "updated_existing",
+        "reason": "Added pnpm packageExtensions workaround to Known Issue #8"
+      },
+      "180": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "query() does not support adaptive thinking or effort",
+        "state": "open",
+        "researchedAt": "2026-02-22",
+        "verdict": "skipped",
+        "reason": "Fixed in v0.2.40 — thinking and effort options now supported; already covered by Known Issue #13 note"
+      },
+      "181": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "SDKMessage resolves to any: SDKRateLimitEvent is referenced but not exported",
+        "state": "open",
+        "knownIssueNumber": 24,
+        "researchedAt": "2026-02-22",
+        "verdict": "already_documented",
+        "reason": "Already documented as Known Issue #24"
+      },
+      "182": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "Opus 4.6 via query() has no effort control — 'opus' shorthand silently upgrades from 4.5",
+        "state": "open",
+        "knownIssueNumber": 28,
+        "researchedAt": "2026-02-22",
+        "verdict": "already_documented",
+        "reason": "Already documented as Known Issue #28"
+      },
+      "183": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "type: 'url' MCP servers fail silently with no error thrown",
+        "state": "open",
+        "researchedAt": "2026-02-22",
+        "verdict": "skipped",
+        "reason": "Already covered by rules file (type 'url' is invalid, use 'http'); 0 reactions"
+      },
+      "184": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "SDKRateLimitEvent type missing from sdk.d.ts in v0.2.45",
+        "state": "open",
+        "knownIssueNumber": 24,
+        "researchedAt": "2026-02-22",
+        "verdict": "already_documented",
+        "reason": "Already documented as Known Issue #24"
+      },
+      "185": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "v0.2.47 notes mention Query.promptSuggestion(), but npm package does not expose it",
+        "state": "open",
+        "knownIssueNumber": 23,
+        "researchedAt": "2026-02-22",
+        "verdict": "already_documented",
+        "reason": "Already documented as Known Issue #23"
+      },
+      "186": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "Context usage info no longer accessible",
+        "state": "open",
+        "knownIssueNumber": 26,
+        "researchedAt": "2026-02-22",
+        "verdict": "already_documented",
+        "reason": "Already documented as Known Issue #26 (slash command output regression)"
+      },
+      "187": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "Large MCP tool result offload: structuredContent produces unnavigable single-line file",
+        "state": "open",
+        "knownIssueNumber": 22,
+        "researchedAt": "2026-02-22",
+        "verdict": "already_documented",
+        "reason": "Related to Known Issue #22 (large MCP tool output forces filesystem dependency)"
+      },
+      "188": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "Agent SDK defaults to 1-hour cache TTL instead of 5-minute",
+        "state": "open",
+        "researchedAt": "2026-02-22",
+        "verdict": "skipped",
+        "reason": "No user-facing workaround available; 0 reactions; no configuration option to change cache TTL"
+      },
+      "189": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "Task tool force-allowed for subagents, ignoring disallowedTools",
+        "state": "open",
+        "knownIssueNumber": 19,
+        "researchedAt": "2026-02-22",
+        "verdict": "already_documented",
+        "reason": "Already mentioned in Known Issue #19 description"
+      },
+      "190": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "No way to disable cloud MCP server auto-discovery from claude.ai account",
+        "state": "open",
+        "knownIssueNumber": 27,
+        "researchedAt": "2026-02-22",
+        "verdict": "already_documented",
+        "reason": "Already documented as Known Issue #27"
+      },
+      "191": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "Agent SDK Bash tool took 3m to run python command",
+        "state": "open",
+        "researchedAt": "2026-02-22",
+        "verdict": "skipped",
+        "reason": "Environment-specific slow execution; no clear reproducible root cause; 0 reactions"
+      },
+      "192": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "Random UUID in Bash tool description busts input cache on every query() call",
+        "state": "open",
+        "researchedAt": "2026-02-22",
+        "verdict": "skipped",
+        "reason": "Interesting cache bug but no user-facing workaround; 0 reactions"
+      },
+      "193": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "fallbackModel not passed through on streaming to non-streaming fallback path",
+        "state": "open",
+        "researchedAt": "2026-02-22",
+        "verdict": "skipped",
+        "reason": "SDK internal bug with no user-level workaround; 0 reactions"
+      },
+      "194": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "fix: add timeout: null support to HookCallbackMatcher for indefinite hook waiting",
+        "state": "open",
+        "knownIssueNumber": 29,
+        "researchedAt": "2026-02-22",
+        "verdict": "added_known_issue",
+        "reason": "Interactive hooks always time out at 60s with no disable option; workaround is large timeout value"
       }
     },
     "trackedIssuesExternal": {
@@ -180,7 +335,7 @@
         "knownIssueNumber": 5
       }
     },
-    "lastScannedIssueNumber": 176,
+    "lastScannedIssueNumber": 194,
     "lastAuditedVersion": "0.2.50"
   },
   "python": {
@@ -377,11 +532,92 @@
         "researchedAt": "2026-02-16",
         "verdict": "skipped",
         "reason": "PR to fix #554, not an issue to document"
+      },
+      "529": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "fix: capture actual stderr in ProcessError instead of hardcoded message (PR)",
+        "state": "open",
+        "knownIssueNumber": 17,
+        "researchedAt": "2026-02-22",
+        "verdict": "updated_existing",
+        "reason": "PR that fixes KI #17 - referenced in Known Issue #17 docs"
+      },
+      "555": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "Session resume silently creates new session despite valid session file and correct parameters",
+        "state": "open",
+        "knownIssueNumber": 16,
+        "researchedAt": "2026-02-22",
+        "verdict": "updated_existing",
+        "reason": "Related to KI #16 (session file flush timing), referenced in Known Issue #16 docs"
+      },
+      "583": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "MessageParseError on rate_limit_event crashes receive_messages() generator",
+        "state": "closed",
+        "knownIssueNumber": 15,
+        "researchedAt": "2026-02-22",
+        "verdict": "updated_existing",
+        "reason": "Closed (PR #598 merged), but fix not yet released; #601 is current open tracking issue"
+      },
+      "584": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "Session file not flushed before disconnect causes resume failure",
+        "state": "open",
+        "knownIssueNumber": 16,
+        "researchedAt": "2026-02-22",
+        "verdict": "added_known_issue",
+        "reason": "Session file flush timing issue documented as KI #16"
+      },
+      "597": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "SDK MCP servers invisible to CLI when using string prompts",
+        "state": "open",
+        "knownIssueNumber": 14,
+        "researchedAt": "2026-02-22",
+        "verdict": "updated_existing",
+        "reason": "Broader scope than #578: reveals MCP server init missing + premature stdin close; updated KI #14 title and causes"
+      },
+      "601": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "MessageParseError on rate_limit_event message type terminates async generator",
+        "state": "open",
+        "knownIssueNumber": 15,
+        "researchedAt": "2026-02-22",
+        "verdict": "updated_existing",
+        "reason": "Current open tracking issue for rate_limit_event crash (follow-up to #583); added link to KI #15"
+      },
+      "602": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "Custom local plugins not all showing up when hitting + sign",
+        "state": "open",
+        "researchedAt": "2026-02-22",
+        "verdict": "skipped",
+        "reason": "Desktop UI issue, 0 reactions, not SDK API issue, no workaround"
+      },
+      "581": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "Add context_management (clear_thinking + clear_tool_uses) as first-class ClaudeAgentOptions parameter",
+        "state": "open",
+        "researchedAt": "2026-02-22",
+        "verdict": "skipped",
+        "reason": "Feature request, 0 reactions, no workaround to document"
       }
     },
     "trackedIssuesExternal": {},
-    "lastScannedIssueNumber": 580,
-    "lastAuditedVersion": "0.1.36"
+    "lastScannedIssueNumber": 602,
+    "lastAuditedVersion": "0.1.39",
+    "lastAuditSummary": {
+      "date": "2026-02-22",
+      "sdkVersion": "0.1.39",
+      "newOptionsAdded": 0,
+      "newMethodsAdded": 0,
+      "newMessageTypesAdded": 0,
+      "newHookEventsAdded": 0,
+      "updatedEntries": 0,
+      "noChanges": true,
+      "notes": "API surface fully matches SKILL-python.md. All ClaudeAgentOptions fields, ClaudeSDKClient methods, hook events (10), message types (5), and content blocks (4) are correctly documented. No gaps found between 0.1.36 and 0.1.39."
+    }
   },
-  "lastUpdated": "2026-02-21T08:02:47Z"
+  "lastUpdated": "2026-02-22T00:00:00Z"
 }

@@ -1356,9 +1356,9 @@ class SessionWorker:
             yield await out_q.get()  # HTTP handler reads from queue
 ```
 
-### #14: SDK MCP Servers Crash with String Prompts
-**Error**: `CLIConnectionError: ProcessTransport is not ready for writing` when using in-process MCP servers (from `create_sdk_mcp_server()`) with string prompts ([#578](https://github.com/anthropics/claude-agent-sdk-python/issues/578))
-**Cause**: String prompt code path closes stdin immediately after sending user message. SDK MCP servers require bidirectional communication (CLI sends `control_request` via stdout, SDK responds via stdin), but stdin is already closed.
+### #14: SDK MCP Servers Completely Non-functional with String Prompts
+**Error**: SDK MCP servers created via `create_sdk_mcp_server()` are completely invisible to Claude when using string prompts. Tool calls either raise `CLIConnectionError: ProcessTransport is not ready for writing` or silently fail with the model unable to see any MCP tools ([#578](https://github.com/anthropics/claude-agent-sdk-python/issues/578), [#597](https://github.com/anthropics/claude-agent-sdk-python/issues/597))
+**Cause**: Three root causes: (1) `sdkMcpServers` field is missing from the initialization control request in non-streaming mode, preventing CLI registration of SDK MCP servers; (2) String prompt code path closes stdin immediately after sending user message, blocking the control protocol; (3) `_stream_close_timeout` defaults to 60s, causing premature stdin close for long interactions.
 **Workaround**: Use `AsyncIterable` prompt instead of string:
 ```python
 async def prompt_gen():
@@ -1369,7 +1369,7 @@ async for msg in query(prompt=prompt_gen(), options=options):
 ```
 
 ### #15: `rate_limit_event` Messages Crash `receive_messages()` Generator
-**Error**: `MessageParseError: Unknown message type: rate_limit_event` kills the async generator; no further messages are received from that session ([#583](https://github.com/anthropics/claude-agent-sdk-python/issues/583))
+**Error**: `MessageParseError: Unknown message type: rate_limit_event` kills the async generator; no further messages are received from that session ([#601](https://github.com/anthropics/claude-agent-sdk-python/issues/601), [#583](https://github.com/anthropics/claude-agent-sdk-python/issues/583))
 **Cause**: `message_parser.py` uses a strict allowlist of message types. When the CLI emits a `rate_limit_event` (a new informational message), the strict match raises `MessageParseError` inside `yield`, terminating the generator permanently.
 **Impact**: Any rate-limited response crashes the session. Affects `receive_messages()` and `receive_response()`.
 **Workaround**: Monkey-patch the message parser to swallow unknown message types:
@@ -1446,4 +1446,4 @@ except ProcessError as e:
 
 ---
 
-**Last verified**: 2026-02-21 | **SDK version**: 0.1.39
+**Last verified**: 2026-02-22 | **SDK version**: 0.1.39

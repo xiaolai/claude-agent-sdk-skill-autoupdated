@@ -397,13 +397,18 @@ type HookCallback = (
 ### Hook Configuration
 
 ```typescript
+// HookCallbackMatcher interface:
+// { matcher?: string; hooks: HookCallback[]; timeout?: number }
+// timeout is in seconds (default: 60). Use a large value for interactive hooks.
+// See Known Issue #29 — there is no way to disable the timeout entirely.
+
 const response = query({
   prompt: "...",
   options: {
     hooks: {
       Setup: [{ hooks: [initCallback] }],  // fires on init/maintenance
       PreToolUse: [
-        { matcher: 'Write|Edit', hooks: [protectFiles] },
+        { matcher: 'Write|Edit', hooks: [protectFiles], timeout: 30 },
         { matcher: '^mcp__', hooks: [logMcpCalls] },
         { hooks: [globalLogger] }  // no matcher = all tools
       ],
@@ -990,6 +995,16 @@ U+2028/U+2029 in MCP tool results break parsing ([#137](https://github.com/anthr
 ### #8: Missing @anthropic-ai/sdk dependency causes type loss
 **Error**: TypeScript types resolve as `any` for SDK messages/events ([#121](https://github.com/anthropics/claude-agent-sdk-typescript/issues/121))
 **Fix**: `npm install @anthropic-ai/sdk` as peer dependency.
+**pnpm note**: pnpm's strict resolution doesn't auto-install undeclared peer deps ([#179](https://github.com/anthropics/claude-agent-sdk-typescript/issues/179)). Add to `package.json`:
+```json
+"pnpm": {
+  "packageExtensions": {
+    "@anthropic-ai/claude-agent-sdk": {
+      "dependencies": { "@anthropic-ai/sdk": "*" }
+    }
+  }
+}
+```
 
 ### #9: Ripgrep binary lacks execute permission on VS Code Remote SSH
 **Error**: Commands/agents from `.claude/commands/` and `.claude/agents/` silently not discovered on Linux remote ([#129](https://github.com/anthropics/claude-agent-sdk-typescript/issues/129))
@@ -1136,6 +1151,16 @@ Or cast messages explicitly: `const msg = message as Exclude<SDKMessage, { type:
 **Impact**: Production pipelines using model shorthands may change behavior silently on SDK upgrade with no deprecation warning or changelog callout.
 **Fix**: Pin to full model IDs (e.g., `'claude-opus-4-5-20251101'`) in `AgentDefinition.model` when specific model behavior is required. Use shorthands only when "latest" is acceptable.
 
+### #29: HookCallbackMatcher timeout cannot be disabled — interactive hooks always time out at 60s
+**Error**: Interactive hooks (e.g., `AskUserQuestion`, `ExitPlanMode`) time out after 60 seconds with no way to opt out ([#194](https://github.com/anthropics/claude-agent-sdk-typescript/issues/194))
+**Cause**: The hook executor uses a truthy check (`timeout ? timeout * 1000 : default`), so `null`, `undefined`, and `0` all silently fall back to the 60-second default. The TypeScript type is `timeout?: number` with no `null` support.
+**Workaround**: Set `timeout` to a very large value (e.g., `86400` for 24 hours) for hooks that need to wait for human input:
+```typescript
+hooks: {
+  PreToolUse: [{ hooks: [interactiveApprovalHook], timeout: 86400 }]
+}
+```
+
 ---
 
 ## Changelog Highlights (v0.2.12 → v0.2.50)
@@ -1154,4 +1179,4 @@ Or cast messages explicitly: `const msg = message as Exclude<SDKMessage, { type:
 
 ---
 
-**Last verified**: 2026-02-21 | **SDK version**: 0.2.50
+**Last verified**: 2026-02-22 | **SDK version**: 0.2.50

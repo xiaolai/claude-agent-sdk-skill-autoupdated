@@ -95,7 +95,7 @@ Stateful client. Maintains a conversation session across multiple exchanges. Sup
 from claude_agent_sdk import ClaudeSDKClient
 
 class ClaudeSDKClient:
-    def __init__(self, options: ClaudeAgentOptions | None = None) -> None: ...
+    def __init__(self, options: ClaudeAgentOptions | None = None, transport: Transport | None = None) -> None: ...
     async def connect(self, prompt: str | AsyncIterable[dict] | None = None) -> None: ...
     async def query(self, prompt: str | AsyncIterable[dict], session_id: str = "default") -> None: ...
     async def receive_messages(self) -> AsyncIterator[Message]: ...
@@ -1369,8 +1369,9 @@ async for msg in query(prompt=prompt_gen(), options=options):
 ```
 
 ### #15: `rate_limit_event` Messages Crash `receive_messages()` Generator
-**Error**: `MessageParseError: Unknown message type: rate_limit_event` kills the async generator; no further messages are received from that session ([#601](https://github.com/anthropics/claude-agent-sdk-python/issues/601), [#583](https://github.com/anthropics/claude-agent-sdk-python/issues/583))
+**Error**: `MessageParseError: Unknown message type: rate_limit_event` kills the async generator; no further messages are received from that session ([#601](https://github.com/anthropics/claude-agent-sdk-python/issues/601), [#583](https://github.com/anthropics/claude-agent-sdk-python/issues/583), [#603](https://github.com/anthropics/claude-agent-sdk-python/issues/603))
 **Cause**: `message_parser.py` uses a strict allowlist of message types. When the CLI emits a `rate_limit_event` (a new informational message), the strict match raises `MessageParseError` inside `yield`, terminating the generator permanently.
+**Status**: Fix merged in [PR #598](https://github.com/anthropics/claude-agent-sdk-python/pull/598) (pending release beyond v0.1.39).
 **Impact**: Any rate-limited response crashes the session. Affects `receive_messages()` and `receive_response()`.
 **Workaround**: Monkey-patch the message parser to swallow unknown message types:
 ```python
@@ -1446,4 +1447,4 @@ except ProcessError as e:
 
 ---
 
-**Last verified**: 2026-02-22 | **SDK version**: 0.1.39
+**Last verified**: 2026-02-23 | **SDK version**: 0.1.39

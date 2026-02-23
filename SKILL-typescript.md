@@ -105,7 +105,7 @@ function createSdkMcpServer(options: {
 | `cwd` | `string` | `process.cwd()` | Working directory |
 | `systemPrompt` | `string \| { type: 'preset', preset: 'claude_code', append?: string }` | minimal | System prompt |
 | `settingSources` | `SettingSource[]` | `[]` | `'user' \| 'project' \| 'local'` |
-| `env` | `Dict<string>` | `process.env` | Environment variables |
+| `env` | `Dict<string>` | `process.env` | Environment variables (set `CLAUDE_AGENT_SDK_CLIENT_APP` to identify your app in User-Agent, e.g. `'my-app/1.0.0'`) |
 | `abortController` | `AbortController` | — | Cancellation controller |
 
 ### Tools & Permissions
@@ -125,7 +125,7 @@ function createSdkMcpServer(options: {
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `outputFormat` | `{ type: 'json_schema', schema: JSONSchema }` | — | Structured output schema |
-| `thinking` | `ThinkingConfig` | — | `{ type: 'enabled', budgetTokens: number } \| { type: 'disabled' } \| { type: 'adaptive' }` |
+| `thinking` | `ThinkingConfig` | — | `{ type: 'enabled', budgetTokens?: number } \| { type: 'disabled' } \| { type: 'adaptive' }` |
 | `effort` | `'low' \| 'medium' \| 'high' \| 'max'` | — | Controls response effort level |
 | `maxThinkingTokens` | `number` | — | **Deprecated** — use `thinking` instead |
 | `fallbackModel` | `string` | — | Fallback model on failure |
@@ -332,16 +332,16 @@ for await (const message of query({ prompt: "...", options })) {
   switch (message.type) {
     case 'system':
       if (message.subtype === 'init') sessionId = message.session_id;
-      if (message.subtype === 'status') console.log('Status:', message.status);
+      if (message.subtype === 'status') console.log('Status:', message.status, message.permissionMode);  // permissionMode?: PermissionMode
       if (message.subtype === 'hook_progress') console.log('Hook:', message.data);
-      if (message.subtype === 'task_started') console.log('Task started:', message.task_id, message.description);
-      if (message.subtype === 'task_notification') console.log('Task done:', message.task_id, message.status, message.tool_use_id);
+      if (message.subtype === 'task_started') console.log('Task started:', message.task_id, message.description, message.task_type);  // task_type?: string
+      if (message.subtype === 'task_notification') console.log('Task done:', message.task_id, message.status, message.tool_use_id, message.output_file, message.summary);  // output_file: string, summary: string, usage?: {total_tokens, tool_uses, duration_ms}
       break;
     case 'assistant':
       console.log(message.message);
       break;
     case 'tool_progress':
-      console.log(`Tool running: ${message.tool_name} (${message.elapsed_time_seconds}s)`);
+      console.log(`Tool running: ${message.tool_name} (${message.elapsed_time_seconds}s) task:${message.task_id}`);  // task_id?: string
       break;
     case 'result':
       if (message.subtype === 'success') {
@@ -889,7 +889,10 @@ interface SDKSession {
 
 ### V2 Limitations
 
-`SDKSessionOptions` is a subset of `Options`. The V2 API does **NOT** support:
+`SDKSessionOptions` is a subset of `Options`. The V2 API **supports**: `permissionMode` (all modes except `bypassPermissions`), `allowedTools`, `disallowedTools`, `canUseTool`, `hooks`, `executable`, `env`.
+
+The V2 API does **NOT** support:
+- `bypassPermissions` mode — `allowDangerouslySkipPermissions` not in `SDKSessionOptions`
 - `cwd` ([#176](https://github.com/anthropics/claude-agent-sdk-typescript/issues/176))
 - `settingSources` ([#176](https://github.com/anthropics/claude-agent-sdk-typescript/issues/176))
 - `plugins` ([#171](https://github.com/anthropics/claude-agent-sdk-typescript/issues/171))
@@ -1085,23 +1088,11 @@ const schema = z.toJSONSchema(MySchema);
 delete schema.$schema;
 ```
 
-### #21: unstable_v2_createSession() ignores critical options
-**Error**: V2 session API silently ignores `permissionMode`, `cwd`, `settingSources`, `allowedTools`, `disallowedTools` ([#176](https://github.com/anthropics/claude-agent-sdk-typescript/issues/176))
-**Cause**: `SessionImpl` constructor hardcodes these values instead of passing them from `SDKSessionOptions` to the `ProcessTransport`.
-**Impact**: Breaks headless/server deployments requiring permission bypass, custom working directories, or CLAUDE.md loading.
-**Workaround**: Manually patch `sdk.mjs` (~line 8597) to use `options` values with nullish coalescing:
-```typescript
-const transport = new ProcessTransport({
-  permissionMode: options.permissionMode ?? "default",
-  allowDangerouslySkipPermissions: options.allowDangerouslySkipPermissions ?? false,
-  settingSources: options.settingSources ?? [],
-  allowedTools: options.allowedTools ?? [],
-  disallowedTools: options.disallowedTools ?? [],
-  mcpServers: options.mcpServers ?? {},
-  cwd: options.cwd,
-  // ... rest of config
-});
-```
+### #21: unstable_v2_createSession() has limited option support
+**Error**: V2 session API silently ignores `cwd` and `settingSources`; `bypassPermissions` mode not supported ([#176](https://github.com/anthropics/claude-agent-sdk-typescript/issues/176))
+**Status**: Partially resolved — `SDKSessionOptions` now includes `permissionMode`, `allowedTools`, `disallowedTools`, `canUseTool`, and `hooks` as of v0.2.50, so these options likely work. However `cwd`, `settingSources`, and `allowDangerouslySkipPermissions` remain absent from `SDKSessionOptions`.
+**Impact**: V2 sessions cannot use `bypassPermissions` mode (requires `allowDangerouslySkipPermissions` which isn't exposed), custom working directories, or CLAUDE.md loading.
+**Workaround**: Use `query()` API if you need `bypassPermissions`, `cwd`, or `settingSources`. For other permission control, the V2 API's built-in `permissionMode`, `allowedTools`, `canUseTool`, and `hooks` options now work.
 
 ### #22: Large MCP tool output forces filesystem tool dependency
 **Error**: When MCP tools return ≥180KB output, SDK truncates response and saves full output to local file, then agent attempts to read file using `Bash`/filesystem tools ([#175](https://github.com/anthropics/claude-agent-sdk-typescript/issues/175), [#187](https://github.com/anthropics/claude-agent-sdk-typescript/issues/187))
@@ -1179,4 +1170,4 @@ hooks: {
 
 ---
 
-**Last verified**: 2026-02-22 | **SDK version**: 0.2.50
+**Last verified**: 2026-02-23 | **SDK version**: 0.2.50

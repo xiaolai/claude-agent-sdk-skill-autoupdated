@@ -336,7 +336,18 @@
       }
     },
     "lastScannedIssueNumber": 194,
-    "lastAuditedVersion": "0.2.50"
+    "lastAuditedVersion": "0.2.50",
+    "lastAuditSummary": {
+      "date": "2026-02-23",
+      "sdkVersion": "0.2.50",
+      "newOptionsAdded": 0,
+      "newMethodsAdded": 0,
+      "newMessageTypesAdded": 0,
+      "newHookEventsAdded": 0,
+      "updatedEntries": 6,
+      "noChanges": false,
+      "notes": "Fixed ThinkingEnabled.budgetTokens to optional. Added task_type to SDKTaskStartedMessage, task_id to SDKToolProgressMessage, permissionMode to SDKStatusMessage docs. Updated Known Issue #21 (allowedTools/disallowedTools/permissionMode/canUseTool/hooks now in SDKSessionOptions). Updated V2 Limitations section. Added CLAUDE_AGENT_SDK_CLIENT_APP env var tip."
+    }
   },
   "python": {
     "registry": {
@@ -602,22 +613,39 @@
         "researchedAt": "2026-02-22",
         "verdict": "skipped",
         "reason": "Feature request, 0 reactions, no workaround to document"
+      },
+      "603": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "rate_limit_event causes MessageParseError instead of being handled gracefully",
+        "state": "open",
+        "knownIssueNumber": 15,
+        "researchedAt": "2026-02-23",
+        "verdict": "updated_existing",
+        "reason": "Duplicate of #601/#583; added #603 link to KI #15 and noted PR #598 merged fix (pending release)"
+      },
+      "604": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "[SECURITY] Edit tool reads file content before PreToolUse hook validation, allowing content probing",
+        "state": "open",
+        "researchedAt": "2026-02-23",
+        "verdict": "skipped",
+        "reason": "Security edge case, 0 reactions, 0 comments; workarounds are drastic (disable Edit tool); CLI-level issue with no SDK API workaround"
       }
     },
     "trackedIssuesExternal": {},
-    "lastScannedIssueNumber": 602,
+    "lastScannedIssueNumber": 604,
     "lastAuditedVersion": "0.1.39",
     "lastAuditSummary": {
-      "date": "2026-02-22",
+      "date": "2026-02-23",
       "sdkVersion": "0.1.39",
       "newOptionsAdded": 0,
-      "newMethodsAdded": 0,
+      "newMethodsAdded": 1,
       "newMessageTypesAdded": 0,
       "newHookEventsAdded": 0,
-      "updatedEntries": 0,
-      "noChanges": true,
-      "notes": "API surface fully matches SKILL-python.md. All ClaudeAgentOptions fields, ClaudeSDKClient methods, hook events (10), message types (5), and content blocks (4) are correctly documented. No gaps found between 0.1.36 and 0.1.39."
+      "updatedEntries": 2,
+      "noChanges": false,
+      "notes": "Fixed ClaudeSDKClient.__init__ missing transport parameter in docs. Updated KI #15 to add #603 link and note PR #598 merged fix pending release. Skipped #604 (security edge case, no practical workaround)."
     }
   },
-  "lastUpdated": "2026-02-22T00:00:00Z"
+  "lastUpdated": "2026-02-23T00:00:00Z"
 }

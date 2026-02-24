@@ -1,7 +1,7 @@
 {
   "typescript": {
     "registry": {
-      "version": "0.2.50",
+      "version": "0.2.52",
       "peerDependencies": {
         "zod": "^4.0.0"
       },
@@ -336,22 +336,11 @@
       }
     },
     "lastScannedIssueNumber": 194,
-    "lastAuditedVersion": "0.2.50",
-    "lastAuditSummary": {
-      "date": "2026-02-23",
-      "sdkVersion": "0.2.50",
-      "newOptionsAdded": 0,
-      "newMethodsAdded": 0,
-      "newMessageTypesAdded": 0,
-      "newHookEventsAdded": 0,
-      "updatedEntries": 6,
-      "noChanges": false,
-      "notes": "Fixed ThinkingEnabled.budgetTokens to optional. Added task_type to SDKTaskStartedMessage, task_id to SDKToolProgressMessage, permissionMode to SDKStatusMessage docs. Updated Known Issue #21 (allowedTools/disallowedTools/permissionMode/canUseTool/hooks now in SDKSessionOptions). Updated V2 Limitations section. Added CLAUDE_AGENT_SDK_CLIENT_APP env var tip."
-    }
+    "lastAuditedVersion": "0.2.52"
   },
   "python": {
     "registry": {
-      "version": "0.1.39"
+      "version": "0.1.41"
     },
     "github": {
       "repo": "anthropics/claude-agent-sdk-python",
@@ -634,18 +623,7 @@
     },
     "trackedIssuesExternal": {},
     "lastScannedIssueNumber": 604,
-    "lastAuditedVersion": "0.1.39",
-    "lastAuditSummary": {
-      "date": "2026-02-23",
-      "sdkVersion": "0.1.39",
-      "newOptionsAdded": 0,
-      "newMethodsAdded": 1,
-      "newMessageTypesAdded": 0,
-      "newHookEventsAdded": 0,
-      "updatedEntries": 2,
-      "noChanges": false,
-      "notes": "Fixed ClaudeSDKClient.__init__ missing transport parameter in docs. Updated KI #15 to add #603 link and note PR #598 merged fix pending release. Skipped #604 (security edge case, no practical workaround)."
-    }
+    "lastAuditedVersion": "0.1.39"
   },
-  "lastUpdated": "2026-02-23T00:00:00Z"
+  "lastUpdated": "2026-02-24T08:10:14Z"
 }

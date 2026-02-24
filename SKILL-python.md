@@ -1,6 +1,6 @@
-# Claude Agent SDK — Python Reference (v0.1.39)
+# Claude Agent SDK — Python Reference (v0.1.41)
 
-**Package**: `claude-agent-sdk==0.1.39` (PyPI)
+**Package**: `claude-agent-sdk==0.1.41` (PyPI)
 **Docs**: https://platform.claude.com/docs/en/agent-sdk/python
 **Repo**: https://github.com/anthropics/claude-agent-sdk-python
 **Requires**: Python 3.10+
@@ -1371,7 +1371,7 @@ async for msg in query(prompt=prompt_gen(), options=options):
 ### #15: `rate_limit_event` Messages Crash `receive_messages()` Generator
 **Error**: `MessageParseError: Unknown message type: rate_limit_event` kills the async generator; no further messages are received from that session ([#601](https://github.com/anthropics/claude-agent-sdk-python/issues/601), [#583](https://github.com/anthropics/claude-agent-sdk-python/issues/583), [#603](https://github.com/anthropics/claude-agent-sdk-python/issues/603))
 **Cause**: `message_parser.py` uses a strict allowlist of message types. When the CLI emits a `rate_limit_event` (a new informational message), the strict match raises `MessageParseError` inside `yield`, terminating the generator permanently.
-**Status**: Fix merged in [PR #598](https://github.com/anthropics/claude-agent-sdk-python/pull/598) (pending release beyond v0.1.39).
+**Status**: Fix merged in [PR #598](https://github.com/anthropics/claude-agent-sdk-python/pull/598) (pending release beyond v0.1.41).
 **Impact**: Any rate-limited response crashes the session. Affects `receive_messages()` and `receive_response()`.
 **Workaround**: Monkey-patch the message parser to swallow unknown message types:
 ```python
@@ -1440,11 +1440,11 @@ except ProcessError as e:
 
 | Version | Change |
 |---------|--------|
-| v0.1.39 | Bundled CLI updated to v2.1.49 |
+| v0.1.41 | Bundled CLI updated to v2.1.49 |
 | v0.1.36 | Added `thinking` (`ThinkingConfig` types: adaptive/enabled/disabled) and `effort` options; deprecated `max_thinking_tokens` |
 | v0.1.35 | Sub-agent registration via `@filepath` syntax fixed; agents now reliably registered |
 | v0.1.0 | Breaking: `ClaudeCodeOptions` renamed to `ClaudeAgentOptions`; no default system prompt; no filesystem settings loaded by default |
 
 ---
 
-**Last verified**: 2026-02-23 | **SDK version**: 0.1.39
+**Last verified**: 2026-02-24 | **SDK version**: 0.1.41

@@ -1,6 +1,6 @@
-# Claude Agent SDK — TypeScript Reference (v0.2.50)
+# Claude Agent SDK — TypeScript Reference (v0.2.52)
 
-**Package**: `@anthropic-ai/claude-agent-sdk@0.2.50`
+**Package**: `@anthropic-ai/claude-agent-sdk@0.2.52`
 **Docs**: https://platform.claude.com/docs/en/agent-sdk/overview
 **Repo**: https://github.com/anthropics/claude-agent-sdk-typescript
 **Migration**: Renamed from `@anthropic-ai/claude-code`. See [migration guide](https://platform.claude.com/docs/en/agent-sdk/migration-guide).
@@ -13,7 +13,7 @@
 - [Core API](#core-api) — `query()`, `tool()`, `createSdkMcpServer()`
 - [Options](#options) — Core, Tools & Permissions, Models & Output, Sessions, MCP & Agents, Advanced
 - [Query Object Methods](#query-object-methods)
-- [Message Types](#message-types) — All 19 SDKMessage types (2 undefined, see Known Issue #24)
+- [Message Types](#message-types) — All 20 SDKMessage types (2 undefined, see Known Issue #24)
 - [Hooks](#hooks) — 18 hook events, matchers, return values, async hooks
 - [Permissions](#permissions) — 6 modes, `canUseTool` callback
 - [MCP Servers](#mcp-servers) — stdio, HTTP, SSE, SDK, claudeai-proxy
@@ -248,7 +248,7 @@ type AccountInfo = {
 
 ## Message Types
 
-The SDK emits 19 message types through the async generator:
+The SDK emits 20 message types through the async generator:
 
 ```typescript
 type SDKMessage =
@@ -271,6 +271,7 @@ type SDKMessage =
   | SDKHookResponseMessage        // type: 'system', subtype: 'hook_response' — hook outcome
   // Task & persistence
   | SDKTaskStartedMessage         // type: 'system', subtype: 'task_started' — emitted when background task begins
+  | SDKTaskProgressMessage        // type: 'system', subtype: 'task_progress' — periodic progress updates for running tasks
   | SDKTaskNotificationMessage    // type: 'system', subtype: 'task_notification' — background task events
   | SDKFilesPersistedEvent        // type: 'system', subtype: 'files_persisted'
   // Undefined types (cause SDKMessage → any, see Known Issue #24)
@@ -335,6 +336,7 @@ for await (const message of query({ prompt: "...", options })) {
       if (message.subtype === 'status') console.log('Status:', message.status, message.permissionMode);  // permissionMode?: PermissionMode
       if (message.subtype === 'hook_progress') console.log('Hook:', message.data);
       if (message.subtype === 'task_started') console.log('Task started:', message.task_id, message.description, message.task_type);  // task_type?: string
+      if (message.subtype === 'task_progress') console.log('Task progress:', message.task_id, message.description, message.last_tool_name, message.usage);  // usage: {total_tokens, tool_uses, duration_ms}; last_tool_name?: string; tool_use_id?: string
       if (message.subtype === 'task_notification') console.log('Task done:', message.task_id, message.status, message.tool_use_id, message.output_file, message.summary);  // output_file: string, summary: string, usage?: {total_tokens, tool_uses, duration_ms}
       break;
     case 'assistant':
@@ -1090,7 +1092,7 @@ delete schema.$schema;
 
 ### #21: unstable_v2_createSession() has limited option support
 **Error**: V2 session API silently ignores `cwd` and `settingSources`; `bypassPermissions` mode not supported ([#176](https://github.com/anthropics/claude-agent-sdk-typescript/issues/176))
-**Status**: Partially resolved — `SDKSessionOptions` now includes `permissionMode`, `allowedTools`, `disallowedTools`, `canUseTool`, and `hooks` as of v0.2.50, so these options likely work. However `cwd`, `settingSources`, and `allowDangerouslySkipPermissions` remain absent from `SDKSessionOptions`.
+**Status**: Partially resolved — `SDKSessionOptions` now includes `permissionMode`, `allowedTools`, `disallowedTools`, `canUseTool`, and `hooks` as of v0.2.52, so these options likely work. However `cwd`, `settingSources`, and `allowDangerouslySkipPermissions` remain absent from `SDKSessionOptions`.
 **Impact**: V2 sessions cannot use `bypassPermissions` mode (requires `allowDangerouslySkipPermissions` which isn't exposed), custom working directories, or CLAUDE.md loading.
 **Workaround**: Use `query()` API if you need `bypassPermissions`, `cwd`, or `settingSources`. For other permission control, the V2 API's built-in `permissionMode`, `allowedTools`, `canUseTool`, and `hooks` options now work.
 
@@ -1154,11 +1156,11 @@ hooks: {
 
 ---
 
-## Changelog Highlights (v0.2.12 → v0.2.50)
+## Changelog Highlights (v0.2.12 → v0.2.52)
 
 | Version | Change |
 |---------|--------|
-| v0.2.50 | Current release; `SDKPromptSuggestionMessage` and `promptSuggestions` option added (type undefined, see [#24](#24-sdkratelimitevent-and-sdkpromptsuggestionmessage-undefined-cause-sdkmessage-to-resolve-to-any)); `ConfigChange` hook event added; slash command output regression (#26 — fix pending); `WorktreeCreate`/`WorktreeRemove` hook events available |
+| v0.2.52 | `SDKPromptSuggestionMessage` and `promptSuggestions` option added (type undefined, see [#24](#24-sdkratelimitevent-and-sdkpromptsuggestionmessage-undefined-cause-sdkmessage-to-resolve-to-any)); `ConfigChange` hook event added; slash command output regression (#26 — fix pending); `WorktreeCreate`/`WorktreeRemove` hook events available |
 | v0.2.43 | Previous release (2026-02-14) |
 | v0.2.33 | `TeammateIdle`/`TaskCompleted` hook events; custom `sessionId` option |
 | v0.2.31 | `stop_reason` field on result messages |
@@ -1170,4 +1172,4 @@ hooks: {
 
 ---
 
-**Last verified**: 2026-02-23 | **SDK version**: 0.2.50
+**Last verified**: 2026-02-24 | **SDK version**: 0.2.52

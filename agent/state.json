@@ -1,7 +1,7 @@
 {
   "typescript": {
     "registry": {
-      "version": "0.2.52",
+      "version": "0.2.56",
       "peerDependencies": {
         "zod": "^4.0.0"
       },
@@ -336,11 +336,11 @@
       }
     },
     "lastScannedIssueNumber": 194,
-    "lastAuditedVersion": "0.2.52"
+    "lastAuditedVersion": "0.2.56"
   },
   "python": {
     "registry": {
-      "version": "0.1.41"
+      "version": "0.1.43"
     },
     "github": {
       "repo": "anthropics/claude-agent-sdk-python",
@@ -625,5 +625,5 @@
     "lastScannedIssueNumber": 604,
     "lastAuditedVersion": "0.1.39"
   },
-  "lastUpdated": "2026-02-24T08:10:14Z"
+  "lastUpdated": "2026-02-25T08:10:35Z"
 }

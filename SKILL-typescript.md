@@ -1,6 +1,6 @@
-# Claude Agent SDK — TypeScript Reference (v0.2.52)
+# Claude Agent SDK — TypeScript Reference (v0.2.56)
 
-**Package**: `@anthropic-ai/claude-agent-sdk@0.2.52`
+**Package**: `@anthropic-ai/claude-agent-sdk@0.2.56`
 **Docs**: https://platform.claude.com/docs/en/agent-sdk/overview
 **Repo**: https://github.com/anthropics/claude-agent-sdk-typescript
 **Migration**: Renamed from `@anthropic-ai/claude-code`. See [migration guide](https://platform.claude.com/docs/en/agent-sdk/migration-guide).
@@ -10,7 +10,7 @@
 ## Table of Contents
 
 - [Breaking Changes](#breaking-changes-v010)
-- [Core API](#core-api) — `query()`, `tool()`, `createSdkMcpServer()`
+- [Core API](#core-api) — `query()`, `tool()`, `createSdkMcpServer()`, `listSessions()`
 - [Options](#options) — Core, Tools & Permissions, Models & Output, Sessions, MCP & Agents, Advanced
 - [Query Object Methods](#query-object-methods)
 - [Message Types](#message-types) — All 20 SDKMessage types (2 undefined, see Known Issue #24)
@@ -91,6 +91,39 @@ function createSdkMcpServer(options: {
   version?: string;
   tools?: Array<SdkMcpToolDefinition<any>>;
 }): McpSdkServerConfigWithInstance
+```
+
+### `listSessions()`
+
+Lists saved session metadata from `~/.claude/projects/`. Useful for building session pickers or resuming conversations by name.
+
+```typescript
+import { listSessions } from "@anthropic-ai/claude-agent-sdk";
+
+function listSessions(options?: {
+  dir?: string;   // Project directory — filters to sessions for that dir (and its worktrees)
+  limit?: number; // Max sessions to return
+}): Promise<SDKSessionInfo[]>
+
+type SDKSessionInfo = {
+  sessionId: string;         // UUID — pass to options.resume
+  summary: string;           // Display title (custom title, auto-summary, or first prompt)
+  lastModified: number;      // Milliseconds since epoch
+  fileSize: number;          // Session file size in bytes
+  customTitle?: string;      // User-set title via /rename
+  firstPrompt?: string;      // First meaningful user prompt
+  gitBranch?: string;        // Git branch at end of session
+  cwd?: string;              // Working directory for the session
+};
+```
+
+Example:
+
+```typescript
+const sessions = await listSessions({ dir: process.cwd(), limit: 10 });
+const latest = sessions[0];
+// Resume the most recent session:
+for await (const msg of query({ prompt: "Continue", options: { resume: latest.sessionId } })) { ... }
 ```
 
 ---
@@ -681,7 +714,7 @@ const activeSubagentSessions = new Map<string, string>();
 const options = {
   hooks: {
     SubagentStart: [{ hooks: [async (input) => {
-      activeSubagentSessions.set(input.session_id, input.agent_name);
+      activeSubagentSessions.set(input.session_id, input.agent_id);
       return {};
     }] }],
     SubagentStop: [{ hooks: [async (input) => {
@@ -1092,7 +1125,7 @@ delete schema.$schema;
 
 ### #21: unstable_v2_createSession() has limited option support
 **Error**: V2 session API silently ignores `cwd` and `settingSources`; `bypassPermissions` mode not supported ([#176](https://github.com/anthropics/claude-agent-sdk-typescript/issues/176))
-**Status**: Partially resolved — `SDKSessionOptions` now includes `permissionMode`, `allowedTools`, `disallowedTools`, `canUseTool`, and `hooks` as of v0.2.52, so these options likely work. However `cwd`, `settingSources`, and `allowDangerouslySkipPermissions` remain absent from `SDKSessionOptions`.
+**Status**: Partially resolved — `SDKSessionOptions` now includes `permissionMode`, `allowedTools`, `disallowedTools`, `canUseTool`, and `hooks`, so these options work. However `cwd`, `settingSources`, and `allowDangerouslySkipPermissions` remain absent from `SDKSessionOptions`.
 **Impact**: V2 sessions cannot use `bypassPermissions` mode (requires `allowDangerouslySkipPermissions` which isn't exposed), custom working directories, or CLAUDE.md loading.
 **Workaround**: Use `query()` API if you need `bypassPermissions`, `cwd`, or `settingSources`. For other permission control, the V2 API's built-in `permissionMode`, `allowedTools`, `canUseTool`, and `hooks` options now work.
 
@@ -1156,11 +1189,11 @@ hooks: {
 
 ---
 
-## Changelog Highlights (v0.2.12 → v0.2.52)
+## Changelog Highlights (v0.2.12 → v0.2.56)
 
 | Version | Change |
 |---------|--------|
-| v0.2.52 | `SDKPromptSuggestionMessage` and `promptSuggestions` option added (type undefined, see [#24](#24-sdkratelimitevent-and-sdkpromptsuggestionmessage-undefined-cause-sdkmessage-to-resolve-to-any)); `ConfigChange` hook event added; slash command output regression (#26 — fix pending); `WorktreeCreate`/`WorktreeRemove` hook events available |
+| v0.2.56 | `SDKPromptSuggestionMessage` and `promptSuggestions` option added (type undefined, see [#24](#24-sdkratelimitevent-and-sdkpromptsuggestionmessage-undefined-cause-sdkmessage-to-resolve-to-any)); `ConfigChange` hook event added; slash command output regression (#26 — fix pending); `WorktreeCreate`/`WorktreeRemove` hook events available |
 | v0.2.43 | Previous release (2026-02-14) |
 | v0.2.33 | `TeammateIdle`/`TaskCompleted` hook events; custom `sessionId` option |
 | v0.2.31 | `stop_reason` field on result messages |
@@ -1172,4 +1205,4 @@ hooks: {
 
 ---
 
-**Last verified**: 2026-02-24 | **SDK version**: 0.2.52
+**Last verified**: 2026-02-25 | **SDK version**: 0.2.56

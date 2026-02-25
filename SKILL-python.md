@@ -1,6 +1,6 @@
-# Claude Agent SDK — Python Reference (v0.1.41)
+# Claude Agent SDK — Python Reference (v0.1.43)
 
-**Package**: `claude-agent-sdk==0.1.41` (PyPI)
+**Package**: `claude-agent-sdk==0.1.43` (PyPI)
 **Docs**: https://platform.claude.com/docs/en/agent-sdk/python
 **Repo**: https://github.com/anthropics/claude-agent-sdk-python
 **Requires**: Python 3.10+
@@ -665,14 +665,16 @@ The SDK exports typed output types for `hookSpecificOutput`:
 
 ```python
 from claude_agent_sdk import (
-    NotificationHookSpecificOutput,      # hookEventName, additionalContext
-    SubagentStartHookSpecificOutput,     # hookEventName, additionalContext
-    PermissionRequestHookSpecificOutput, # hookEventName, decision (dict)
+    HookJSONOutput,                       # Union: AsyncHookJSONOutput | SyncHookJSONOutput
+    NotificationHookSpecificOutput,       # hookEventName, additionalContext
+    SubagentStartHookSpecificOutput,      # hookEventName, additionalContext
+    PermissionRequestHookSpecificOutput,  # hookEventName, decision (dict)
     PostToolUseFailureHookSpecificOutput, # hookEventName, additionalContext
 )
 # SyncHookJSONOutput covers: continue_, suppressOutput, stopReason,
 #                             decision, systemMessage, reason, hookSpecificOutput
 # AsyncHookJSONOutput covers: async_ (True), asyncTimeout (int, optional)
+# Both can be imported from claude_agent_sdk.types if needed
 ```
 
 ### Async Hooks
@@ -1368,12 +1370,11 @@ async for msg in query(prompt=prompt_gen(), options=options):
     ...
 ```
 
-### #15: `rate_limit_event` Messages Crash `receive_messages()` Generator
+### #15: `rate_limit_event` Messages Crash `receive_messages()` Generator (Fixed in v0.1.43)
 **Error**: `MessageParseError: Unknown message type: rate_limit_event` kills the async generator; no further messages are received from that session ([#601](https://github.com/anthropics/claude-agent-sdk-python/issues/601), [#583](https://github.com/anthropics/claude-agent-sdk-python/issues/583), [#603](https://github.com/anthropics/claude-agent-sdk-python/issues/603))
-**Cause**: `message_parser.py` uses a strict allowlist of message types. When the CLI emits a `rate_limit_event` (a new informational message), the strict match raises `MessageParseError` inside `yield`, terminating the generator permanently.
-**Status**: Fix merged in [PR #598](https://github.com/anthropics/claude-agent-sdk-python/pull/598) (pending release beyond v0.1.41).
-**Impact**: Any rate-limited response crashes the session. Affects `receive_messages()` and `receive_response()`.
-**Workaround**: Monkey-patch the message parser to swallow unknown message types:
+**Cause**: In versions before v0.1.43, `message_parser.py` used a strict allowlist of message types. When the CLI emitted a `rate_limit_event` (a new informational message), the strict match raised `MessageParseError` inside `yield`, terminating the generator permanently.
+**Fix**: Fixed in v0.1.43. The message parser now silently skips unrecognized message types (returning `None`) instead of raising an exception, making it forward-compatible with new CLI message types. Upgrade to v0.1.43 or later to resolve.
+**Workaround (pre-v0.1.43 only)**: Monkey-patch the message parser to swallow unknown message types:
 ```python
 import claude_agent_sdk._internal.message_parser as _mp
 
@@ -1440,11 +1441,11 @@ except ProcessError as e:
 
 | Version | Change |
 |---------|--------|
-| v0.1.41 | Bundled CLI updated to v2.1.49 |
+| v0.1.43 | Fixed `rate_limit_event` crash in message parser — unknown CLI message types now skipped gracefully; bundled CLI updated to v2.1.56 |
 | v0.1.36 | Added `thinking` (`ThinkingConfig` types: adaptive/enabled/disabled) and `effort` options; deprecated `max_thinking_tokens` |
 | v0.1.35 | Sub-agent registration via `@filepath` syntax fixed; agents now reliably registered |
 | v0.1.0 | Breaking: `ClaudeCodeOptions` renamed to `ClaudeAgentOptions`; no default system prompt; no filesystem settings loaded by default |
 
 ---
 
-**Last verified**: 2026-02-24 | **SDK version**: 0.1.41
+**Last verified**: 2026-02-25 | **SDK version**: 0.1.43

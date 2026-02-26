@@ -64,8 +64,8 @@ async function resultLogger(
   toolUseID: string | undefined,
   { signal }: { signal: AbortSignal }
 ): Promise<HookJSONOutput> {
-  const toolName = input.tool_name;
-  const output = input.tool_output;
+  const toolName = (input as { tool_name: string }).tool_name;
+  const output = (input as { tool_response: unknown }).tool_response;
   console.log(`[post] ${toolName} completed (id: ${toolUseID}), output length: ${JSON.stringify(output).length}`);
   return {};
 }

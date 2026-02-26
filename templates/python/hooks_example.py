@@ -1,6 +1,7 @@
 """Hooks with Claude Agent SDK (Python).
 
-NOTE: Hooks require ClaudeSDKClient, not the standalone query() function.
+Hooks work with both ClaudeSDKClient and query() via ClaudeAgentOptions.hooks.
+This example uses ClaudeSDKClient for its multi-turn conversation support.
 """
 import asyncio
 from typing import Any

@@ -1,6 +1,6 @@
-# Claude Agent SDK — TypeScript Reference (v0.2.56)
+# Claude Agent SDK — TypeScript Reference (v0.2.59)
 
-**Package**: `@anthropic-ai/claude-agent-sdk@0.2.56`
+**Package**: `@anthropic-ai/claude-agent-sdk@0.2.59`
 **Docs**: https://platform.claude.com/docs/en/agent-sdk/overview
 **Repo**: https://github.com/anthropics/claude-agent-sdk-typescript
 **Migration**: Renamed from `@anthropic-ai/claude-code`. See [migration guide](https://platform.claude.com/docs/en/agent-sdk/migration-guide).
@@ -10,7 +10,7 @@
 ## Table of Contents
 
 - [Breaking Changes](#breaking-changes-v010)
-- [Core API](#core-api) — `query()`, `tool()`, `createSdkMcpServer()`, `listSessions()`
+- [Core API](#core-api) — `query()`, `tool()`, `createSdkMcpServer()`, `listSessions()`, `getSessionMessages()`
 - [Options](#options) — Core, Tools & Permissions, Models & Output, Sessions, MCP & Agents, Advanced
 - [Query Object Methods](#query-object-methods)
 - [Message Types](#message-types) — All 20 SDKMessage types (2 undefined, see Known Issue #24)
@@ -124,6 +124,40 @@ const sessions = await listSessions({ dir: process.cwd(), limit: 10 });
 const latest = sessions[0];
 // Resume the most recent session:
 for await (const msg of query({ prompt: "Continue", options: { resume: latest.sessionId } })) { ... }
+```
+
+### `getSessionMessages()`
+
+Reads a session's conversation messages from its JSONL transcript file. Returns user and assistant messages in chronological order. Useful for inspecting conversation history without resuming a session.
+
+```typescript
+import { getSessionMessages } from "@anthropic-ai/claude-agent-sdk";
+
+function getSessionMessages(
+  sessionId: string,
+  options?: {
+    dir?: string;    // Project directory to find the session in; searches all projects if omitted
+    limit?: number;  // Maximum number of messages to return
+    offset?: number; // Number of messages to skip from the start
+  }
+): Promise<SessionMessage[]>
+
+type SessionMessage = {
+  type: 'user' | 'assistant';
+  uuid: string;
+  session_id: string;
+  message: unknown;           // Raw message content (MessageParam or BetaMessage shape)
+  parent_tool_use_id: null;
+};
+```
+
+Example:
+
+```typescript
+const messages = await getSessionMessages(sessionId, { limit: 20 });
+for (const msg of messages) {
+  console.log(`[${msg.type}]`, msg.uuid);
+}
 ```
 
 ---
@@ -367,7 +401,7 @@ for await (const message of query({ prompt: "...", options })) {
     case 'system':
       if (message.subtype === 'init') sessionId = message.session_id;
       if (message.subtype === 'status') console.log('Status:', message.status, message.permissionMode);  // permissionMode?: PermissionMode
-      if (message.subtype === 'hook_progress') console.log('Hook:', message.data);
+      if (message.subtype === 'hook_progress') console.log('Hook:', message.output);  // also: .stdout, .stderr, .hook_name, .hook_event
       if (message.subtype === 'task_started') console.log('Task started:', message.task_id, message.description, message.task_type);  // task_type?: string
       if (message.subtype === 'task_progress') console.log('Task progress:', message.task_id, message.description, message.last_tool_name, message.usage);  // usage: {total_tokens, tool_uses, duration_ms}; last_tool_name?: string; tool_use_id?: string
       if (message.subtype === 'task_notification') console.log('Task done:', message.task_id, message.status, message.tool_use_id, message.output_file, message.summary);  // output_file: string, summary: string, usage?: {total_tokens, tool_uses, duration_ms}
@@ -1189,11 +1223,13 @@ hooks: {
 
 ---
 
-## Changelog Highlights (v0.2.12 → v0.2.56)
+## Changelog Highlights (v0.2.12 → v0.2.59)
 
 | Version | Change |
 |---------|--------|
-| v0.2.56 | `SDKPromptSuggestionMessage` and `promptSuggestions` option added (type undefined, see [#24](#24-sdkratelimitevent-and-sdkpromptsuggestionmessage-undefined-cause-sdkmessage-to-resolve-to-any)); `ConfigChange` hook event added; slash command output regression (#26 — fix pending); `WorktreeCreate`/`WorktreeRemove` hook events available |
+| v0.2.59 | Version bump |
+| v0.2.58 | Version bump |
+| v0.2.57 | `getSessionMessages()` exported — reads transcript messages by session ID; `SessionMessage` type exported |
 | v0.2.43 | Previous release (2026-02-14) |
 | v0.2.33 | `TeammateIdle`/`TaskCompleted` hook events; custom `sessionId` option |
 | v0.2.31 | `stop_reason` field on result messages |
@@ -1205,4 +1241,4 @@ hooks: {
 
 ---
 
-**Last verified**: 2026-02-25 | **SDK version**: 0.2.56
+**Last verified**: 2026-02-26 | **SDK version**: 0.2.59

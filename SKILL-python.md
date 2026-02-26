@@ -127,8 +127,8 @@ async with ClaudeSDKClient(options=options) as client:
 | **Connection**      | Managed automatically         | Manual control                     |
 | **Streaming Input** | Yes                           | Yes                                |
 | **Interrupts**      | No                            | Yes                                |
-| **Hooks**           | No                            | Yes                                |
-| **Custom Tools**    | No                            | Yes                                |
+| **Hooks**           | Yes (via `options`)           | Yes                                |
+| **Custom Tools**    | Yes (AsyncIterable only; see [#14](#14-sdk-mcp-servers-completely-non-functional-with-string-prompts)) | Yes |
 | **Continue Chat**   | No (new session each time)    | Yes (maintains conversation)       |
 
 ### `@tool()`
@@ -136,9 +136,8 @@ async with ClaudeSDKClient(options=options) as client:
 Decorator for defining MCP tools.
 
 ```python
-from claude_agent_sdk import tool
+from claude_agent_sdk import tool, ToolAnnotations  # ToolAnnotations re-exported from mcp.types
 from typing import Any
-from mcp.types import ToolAnnotations
 
 def tool(
     name: str,
@@ -191,6 +190,27 @@ def create_sdk_mcp_server(
 
 ```python
 server = create_sdk_mcp_server(name="calculator", version="2.0.0", tools=[add, multiply])
+```
+
+### `SdkMcpTool`
+
+The dataclass returned by the `@tool` decorator (also exported from `claude_agent_sdk`):
+
+```python
+from claude_agent_sdk import SdkMcpTool
+from typing import TypeVar, Generic, Any
+from collections.abc import Awaitable, Callable
+from mcp.types import ToolAnnotations
+
+T = TypeVar("T")
+
+@dataclass
+class SdkMcpTool(Generic[T]):
+    name: str                                          # Unique tool identifier
+    description: str                                   # Human-readable description
+    input_schema: type[T] | dict[str, Any]             # Type or JSON Schema dict
+    handler: Callable[[T], Awaitable[dict[str, Any]]]  # Async tool implementation
+    annotations: ToolAnnotations | None = None         # Optional MCP tool annotations
 ```
 
 ---
@@ -508,7 +528,7 @@ asyncio.run(main())
 
 ## Hooks
 
-Hooks use **callback matchers**: an optional regex `matcher` for tool names and a list of `hooks` callbacks. Hooks are only available with `ClaudeSDKClient`, not the standalone `query()` function.
+Hooks use **callback matchers**: an optional regex `matcher` for tool names and a list of `hooks` callbacks. Hooks work with both `query()` and `ClaudeSDKClient` via `ClaudeAgentOptions.hooks`.
 
 ### Hook Events
 

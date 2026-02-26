@@ -129,24 +129,7 @@ Each entry should be brief (2–5 lines) and link to the full report. Format:
 
 **Prepend** new entries so the most recent is always at the top, right after the `# Changelog` header. Do not remove or modify existing entries.
 
-## README Cost Log
-
-After writing the daily report and CHANGELOG entry, **update the Cost Log table in `README.md`**.
-
-The table is located between the `## Cost Log` heading and the `_Last 7 days only.` line. Format:
-
-```markdown
-| Date | SDK Version | Update | Research | Report | Total | Notes |
-|------|-------------|--------|----------|--------|-------|-------|
-| 2026-02-11 | v0.2.39 | — | $1.22 | $0.05 | **$1.27** | Research only, 13 issues evaluated |
-```
-
-Rules for this table:
-1. **Add today's row** at the top (newest first), below the header row.
-2. **Keep only 7 rows** (excluding header). Delete the oldest row(s) if there are more than 7.
-3. Use `—` for agents that didn't run. Use `**$X.XX**` for the Total column.
-4. The Notes column should be a brief summary (e.g. "Research only", "SDK v0.2.38→v0.2.39", "Pipeline failed").
-5. If a row for today already exists, **replace** it.
+**Note:** The README Cost Log table is updated automatically by the report-agent.ts script after you finish. You do NOT need to update it.
 
 ## Rules
 

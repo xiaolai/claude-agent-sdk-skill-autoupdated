@@ -52,7 +52,7 @@ echo "Python Dependencies:"
 echo -n "Checking claude-agent-sdk (PyPI)... "
 if command -v pip &> /dev/null; then
     py_latest=$(pip index versions claude-agent-sdk 2>/dev/null | head -1 | grep -oP '\([\d.]+\)' | tr -d '()' || echo "unknown")
-    py_current="0.1.43"
+    py_current="0.1.44"
     if [ "$py_current" = "$py_latest" ]; then
         echo -e "${GREEN}Up to date ($py_current)${NC}"
     elif [ "$py_latest" = "unknown" ]; then

@@ -1,6 +1,6 @@
 {
   "name": "claude-agent-sdk",
-  "description": "Build autonomous AI agents with Claude Agent SDK. TypeScript v0.2.59 | Python v0.1.43. API reference for query(), hooks, subagents, MCP, permissions, sandbox, structured outputs, and sessions.",
+  "description": "Build autonomous AI agents with Claude Agent SDK. TypeScript v0.2.59 | Python v0.1.44. API reference for query(), hooks, subagents, MCP, permissions, sandbox, structured outputs, and sessions.",
   "version": "2.0.0",
   "author": {
     "name": "xiaolai"

@@ -1059,6 +1059,7 @@ U+2028/U+2029 in MCP tool results break parsing ([#137](https://github.com/anthr
 ### #6: ANTHROPIC_BASE_URL via env option broken in v0.2.8+
 **Error**: `error_during_execution` with 0 tokens when using custom base URL ([#144](https://github.com/anthropics/claude-agent-sdk-typescript/issues/144))
 **Fix**: Downgrade to v0.2.7 or set `ANTHROPIC_BASE_URL` as environment variable before process start instead of via `options.env`.
+**Additional bug**: If `ANTHROPIC_BASE_URL` contains query parameters (e.g., `https://proxy.example.com/api?token=abc`), the SDK mangles the URL by URL-encoding the API path into the query value instead of appending it to the path ([#195](https://github.com/anthropics/claude-agent-sdk-typescript/issues/195)). Use a base URL without query parameters; put auth tokens in a header via a proxy instead.
 
 ### #7: SDK MCP servers fail from concurrent query() calls
 **Error**: Second+ concurrent queries timeout after 60s with "MCP error -32001: Request timed out" ([#122](https://github.com/anthropics/claude-agent-sdk-typescript/issues/122))
@@ -1176,28 +1177,31 @@ delete schema.$schema;
 **Workaround**: Method is not available in the current package. Monitor future releases for the fix.
 
 ### #24: SDKRateLimitEvent and SDKPromptSuggestionMessage undefined cause SDKMessage to resolve to `any`
-**Error**: TypeScript reports no type errors on `SDKMessage` values; full type safety is lost ([#181](https://github.com/anthropics/claude-agent-sdk-typescript/issues/181), [#184](https://github.com/anthropics/claude-agent-sdk-typescript/issues/184))
+**Error**: TypeScript reports no type errors on `SDKMessage` values; full type safety is lost ([#181](https://github.com/anthropics/claude-agent-sdk-typescript/issues/181), [#184](https://github.com/anthropics/claude-agent-sdk-typescript/issues/184), [#196](https://github.com/anthropics/claude-agent-sdk-typescript/issues/196))
 **Cause**: Both `SDKRateLimitEvent` and `SDKPromptSuggestionMessage` are referenced in the `SDKMessage` union type in `sdk.d.ts` but are never declared or exported anywhere in the file. A union containing an undefined type resolves to `any` in TypeScript.
 **Impact**: All pattern matching on `SDKMessage` values loses type safety (no compiler errors for wrong field names, etc.).
+**Status**: Fix merged (issue #196 closed as completed 2026-02-26), pending next release. Still present in v0.2.59.
 **Workaround**: Add local ambient declarations until the SDK ships the types:
 ```typescript
-declare module "@anthropic-ai/claude-agent-sdk" {
-  type SDKRateLimitEvent = { type: 'system'; subtype: 'rate_limit_event'; [key: string]: unknown };
-  type SDKPromptSuggestionMessage = { type: 'system'; subtype: 'prompt_suggestion'; suggestion: string; [key: string]: unknown };
+// claude-agent-sdk-augment.d.ts
+import type {} from '@anthropic-ai/claude-agent-sdk/sdk';
+
+declare module '@anthropic-ai/claude-agent-sdk/sdk' {
+  export interface SDKRateLimitEvent { type: 'unknown_rate_limit_event'; session_id?: string; }
+  export interface SDKPromptSuggestionMessage { type: 'unknown_prompt_suggestion'; session_id?: string; }
 }
 ```
 Or cast messages explicitly: `const msg = message as Exclude<SDKMessage, { type: never }>`.
 
-### #25: unstable_v2 close() breaks session persistence
+### #25: unstable_v2 close() breaks session persistence ✅ Fixed in v0.2.51
 **Error**: Resuming a v2 session after `close()` starts a fresh session with no conversation context ([#177](https://github.com/anthropics/claude-agent-sdk-typescript/issues/177))
-**Cause**: `session.close()` sends `SIGTERM` to the subprocess immediately, before it can flush session data to disk. The v1 `query()` API doesn't have this problem — the subprocess exits naturally after the `AsyncGenerator` completes, giving it time to write session data.
-**Workaround**: Use the v1 `query()` API if session persistence/resumability is required. If using v2, avoid `close()` and prefer `await using` disposal which may allow more graceful shutdown.
+**Cause**: `session.close()` sent `SIGTERM` to the subprocess immediately, before it could flush session data to disk.
+**Status**: Fixed in v0.2.51. Upgrade to v0.2.51+ to resolve. If still on an older version, use the v1 `query()` API as a workaround.
 
-### #26: Slash command output lost since v0.2.45
+### #26: Slash command output lost since v0.2.45 ✅ Fixed
 **Error**: `/context`, `/clear`, and other slash commands no longer emit output in the message stream since v0.2.45 ([#186](https://github.com/anthropics/claude-agent-sdk-typescript/issues/186))
 **Behavior**: Previous behavior (v0.2.5): `system init → user (has output) → result success`. Current behavior (v0.2.45+): `rate_limit_event → system init → result success` (no output). Additionally, `/clear` is missing from `SDKSystemMessage.slash_commands` and returns `"Unknown skill: clear"`.
-**Cause**: Slash command output is no longer surfaced in the message stream.
-**Status**: A fix has been submitted (pending release). Downgrade to v0.2.44 as a temporary workaround.
+**Status**: Fixed (issue closed as completed 2026-02-26, fix merged to main). Upgrade to the next release after v0.2.59 if the issue persists.
 
 ### #27: Cloud MCP servers auto-discovered from claude.ai account with no way to disable
 **Error**: SDK automatically connects to MCP servers from the user's Anthropic cloud account (Figma, Canva, Bright Data, etc.) in every session, with no option to disable ([#190](https://github.com/anthropics/claude-agent-sdk-typescript/issues/190))
@@ -1221,6 +1225,32 @@ hooks: {
 }
 ```
 
+### #30: pathToClaudeCodeExecutable rejects bare command names — must be an absolute path
+**Error**: `Claude Code native binary not found at claude. Please ensure Claude Code is installed via native installer or specify a valid path with options.pathToClaudeCodeExecutable.` ([#205](https://github.com/anthropics/claude-agent-sdk-typescript/issues/205))
+**Cause**: The SDK validates the binary path with `fs.existsSync(path)` before spawning. `existsSync` treats bare names as relative paths (checked against CWD), so `"claude"` fails even when `claude` is on `PATH`.
+**Impact**: Affects integrations like the Zed editor that set `CLAUDE_CODE_EXECUTABLE=claude` portably.
+**Fix**: Use the absolute path to the Claude Code binary:
+```typescript
+import { execFileSync } from 'child_process';
+const claudePath = execFileSync('which', ['claude'], { encoding: 'utf8' }).trim();
+const session = new ClaudeCodeSession({ pathToClaudeCodeExecutable: claudePath });
+```
+
+### #31: "write after end" race condition in single-turn queries with MCP tool calls
+**Error**: `Error: write after end` / `Error: ProcessTransport is not ready for writing` in production ([#148](https://github.com/anthropics/claude-agent-sdk-typescript/issues/148))
+**Cause**: For single-turn (string prompt) queries, the SDK calls `transport.endInput()` on the first `result` message. If async `handleControlRequest()` calls arrive after stdin is ended (e.g., MCP responses), they attempt to write to the ended stream. `handleControlRequest` is not awaited so there is no backpressure.
+**Impact**: Production applications with MCP tools and single-turn queries see sporadic crashes (~77 Sentry errors per two weeks in one report).
+**Workaround**: Catch these specific errors at the application level and treat them as non-fatal:
+```typescript
+process.on('uncaughtException', (err) => {
+  if (err.message === 'write after end' || err.message === 'ProcessTransport is not ready for writing') {
+    return; // non-fatal, query already completed
+  }
+  throw err;
+});
+```
+Or use `AbortController` with the `abortController` option to cancel cleanly before stream end.
+
 ---
 
 ## Changelog Highlights (v0.2.12 → v0.2.59)
@@ -1230,6 +1260,7 @@ hooks: {
 | v0.2.59 | Version bump |
 | v0.2.58 | Version bump |
 | v0.2.57 | `getSessionMessages()` exported — reads transcript messages by session ID; `SessionMessage` type exported |
+| v0.2.51 | Fixed `close()` breaking session persistence in v2 session API ([#177](https://github.com/anthropics/claude-agent-sdk-typescript/issues/177)) |
 | v0.2.43 | Previous release (2026-02-14) |
 | v0.2.33 | `TeammateIdle`/`TaskCompleted` hook events; custom `sessionId` option |
 | v0.2.31 | `stop_reason` field on result messages |

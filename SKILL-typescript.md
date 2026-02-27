@@ -1,6 +1,6 @@
-# Claude Agent SDK — TypeScript Reference (v0.2.59)
+# Claude Agent SDK — TypeScript Reference (v0.2.62)
 
-**Package**: `@anthropic-ai/claude-agent-sdk@0.2.59`
+**Package**: `@anthropic-ai/claude-agent-sdk@0.2.62`
 **Docs**: https://platform.claude.com/docs/en/agent-sdk/overview
 **Repo**: https://github.com/anthropics/claude-agent-sdk-typescript
 **Migration**: Renamed from `@anthropic-ai/claude-code`. See [migration guide](https://platform.claude.com/docs/en/agent-sdk/migration-guide).
@@ -1023,9 +1023,9 @@ for await (const msg of query({ prompt: "...", options: { maxBudgetUsd: 5.00 } }
   if (msg.type === 'result' && msg.subtype === 'success') {
     console.log(`Cost: $${msg.total_cost_usd}`);
     console.log(`Turns: ${msg.num_turns}`);
-    // Per-model token usage
+    // Per-model token usage (ModelUsage fields are camelCase)
     for (const [model, usage] of Object.entries(msg.modelUsage ?? {})) {
-      console.log(`  ${model}: ${usage.input_tokens}in / ${usage.output_tokens}out`);
+      console.log(`  ${model}: ${usage.inputTokens}in / ${usage.outputTokens}out ($${usage.costUSD})`);
     }
   }
 }
@@ -1180,7 +1180,7 @@ delete schema.$schema;
 **Error**: TypeScript reports no type errors on `SDKMessage` values; full type safety is lost ([#181](https://github.com/anthropics/claude-agent-sdk-typescript/issues/181), [#184](https://github.com/anthropics/claude-agent-sdk-typescript/issues/184), [#196](https://github.com/anthropics/claude-agent-sdk-typescript/issues/196))
 **Cause**: Both `SDKRateLimitEvent` and `SDKPromptSuggestionMessage` are referenced in the `SDKMessage` union type in `sdk.d.ts` but are never declared or exported anywhere in the file. A union containing an undefined type resolves to `any` in TypeScript.
 **Impact**: All pattern matching on `SDKMessage` values loses type safety (no compiler errors for wrong field names, etc.).
-**Status**: Fix merged (issue #196 closed as completed 2026-02-26), pending next release. Still present in v0.2.59.
+**Status**: Fix merged (issue #196 closed as completed 2026-02-26) but **NOT yet in the published npm package** — v0.2.62 is still affected. Expect fix in the next release after v0.2.62.
 **Workaround**: Add local ambient declarations until the SDK ships the types:
 ```typescript
 // claude-agent-sdk-augment.d.ts
@@ -1201,7 +1201,7 @@ Or cast messages explicitly: `const msg = message as Exclude<SDKMessage, { type:
 ### #26: Slash command output lost since v0.2.45 ✅ Fixed
 **Error**: `/context`, `/clear`, and other slash commands no longer emit output in the message stream since v0.2.45 ([#186](https://github.com/anthropics/claude-agent-sdk-typescript/issues/186))
 **Behavior**: Previous behavior (v0.2.5): `system init → user (has output) → result success`. Current behavior (v0.2.45+): `rate_limit_event → system init → result success` (no output). Additionally, `/clear` is missing from `SDKSystemMessage.slash_commands` and returns `"Unknown skill: clear"`.
-**Status**: Fixed (issue closed as completed 2026-02-26, fix merged to main). Upgrade to the next release after v0.2.59 if the issue persists.
+**Status**: Fixed (issue closed as completed 2026-02-26, fix merged to main). Upgrade to v0.2.62 or later if the issue persists.
 
 ### #27: Cloud MCP servers auto-discovered from claude.ai account with no way to disable
 **Error**: SDK automatically connects to MCP servers from the user's Anthropic cloud account (Figma, Canva, Bright Data, etc.) in every session, with no option to disable ([#190](https://github.com/anthropics/claude-agent-sdk-typescript/issues/190))
@@ -1253,11 +1253,11 @@ Or use `AbortController` with the `abortController` option to cancel cleanly bef
 
 ---
 
-## Changelog Highlights (v0.2.12 → v0.2.59)
+## Changelog Highlights (v0.2.12 → v0.2.62)
 
 | Version | Change |
 |---------|--------|
-| v0.2.59 | Version bump |
+| v0.2.62 | Version bump |
 | v0.2.58 | Version bump |
 | v0.2.57 | `getSessionMessages()` exported — reads transcript messages by session ID; `SessionMessage` type exported |
 | v0.2.51 | Fixed `close()` breaking session persistence in v2 session API ([#177](https://github.com/anthropics/claude-agent-sdk-typescript/issues/177)) |
@@ -1272,4 +1272,4 @@ Or use `AbortController` with the `abortController` option to cancel cleanly bef
 
 ---
 
-**Last verified**: 2026-02-26 | **SDK version**: 0.2.59
+**Last verified**: 2026-02-27 | **SDK version**: 0.2.62

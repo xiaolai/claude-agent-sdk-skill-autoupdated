@@ -31,7 +31,7 @@
 
 ## Breaking Changes (v0.1.0)
 
-1. **No default system prompt** — SDK uses minimal prompt. Use `system_prompt={"type": "preset", "preset": "claude_code"}` for old behavior.
+1. **No default system prompt** — SDK uses minimal prompt. Use `system_prompt={"type": "preset", "preset": "claude_code"}` for old behavior. Add `"append": "extra text"` to extend the preset.
 2. **No filesystem settings loaded** — `setting_sources` defaults to `None`. Add `setting_sources=["project"]` to load CLAUDE.md.
 3. **`ClaudeCodeOptions` renamed** — Now `ClaudeAgentOptions`.
 
@@ -223,10 +223,38 @@ class SdkMcpTool(Generic[T]):
 |--------|------|---------|-------------|
 | `model` | `str \| None` | `None` | Claude model to use |
 | `cwd` | `str \| Path \| None` | `None` | Working directory |
-| `system_prompt` | `str \| SystemPromptPreset \| None` | `None` | System prompt or preset dict |
+| `system_prompt` | `str \| SystemPromptPreset \| None` | `None` | System prompt or preset dict (see [`SystemPromptPreset`](#systempromptsettings)) |
 | `setting_sources` | `list[SettingSource] \| None` | `None` | `"user" \| "project" \| "local"` |
 | `env` | `dict[str, str]` | `{}` | Environment variables |
 | `cli_path` | `str \| Path \| None` | `None` | Custom path to Claude Code CLI |
+
+#### `SystemPromptPreset` / `ToolsPreset`
+
+```python
+class SystemPromptPreset(TypedDict):
+    type: Literal["preset"]
+    preset: Literal["claude_code"]
+    append: NotRequired[str]     # Optional text appended after the preset
+
+class ToolsPreset(TypedDict):
+    type: Literal["preset"]
+    preset: Literal["claude_code"]  # Enable the full Claude Code toolset
+```
+
+Use these to opt in to the full Claude Code system prompt and/or toolset:
+
+```python
+options = ClaudeAgentOptions(
+    # Full Claude Code system prompt (replaces SDK's minimal default)
+    system_prompt={"type": "preset", "preset": "claude_code"},
+
+    # With extra instructions appended after the preset
+    system_prompt={"type": "preset", "preset": "claude_code", "append": "Always prefer TypeScript."},
+
+    # Enable the full Claude Code toolset preset
+    tools={"type": "preset", "preset": "claude_code"},
+)
+```
 
 ### Tools & Permissions
 
@@ -1468,4 +1496,4 @@ except ProcessError as e:
 
 ---
 
-**Last verified**: 2026-02-26 | **SDK version**: 0.1.44
+**Last verified**: 2026-02-27 | **SDK version**: 0.1.44

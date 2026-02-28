@@ -2,7 +2,7 @@
 name: claude-agent-sdk
 description: |
   Build autonomous AI agents with Claude Agent SDK.
-  TypeScript v0.2.62 | Python v0.1.44.
+  TypeScript v0.2.63 | Python v0.1.44.
   Covers: query(), hooks, subagents, MCP, permissions, sandbox,
   structured outputs, and sessions.
 
@@ -16,7 +16,7 @@ user-invocable: true
 
 | | TypeScript | Python |
 |---|---|---|
-| **Version** | v0.2.62 | v0.1.44 |
+| **Version** | v0.2.63 | v0.1.44 |
 | **Package** | `@anthropic-ai/claude-agent-sdk` | `claude-agent-sdk` (PyPI) |
 | **Docs** | [TypeScript SDK](https://platform.claude.com/docs/en/agent-sdk/typescript) | [Python SDK](https://platform.claude.com/docs/en/agent-sdk/python) |
 | **Repo** | [claude-agent-sdk-typescript](https://github.com/anthropics/claude-agent-sdk-typescript) | [claude-agent-sdk-python](https://github.com/anthropics/claude-agent-sdk-python) |

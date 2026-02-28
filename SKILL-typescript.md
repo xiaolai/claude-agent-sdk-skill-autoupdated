@@ -1,6 +1,6 @@
-# Claude Agent SDK — TypeScript Reference (v0.2.62)
+# Claude Agent SDK — TypeScript Reference (v0.2.63)
 
-**Package**: `@anthropic-ai/claude-agent-sdk@0.2.62`
+**Package**: `@anthropic-ai/claude-agent-sdk@0.2.63`
 **Docs**: https://platform.claude.com/docs/en/agent-sdk/overview
 **Repo**: https://github.com/anthropics/claude-agent-sdk-typescript
 **Migration**: Renamed from `@anthropic-ai/claude-code`. See [migration guide](https://platform.claude.com/docs/en/agent-sdk/migration-guide).
@@ -452,6 +452,8 @@ Hooks use **callback matchers**: an optional regex `matcher` for tool names and 
 | `ConfigChange` | Settings file changed (user/project/local/policy/skills) | Yes | No |
 | `WorktreeCreate` | Git worktree created | Yes | No |
 | `WorktreeRemove` | Git worktree removed | Yes | No |
+| `Elicitation` | MCP server requests user input (form or URL auth) | Yes | No |
+| `ElicitationResult` | MCP elicitation completed (result available) | Yes | No |
 
 ### Hook Callback Signature
 
@@ -578,6 +580,8 @@ Common fields on all hooks: `session_id`, `transcript_path`, `cwd`, `permission_
 | `source` (`'user_settings' \| 'project_settings' \| 'local_settings' \| 'policy_settings' \| 'skills'`), `file_path?` | ConfigChange |
 | `name` | WorktreeCreate (worktree name) |
 | `worktree_path` | WorktreeRemove (path of removed worktree) |
+| `mcp_server_name`, `message`, `mode?`, `url?`, `elicitation_id?`, `requested_schema?` | Elicitation |
+| `mcp_server_name`, `elicitation_id?`, `mode?`, `action`, `content?` | ElicitationResult |
 
 ---
 
@@ -1176,22 +1180,10 @@ delete schema.$schema;
 **Cause**: The release notes describe a new `Query.promptSuggestion()` method to request prompt suggestions based on conversation context, but the published npm package's `sdk.d.ts` does not expose this method.
 **Workaround**: Method is not available in the current package. Monitor future releases for the fix.
 
-### #24: SDKRateLimitEvent and SDKPromptSuggestionMessage undefined cause SDKMessage to resolve to `any`
-**Error**: TypeScript reports no type errors on `SDKMessage` values; full type safety is lost ([#181](https://github.com/anthropics/claude-agent-sdk-typescript/issues/181), [#184](https://github.com/anthropics/claude-agent-sdk-typescript/issues/184), [#196](https://github.com/anthropics/claude-agent-sdk-typescript/issues/196))
-**Cause**: Both `SDKRateLimitEvent` and `SDKPromptSuggestionMessage` are referenced in the `SDKMessage` union type in `sdk.d.ts` but are never declared or exported anywhere in the file. A union containing an undefined type resolves to `any` in TypeScript.
-**Impact**: All pattern matching on `SDKMessage` values loses type safety (no compiler errors for wrong field names, etc.).
-**Status**: Fix merged (issue #196 closed as completed 2026-02-26) but **NOT yet in the published npm package** — v0.2.62 is still affected. Expect fix in the next release after v0.2.62.
-**Workaround**: Add local ambient declarations until the SDK ships the types:
-```typescript
-// claude-agent-sdk-augment.d.ts
-import type {} from '@anthropic-ai/claude-agent-sdk/sdk';
-
-declare module '@anthropic-ai/claude-agent-sdk/sdk' {
-  export interface SDKRateLimitEvent { type: 'unknown_rate_limit_event'; session_id?: string; }
-  export interface SDKPromptSuggestionMessage { type: 'unknown_prompt_suggestion'; session_id?: string; }
-}
-```
-Or cast messages explicitly: `const msg = message as Exclude<SDKMessage, { type: never }>`.
+### #24: SDKRateLimitEvent and SDKPromptSuggestionMessage undefined cause SDKMessage to resolve to `any` ✅ Fixed in v0.2.63
+**Error**: TypeScript reports no type errors on `SDKMessage` values; full type safety is lost ([#181](https://github.com/anthropics/claude-agent-sdk-typescript/issues/181), [#184](https://github.com/anthropics/claude-agent-sdk-typescript/issues/184), [#196](https://github.com/anthropics/claude-agent-sdk-typescript/issues/196), [#206](https://github.com/anthropics/claude-agent-sdk-typescript/issues/206))
+**Cause**: Both `SDKRateLimitEvent` and `SDKPromptSuggestionMessage` were referenced in the `SDKMessage` union type in `sdk.d.ts` but were never declared or exported anywhere in the file. A union containing an undefined type resolves to `any` in TypeScript.
+**Status**: Fixed in v0.2.63. Both `SDKRateLimitEvent` and `SDKPromptSuggestionMessage` are now exported in `sdk.d.ts`. Upgrade to v0.2.63+ to restore full type safety.
 
 ### #25: unstable_v2 close() breaks session persistence ✅ Fixed in v0.2.51
 **Error**: Resuming a v2 session after `close()` starts a fresh session with no conversation context ([#177](https://github.com/anthropics/claude-agent-sdk-typescript/issues/177))
@@ -1201,7 +1193,7 @@ Or cast messages explicitly: `const msg = message as Exclude<SDKMessage, { type:
 ### #26: Slash command output lost since v0.2.45 ✅ Fixed
 **Error**: `/context`, `/clear`, and other slash commands no longer emit output in the message stream since v0.2.45 ([#186](https://github.com/anthropics/claude-agent-sdk-typescript/issues/186))
 **Behavior**: Previous behavior (v0.2.5): `system init → user (has output) → result success`. Current behavior (v0.2.45+): `rate_limit_event → system init → result success` (no output). Additionally, `/clear` is missing from `SDKSystemMessage.slash_commands` and returns `"Unknown skill: clear"`.
-**Status**: Fixed (issue closed as completed 2026-02-26, fix merged to main). Upgrade to v0.2.62 or later if the issue persists.
+**Status**: Fixed (issue closed as completed 2026-02-26, fix merged to main). Upgrade to v0.2.63 or later if the issue persists.
 
 ### #27: Cloud MCP servers auto-discovered from claude.ai account with no way to disable
 **Error**: SDK automatically connects to MCP servers from the user's Anthropic cloud account (Figma, Canva, Bright Data, etc.) in every session, with no option to disable ([#190](https://github.com/anthropics/claude-agent-sdk-typescript/issues/190))
@@ -1251,13 +1243,51 @@ process.on('uncaughtException', (err) => {
 ```
 Or use `AbortController` with the `abortController` option to cancel cleanly before stream end.
 
+### #32: AsyncIterable prompt causes double AI turn per message, doubling token costs
+**Symptom**: When using `query()` with an `AsyncIterable<SDKUserMessage>` prompt, the CLI executes two full AI thinking + response cycles for each message, roughly doubling token usage ([#207](https://github.com/anthropics/claude-agent-sdk-typescript/issues/207))
+**Cause**: For `AsyncIterable` prompts, `isSingleUserTurn` is `false`, so `transport.endInput()` is never called after a result. The CLI sees stdin still open and runs a second agentic turn. The same issue affects `unstable_v2_createSession()` (which hardcodes `isSingleUserTurn = false`).
+**Impact**: Tested on SDK versions v0.1.28 through v0.2.63 — same behaviour on all.
+**Workaround**: Use a fresh one-shot query per message with the `resume` option to preserve conversation history:
+```typescript
+// Instead of a persistent AsyncIterable, spawn a new query() per message:
+let sessionId: string | undefined;
+for (const userMessage of messages) {
+  const q = query({
+    prompt: userMessage,           // string prompt, not AsyncIterable
+    options: { resume: sessionId } // preserves history on 2nd+ message
+  });
+  for await (const msg of q) {
+    if (msg.type === 'system' && msg.subtype === 'init') sessionId = msg.session_id;
+    // handle messages...
+  }
+}
+```
+**Trade-off**: 3–12 second cold start per message (CLI process spawn + session load).
+
+### #33: `env` option completely replaces subprocess environment — PATH required
+**Error**: `Error: Failed to spawn Claude Code process: spawn node ENOENT` when `env` is provided without including `PATH` ([#208](https://github.com/anthropics/claude-agent-sdk-typescript/issues/208))
+**Cause**: The SDK's `env` option replaces the subprocess environment entirely (it does not merge with `process.env`). If `PATH` is omitted, the subprocess cannot find the `node` executable.
+**Fix**: Always spread `process.env` when building a custom env:
+```typescript
+const q = query({
+  prompt: 'hello',
+  options: {
+    env: {
+      ...process.env,                 // inherit PATH and all other vars
+      ANTHROPIC_API_KEY: 'sk-...',
+      ANTHROPIC_BASE_URL: 'https://example.com'
+    }
+  }
+});
+```
+
 ---
 
-## Changelog Highlights (v0.2.12 → v0.2.62)
+## Changelog Highlights (v0.2.12 → v0.2.63)
 
 | Version | Change |
 |---------|--------|
-| v0.2.62 | Version bump |
+| v0.2.63 | Fixed `SDKRateLimitEvent` and `SDKPromptSuggestionMessage` missing from `sdk.d.ts` — `SDKMessage` now has full type safety ([#196](https://github.com/anthropics/claude-agent-sdk-typescript/issues/196), [#206](https://github.com/anthropics/claude-agent-sdk-typescript/issues/206)) |
 | v0.2.58 | Version bump |
 | v0.2.57 | `getSessionMessages()` exported — reads transcript messages by session ID; `SessionMessage` type exported |
 | v0.2.51 | Fixed `close()` breaking session persistence in v2 session API ([#177](https://github.com/anthropics/claude-agent-sdk-typescript/issues/177)) |
@@ -1272,4 +1302,4 @@ Or use `AbortController` with the `abortController` option to cancel cleanly bef
 
 ---
 
-**Last verified**: 2026-02-27 | **SDK version**: 0.2.62
+**Last verified**: 2026-02-28 | **SDK version**: 0.2.63

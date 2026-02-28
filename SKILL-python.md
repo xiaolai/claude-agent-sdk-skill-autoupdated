@@ -400,8 +400,9 @@ The SDK emits 5 message types:
 
 ```python
 from claude_agent_sdk import (
-    UserMessage, AssistantMessage, SystemMessage, ResultMessage, StreamEvent
+    UserMessage, AssistantMessage, SystemMessage, ResultMessage
 )
+from claude_agent_sdk.types import StreamEvent  # not re-exported from main package
 
 Message = UserMessage | AssistantMessage | SystemMessage | ResultMessage | StreamEvent
 ```
@@ -1496,4 +1497,4 @@ except ProcessError as e:
 
 ---
 
-**Last verified**: 2026-02-27 | **SDK version**: 0.1.44
+**Last verified**: 2026-02-28 | **SDK version**: 0.1.44

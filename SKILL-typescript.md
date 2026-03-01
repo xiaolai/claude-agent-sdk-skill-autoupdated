@@ -13,8 +13,8 @@
 - [Core API](#core-api) — `query()`, `tool()`, `createSdkMcpServer()`, `listSessions()`, `getSessionMessages()`
 - [Options](#options) — Core, Tools & Permissions, Models & Output, Sessions, MCP & Agents, Advanced
 - [Query Object Methods](#query-object-methods)
-- [Message Types](#message-types) — All 20 SDKMessage types (2 undefined, see Known Issue #24)
-- [Hooks](#hooks) — 18 hook events, matchers, return values, async hooks
+- [Message Types](#message-types) — All 22 SDKMessage types
+- [Hooks](#hooks) — 20 hook events, matchers, return values, async hooks
 - [Permissions](#permissions) — 6 modes, `canUseTool` callback
 - [MCP Servers](#mcp-servers) — stdio, HTTP, SSE, SDK, claudeai-proxy
 - [Subagents](#subagents) — AgentDefinition, tool enforcement workaround
@@ -228,6 +228,7 @@ for (const msg of messages) {
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
+| `onElicitation` | `OnElicitation` | — | Callback for MCP elicitation requests (form fields, URL auth); auto-declines if not provided |
 | `sandbox` | `SandboxSettings` | — | Sandbox configuration |
 | `hooks` | `Partial<Record<HookEvent, HookCallbackMatcher[]>>` | `{}` | Hook callbacks |
 | `additionalDirectories` | `string[]` | `[]` | Extra directories for Claude to access |
@@ -260,6 +261,7 @@ await q.stopTask(taskId);                   // Stop a running background task by
 
 // Introspection
 await q.supportedModels();                  // List available models
+await q.supportedAgents();                  // List available subagents (AgentInfo[])
 await q.supportedCommands();                // List slash commands
 await q.mcpServerStatus();                  // MCP server status
 await q.accountInfo();                      // Account info
@@ -281,10 +283,12 @@ The `initializationResult()` method returns detailed session initialization data
 ```typescript
 type SDKControlInitializeResponse = {
   commands: SlashCommand[];              // Available skills/slash commands
+  agents: AgentInfo[];                   // Available subagents
   output_style: string;                  // Current output style setting
   available_output_styles: string[];     // All available output style options
   models: ModelInfo[];                   // Available models
   account: AccountInfo;                  // User account information
+  fast_mode_state?: FastModeState;       // 'off' | 'cooldown' | 'on' — rate-limit fast mode status
 };
 
 type SlashCommand = {
@@ -315,7 +319,7 @@ type AccountInfo = {
 
 ## Message Types
 
-The SDK emits 20 message types through the async generator:
+The SDK emits 22 message types through the async generator:
 
 ```typescript
 type SDKMessage =
@@ -332,6 +336,7 @@ type SDKMessage =
   | SDKToolProgressMessage        // type: 'tool_progress' — tool execution progress with elapsed time
   | SDKToolUseSummaryMessage      // type: 'tool_use_summary' — summary of tool usage
   | SDKAuthStatusMessage          // type: 'auth_status' — authentication status
+  | SDKLocalCommandOutputMessage  // type: 'system', subtype: 'local_command_output' — output from slash commands like /cost, /voice
   // Hook messages
   | SDKHookStartedMessage         // type: 'system', subtype: 'hook_started'
   | SDKHookProgressMessage        // type: 'system', subtype: 'hook_progress' — hook stdout/stderr
@@ -341,9 +346,11 @@ type SDKMessage =
   | SDKTaskProgressMessage        // type: 'system', subtype: 'task_progress' — periodic progress updates for running tasks
   | SDKTaskNotificationMessage    // type: 'system', subtype: 'task_notification' — background task events
   | SDKFilesPersistedEvent        // type: 'system', subtype: 'files_persisted'
-  // Undefined types (cause SDKMessage → any, see Known Issue #24)
-  | SDKRateLimitEvent             // referenced in union but not exported in sdk.d.ts
-  | SDKPromptSuggestionMessage    // referenced in union but not exported in sdk.d.ts
+  // MCP Elicitation
+  | SDKElicitationCompleteMessage // type: 'system', subtype: 'elicitation_complete' — MCP elicitation finished
+  // Rate limiting & suggestions
+  | SDKRateLimitEvent             // type: 'rate_limit_event' — rate limit status for claude.ai subscriptions
+  | SDKPromptSuggestionMessage    // type: 'prompt_suggestion' — predicted next user prompt (requires promptSuggestions: true)
 ```
 
 ### SDKResultMessage
@@ -352,12 +359,14 @@ type SDKMessage =
 // Success
 { type: 'result', subtype: 'success', session_id, duration_ms, duration_api_ms,
   is_error: false, num_turns, result: string, total_cost_usd,
-  usage, modelUsage, permission_denials, structured_output?, stop_reason? }
+  usage, modelUsage, permission_denials, structured_output?, stop_reason?,
+  fast_mode_state?: FastModeState }
 
 // Error variants
 { type: 'result', subtype: 'error_max_turns' | 'error_during_execution'
   | 'error_max_budget_usd' | 'error_max_structured_output_retries',
-  session_id, is_error: true, errors: string[], ... }
+  session_id, is_error: true, errors: string[], ...,
+  fast_mode_state?: FastModeState }
 
 // Error codes (SDKAssistantMessageError)
 'authentication_failed' | 'billing_error' | 'rate_limit' |
@@ -374,7 +383,8 @@ type SDKMessage =
   betas?: string[],               // Active beta features
   claude_code_version: string,    // CLI version (e.g., "2.1.41")
   skills: string[],               // Loaded skills
-  plugins: { name: string; path: string }[]  // Active plugins
+  plugins: { name: string; path: string }[],  // Active plugins
+  fast_mode_state?: FastModeState             // 'off' | 'cooldown' | 'on'
 }
 ```
 
@@ -402,6 +412,8 @@ for await (const message of query({ prompt: "...", options })) {
       if (message.subtype === 'init') sessionId = message.session_id;
       if (message.subtype === 'status') console.log('Status:', message.status, message.permissionMode);  // permissionMode?: PermissionMode
       if (message.subtype === 'hook_progress') console.log('Hook:', message.output);  // also: .stdout, .stderr, .hook_name, .hook_event
+      if (message.subtype === 'local_command_output') console.log('Slash cmd output:', message.content);
+      if (message.subtype === 'elicitation_complete') console.log('Elicitation done:', message.mcp_server_name, message.elicitation_id);
       if (message.subtype === 'task_started') console.log('Task started:', message.task_id, message.description, message.task_type);  // task_type?: string
       if (message.subtype === 'task_progress') console.log('Task progress:', message.task_id, message.description, message.last_tool_name, message.usage);  // usage: {total_tokens, tool_uses, duration_ms}; last_tool_name?: string; tool_use_id?: string
       if (message.subtype === 'task_notification') console.log('Task done:', message.task_id, message.status, message.tool_use_id, message.output_file, message.summary);  // output_file: string, summary: string, usage?: {total_tokens, tool_uses, duration_ms}
@@ -533,7 +545,7 @@ return {
   }
 };
 
-// Decision-based response
+// Decision-based response (reason is a top-level field, not nested)
 return { decision: 'approve', reason: 'Looks safe' };   // or 'block'
 
 // Stop agent
@@ -1302,4 +1314,4 @@ const q = query({
 
 ---
 
-**Last verified**: 2026-02-28 | **SDK version**: 0.2.63
+**Last verified**: 2026-03-01 | **SDK version**: 0.2.63

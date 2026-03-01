@@ -336,7 +336,31 @@
       }
     },
     "lastScannedIssueNumber": 194,
-    "lastAuditedVersion": "0.2.63"
+    "lastAuditedVersion": "0.2.63",
+    "lastAuditSummary": {
+      "date": "2026-03-01",
+      "sdkVersion": "0.2.63",
+      "newOptionsAdded": 1,
+      "newMethodsAdded": 1,
+      "newMessageTypesAdded": 2,
+      "updatedEntries": 6,
+      "noChanges": false,
+      "details": [
+        "Added onElicitation option to Advanced Options table",
+        "Added supportedAgents() to Query Object Methods",
+        "Added SDKLocalCommandOutputMessage to SDKMessage union (was missing)",
+        "Added SDKElicitationCompleteMessage to SDKMessage union (was missing)",
+        "Fixed SDKMessage union count: 20 → 22, removed stale 'not exported' comments for SDKRateLimitEvent/SDKPromptSuggestionMessage",
+        "Updated TOC: '20 types (2 undefined)' → '22 types', '18 hook events' → '20 hook events'",
+        "Added agents and fast_mode_state to SDKControlInitializeResponse",
+        "Added fast_mode_state to SDKSystemMessage and SDKResultMessage docs",
+        "Added local_command_output and elicitation_complete to Streaming Pattern example",
+        "Clarified reason? as top-level field in hook return values"
+      ],
+      "githubIssuesResearched": 0,
+      "githubIssuesSkipped": 0,
+      "note": "GitHub auth unavailable — Part B skipped this run"
+    }
   },
   "python": {
     "registry": {
@@ -623,7 +647,33 @@
     },
     "trackedIssuesExternal": {},
     "lastScannedIssueNumber": 604,
-    "lastAuditedVersion": "0.1.39"
+    "lastAuditedVersion": "0.1.44",
+    "lastAuditSummary": {
+      "date": "2026-03-01",
+      "sdkVersion": "0.1.44",
+      "newOptionsAdded": 0,
+      "newMethodsAdded": 0,
+      "newMessageTypesAdded": 0,
+      "newHookEventsAdded": 0,
+      "updatedEntries": 1,
+      "noChanges": false,
+      "details": [
+        "Updated 'Last verified' footer date from 2026-02-28 to 2026-03-01",
+        "Full audit: all 37 ClaudeAgentOptions fields match installed SDK",
+        "Full audit: all 12 ClaudeSDKClient methods match installed SDK",
+        "Full audit: all 10 hook events and 10 hook input types match",
+        "Full audit: all 5 message types (UserMessage, AssistantMessage, SystemMessage, ResultMessage, StreamEvent) match",
+        "Full audit: all exported types in __init__.__all__ are documented",
+        "Full audit: all 13 Python templates pass import validation",
+        "KI #15 fix (rate_limit_event) already documented as fixed in v0.1.44",
+        "MessageParseError now returns None for unknown types (forward-compatible) — already documented"
+      ],
+      "githubIssuesResearched": 0,
+      "githubIssuesSkipped": 0,
+      "note": "GitHub auth unavailable — Part B skipped this run",
+      "templateFilesAudited": 13,
+      "templateFixesApplied": 0
+    }
   },
-  "lastUpdated": "2026-02-28T08:01:39Z"
+  "lastUpdated": "2026-03-01T00:00:00Z"
 }

@@ -15,7 +15,7 @@
 - [Query Object Methods](#query-object-methods)
 - [Message Types](#message-types) — All 22 SDKMessage types
 - [Hooks](#hooks) — 20 hook events, matchers, return values, async hooks
-- [Permissions](#permissions) — 6 modes, `canUseTool` callback
+- [Permissions](#permissions) — 5 modes, `canUseTool` callback
 - [MCP Servers](#mcp-servers) — stdio, HTTP, SSE, SDK, claudeai-proxy
 - [Subagents](#subagents) — AgentDefinition, tool enforcement workaround
 - [Structured Outputs](#structured-outputs)

@@ -1,7 +1,7 @@
 {
   "typescript": {
     "registry": {
-      "version": "0.2.63",
+      "version": "0.2.66",
       "peerDependencies": {
         "zod": "^4.0.0"
       },
@@ -336,29 +336,11 @@
       }
     },
     "lastScannedIssueNumber": 194,
-    "lastAuditedVersion": "0.2.63",
-    "lastAuditSummary": {
-      "date": "2026-03-02",
-      "sdkVersion": "0.2.63",
-      "newOptionsAdded": 0,
-      "newMethodsAdded": 0,
-      "newMessageTypesAdded": 0,
-      "newHookEventsAdded": 0,
-      "updatedEntries": 1,
-      "noChanges": false,
-      "details": [
-        "Part A skipped: SDK version 0.2.63 matches lastAuditedVersion",
-        "Part B skipped: GitHub auth unavailable",
-        "Part C: Fixed ToC 'Permissions — 6 modes' → '5 modes' (SDK PermissionMode has exactly 5 values)"
-      ],
-      "githubIssuesResearched": 0,
-      "githubIssuesSkipped": 0,
-      "note": "GitHub auth unavailable — Part B skipped this run"
-    }
+    "lastAuditedVersion": "0.2.66"
   },
   "python": {
     "registry": {
-      "version": "0.1.44"
+      "version": "0.1.45"
     },
     "github": {
       "repo": "anthropics/claude-agent-sdk-python",
@@ -641,30 +623,7 @@
     },
     "trackedIssuesExternal": {},
     "lastScannedIssueNumber": 604,
-    "lastAuditedVersion": "0.1.44",
-    "lastAuditSummary": {
-      "date": "2026-03-02",
-      "sdkVersion": "0.1.44",
-      "newOptionsAdded": 0,
-      "newMethodsAdded": 0,
-      "newMessageTypesAdded": 0,
-      "newHookEventsAdded": 0,
-      "updatedEntries": 1,
-      "noChanges": false,
-      "details": [
-        "Part A skipped: SDK version 0.1.44 matches lastAuditedVersion",
-        "Part B skipped: GitHub auth unavailable",
-        "Part C: Updated 'Last verified' footer date from 2026-03-01 to 2026-03-02",
-        "Part C: Updated README.md auto-updated date to 2026-03-02",
-        "Part C: Verified Known Issues #1-#17 sequential, no duplicates",
-        "Part C: Verified PermissionMode 4 values match installed SDK",
-        "Part C: Verified 10 hook events match installed SDK",
-        "Part C: All version references consistent at v0.1.44"
-      ],
-      "githubIssuesResearched": 0,
-      "githubIssuesSkipped": 0,
-      "note": "GitHub auth unavailable — Part B skipped this run"
-    }
+    "lastAuditedVersion": "0.1.44"
   },
-  "lastUpdated": "2026-03-02T00:00:00Z"
+  "lastUpdated": "2026-03-04T08:05:18Z"
 }

@@ -1,6 +1,6 @@
-# Claude Agent SDK — TypeScript Reference (v0.2.63)
+# Claude Agent SDK — TypeScript Reference (v0.2.70)
 
-**Package**: `@anthropic-ai/claude-agent-sdk@0.2.63`
+**Package**: `@anthropic-ai/claude-agent-sdk@0.2.70`
 **Docs**: https://platform.claude.com/docs/en/agent-sdk/overview
 **Repo**: https://github.com/anthropics/claude-agent-sdk-typescript
 **Migration**: Renamed from `@anthropic-ai/claude-code`. See [migration guide](https://platform.claude.com/docs/en/agent-sdk/migration-guide).
@@ -14,7 +14,7 @@
 - [Options](#options) — Core, Tools & Permissions, Models & Output, Sessions, MCP & Agents, Advanced
 - [Query Object Methods](#query-object-methods)
 - [Message Types](#message-types) — All 22 SDKMessage types
-- [Hooks](#hooks) — 20 hook events, matchers, return values, async hooks
+- [Hooks](#hooks) — 21 hook events, matchers, return values, async hooks
 - [Permissions](#permissions) — 5 modes, `canUseTool` callback
 - [MCP Servers](#mcp-servers) — stdio, HTTP, SSE, SDK, claudeai-proxy
 - [Subagents](#subagents) — AgentDefinition, tool enforcement workaround
@@ -101,8 +101,9 @@ Lists saved session metadata from `~/.claude/projects/`. Useful for building ses
 import { listSessions } from "@anthropic-ai/claude-agent-sdk";
 
 function listSessions(options?: {
-  dir?: string;   // Project directory — filters to sessions for that dir (and its worktrees)
-  limit?: number; // Max sessions to return
+  dir?: string;             // Project directory — filters to sessions for that dir (and its worktrees)
+  limit?: number;           // Max sessions to return
+  includeWorktrees?: boolean; // When dir is inside a git repo, include sessions from all worktree paths (default: true)
 }): Promise<SDKSessionInfo[]>
 
 type SDKSessionInfo = {
@@ -231,6 +232,8 @@ for (const msg of messages) {
 | `onElicitation` | `OnElicitation` | — | Callback for MCP elicitation requests (form fields, URL auth); auto-declines if not provided |
 | `sandbox` | `SandboxSettings` | — | Sandbox configuration |
 | `hooks` | `Partial<Record<HookEvent, HookCallbackMatcher[]>>` | `{}` | Hook callbacks |
+| `settings` | `string \| Settings` | — | Additional settings to apply (path to JSON file or inline object). Loaded into the highest-priority "flag settings" layer. Equivalent to `--settings` CLI flag. |
+| `toolConfig` | `ToolConfig` | — | Per-tool configuration for built-in tools (e.g., `{ askUserQuestion: { previewFormat: 'html' } }`) |
 | `additionalDirectories` | `string[]` | `[]` | Extra directories for Claude to access |
 | `debug` | `boolean` | — | Enable debug logging (v0.2.30) |
 | `debugFile` | `string` | — | Debug log file path (v0.2.30) |
@@ -304,6 +307,7 @@ type ModelInfo = {
   supportsEffort?: boolean;                              // Whether this model supports effort levels
   supportedEffortLevels?: ('low' | 'medium' | 'high' | 'max')[];  // Available effort levels
   supportsAdaptiveThinking?: boolean;                   // Whether this model supports adaptive thinking
+  supportsFastMode?: boolean;                           // Whether this model supports fast mode (rate-limit speed optimization)
 };
 
 type AccountInfo = {
@@ -466,6 +470,7 @@ Hooks use **callback matchers**: an optional regex `matcher` for tool names and 
 | `WorktreeRemove` | Git worktree removed | Yes | No |
 | `Elicitation` | MCP server requests user input (form or URL auth) | Yes | No |
 | `ElicitationResult` | MCP elicitation completed (result available) | Yes | No |
+| `InstructionsLoaded` | CLAUDE.md / instructions file loaded into context | Yes | No |
 
 ### Hook Callback Signature
 
@@ -594,6 +599,7 @@ Common fields on all hooks: `session_id`, `transcript_path`, `cwd`, `permission_
 | `worktree_path` | WorktreeRemove (path of removed worktree) |
 | `mcp_server_name`, `message`, `mode?`, `url?`, `elicitation_id?`, `requested_schema?` | Elicitation |
 | `mcp_server_name`, `elicitation_id?`, `mode?`, `action`, `content?` | ElicitationResult |
+| `file_path`, `memory_type` (`'User' \| 'Project' \| 'Local' \| 'Managed'`), `load_reason` (`'session_start' \| 'nested_traversal' \| 'path_glob_match' \| 'include'`), `globs?`, `trigger_file_path?`, `parent_file_path?` | InstructionsLoaded |
 
 ---
 
@@ -858,6 +864,7 @@ type SandboxSettings = {
   };
   ignoreViolations?: Record<string, string[]>;  // Generic violation categories
   enableWeakerNestedSandbox?: boolean;
+  enableWeakerNetworkIsolation?: boolean;
   ripgrep?: { command: string; args?: string[] };  // Custom ripgrep binary
 };
 ```
@@ -919,10 +926,10 @@ import {
 
 ```typescript
 // Using 'await using' for automatic cleanup (TC39 Explicit Resource Management)
+// Note: V2 does NOT support 'bypassPermissions' — use query() instead (see Known Issue #21)
 await using session = unstable_v2_createSession({
   model: 'claude-sonnet-4-5-20250929',
-  permissionMode: 'bypassPermissions',
-  allowDangerouslySkipPermissions: true
+  permissionMode: 'acceptEdits',
 });
 
 // Send a message
@@ -1295,7 +1302,7 @@ const q = query({
 
 ---
 
-## Changelog Highlights (v0.2.12 → v0.2.63)
+## Changelog Highlights (v0.2.12 → v0.2.70)
 
 | Version | Change |
 |---------|--------|
@@ -1314,4 +1321,4 @@ const q = query({
 
 ---
 
-**Last verified**: 2026-03-01 | **SDK version**: 0.2.63
+**Last verified**: 2026-03-06 | **SDK version**: 0.2.70

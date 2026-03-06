@@ -1,6 +1,6 @@
-# Claude Agent SDK — Python Reference (v0.1.44)
+# Claude Agent SDK — Python Reference (v0.1.47)
 
-**Package**: `claude-agent-sdk==0.1.44` (PyPI)
+**Package**: `claude-agent-sdk==0.1.47` (PyPI)
 **Docs**: https://platform.claude.com/docs/en/agent-sdk/python
 **Repo**: https://github.com/anthropics/claude-agent-sdk-python
 **Requires**: Python 3.10+
@@ -1230,6 +1230,52 @@ async with ClaudeSDKClient(
     await client.rewind_files(user_message_id)
 ```
 
+### Listing & Reading Sessions
+
+Use `list_sessions()` and `get_session_messages()` to browse historical session metadata and read transcripts without running a new query. Both functions are synchronous and read directly from `~/.claude/projects/`.
+
+```python
+from claude_agent_sdk import list_sessions, get_session_messages, SDKSessionInfo, SessionMessage
+
+# List sessions for a specific project directory
+sessions: list[SDKSessionInfo] = list_sessions(
+    directory="/path/to/project",  # omit to list all projects
+    limit=20,                      # optional cap
+    include_worktrees=True,        # include git worktree paths (default True)
+)
+
+for s in sessions:
+    print(s.session_id, s.summary, s.last_modified)
+    # SDKSessionInfo fields:
+    # .session_id     str           — UUID
+    # .summary        str           — auto title, custom title, or first prompt
+    # .last_modified  int           — milliseconds since epoch
+    # .file_size      int           — bytes
+    # .custom_title   str | None    — user-set via /rename
+    # .first_prompt   str | None    — first meaningful user prompt
+    # .git_branch     str | None    — git branch at end of session
+    # .cwd            str | None    — working directory
+
+# Read all messages from a session transcript
+messages: list[SessionMessage] = get_session_messages(
+    session_id="550e8400-e29b-41d4-a716-446655440000",
+    directory="/path/to/project",  # optional; searches all projects if omitted
+    limit=50,                      # optional pagination
+    offset=0,                      # skip N messages from start
+)
+
+for msg in messages:
+    print(msg.type, msg.message)
+    # SessionMessage fields:
+    # .type              "user" | "assistant"
+    # .uuid              str     — unique message identifier
+    # .session_id        str     — session this message belongs to
+    # .message           Any     — raw Anthropic API message dict (role, content)
+    # .parent_tool_use_id  None  — always None (tool-use sidechain messages filtered out)
+```
+
+> **Note**: `list_sessions()` uses only `stat` + head/tail reads — no full JSONL parsing — so it is fast even for large session files.
+
 ---
 
 ## Debugging & Error Handling
@@ -1497,4 +1543,4 @@ except ProcessError as e:
 
 ---
 
-**Last verified**: 2026-03-02 | **SDK version**: 0.1.44
+**Last verified**: 2026-03-06 | **SDK version**: 0.1.47

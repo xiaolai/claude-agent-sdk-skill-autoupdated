@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-03-06
+
+- SDK TS v0.2.69 → v0.2.70, Python v0.1.46 → v0.1.47; verify passed (28/28 checks, no mending)
+- No new known issues added; typecheck step had a false-positive script error (not a template bug)
+- [Full report](reports/2026-03-06.md)
+
 ## 2026-02-18
 
 - SDK TS v0.2.44 → v0.2.45; verify passed after 2 mending runs (attempt 3 of 3)

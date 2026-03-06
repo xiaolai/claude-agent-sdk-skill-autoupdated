@@ -1,13 +1,13 @@
 ---
 paths: "**/*agent*.py"
-description: Auto-corrections for Claude Agent SDK (Python) v0.1.44
+description: Auto-corrections for Claude Agent SDK (Python) v0.1.47
 ---
 
 # Claude Agent SDK Rules (Python)
 
 ## Package
 - Package: `claude-agent-sdk` (PyPI, NOT `anthropic-sdk-python`)
-- Latest: v0.1.44
+- Latest: v0.1.47
 
 ## Common Mistakes
 
@@ -156,3 +156,22 @@ import os
 os.environ["CLAUDE_CODE_STREAM_CLOSE_TIMEOUT"] = "10000"  # milliseconds
 ```
 **Why**: `Query.close()` has no timeout on task group cleanup. If subprocess is killed or tasks don't respond to cancellation, `anyio._deliver_cancellation()` spins at 100% CPU forever. Issue [#378](https://github.com/anthropics/claude-agent-sdk-python/issues/378).
+
+### Use dict-key access on TypedDict types, not attribute access
+
+```python
+# WRONG — attribute access fails at runtime; TypedDicts are plain dicts
+config = ThinkingConfigEnabled(type="enabled", budget_tokens=20000)
+config.budget_tokens  # AttributeError: 'dict' object has no attribute 'budget_tokens'
+
+output = SyncHookJSONOutput(continue_=True)
+output.continue_  # AttributeError at runtime
+
+# CORRECT — use dict key access
+config = ThinkingConfigEnabled(type="enabled", budget_tokens=20000)
+config["budget_tokens"]  # ✅
+
+output = SyncHookJSONOutput(continue_=True)
+output["continue_"]  # ✅
+```
+**Why**: `TypedDict` classes (e.g., `ThinkingConfig*`, `SyncHookJSONOutput`, `AsyncHookJSONOutput`, `HookSpecificOutput` variants, `McpStdioServerConfig`, `McpSSEServerConfig`, `McpHttpServerConfig`, `SandboxSettings`) are plain `dict` at runtime. Attribute access like `.budget_tokens` raises `AttributeError`. Only `@dataclass` types (e.g., `AgentDefinition`, `HookMatcher`, `TextBlock`, `ResultMessage`) support dot-notation. Issue [#623](https://github.com/anthropics/claude-agent-sdk-python/issues/623).

@@ -1,6 +1,6 @@
-# Claude Agent SDK — TypeScript Reference (v0.2.70)
+# Claude Agent SDK — TypeScript Reference (v0.2.71)
 
-**Package**: `@anthropic-ai/claude-agent-sdk@0.2.70`
+**Package**: `@anthropic-ai/claude-agent-sdk@0.2.71`
 **Docs**: https://platform.claude.com/docs/en/agent-sdk/overview
 **Repo**: https://github.com/anthropics/claude-agent-sdk-typescript
 **Migration**: Renamed from `@anthropic-ai/claude-code`. See [migration guide](https://platform.claude.com/docs/en/agent-sdk/migration-guide).
@@ -1300,9 +1300,34 @@ const q = query({
 });
 ```
 
+### #34: SDK v0.2.68+ silently injects `effort: "medium"` for all effort-capable models
+**Error**: Multi-turn agentic workflows complete in a single turn with no tool use; AWS Bedrock users see `"output_config.effort: Extra inputs are not permitted"` for non-effort-capable models ([#214](https://github.com/anthropics/claude-agent-sdk-typescript/issues/214))
+**Cause**: SDK v0.2.68 introduced a feature flag (`tengu_turtle_carbon`) that injects `output_config: { effort: "medium" }` into all requests for effort-capable models (Sonnet 4.6, Opus 4.6), even when no effort level is specified. A separate bug causes Bedrock ARN-format model IDs (e.g., `arn:aws:bedrock:us-east-1::foundation-model/...`) to incorrectly pass the effort-capable check, injecting an unsupported parameter.
+**Impact**: Models given forced `medium` effort often skip tool use and return minimal single-turn responses. On Bedrock, Haiku 4.5 and Sonnet 4.5 inference profiles receive hard API validation errors on every call.
+**Fix**: Explicitly set `effort: 'high'` to override the injected default:
+```typescript
+const q = query({ prompt, options: { effort: 'high' } });
+```
+Or set the environment variable before spawning: `CLAUDE_CODE_EFFORT_LEVEL=high`.
+**Bedrock workaround**: Downgrade to v0.2.66 until the `supportsEffort` check correctly handles ARN-format model IDs.
+
+### #35: `sdk-tools.d.ts` subpath unresolvable since v0.2.69 — missing from package exports map
+**Error**: TypeScript cannot resolve `"@anthropic-ai/claude-agent-sdk/sdk-tools"` in projects using `moduleResolution: bundler`, `node16`, or `nodenext` ([#218](https://github.com/anthropics/claude-agent-sdk-typescript/issues/218))
+**Cause**: SDK v0.2.69 added a package.json `exports` field but omitted `"./sdk-tools"`. In strict ESM environments the exports map is authoritative, so the physical `sdk-tools.d.ts` file (which contains input schemas for all built-in tools: `BashInput`, `GlobInput`, `GrepInput`, etc.) is inaccessible via the subpath import.
+**Workaround**: Switch to `moduleResolution: node10` (legacy), which ignores the exports map and resolves directly from the file system. Alternatively, reference the types via a relative import from `node_modules` (non-portable):
+```typescript
+// Instead of (broken in bundler/node16/nodenext moduleResolution):
+import type { GlobInput } from "@anthropic-ai/claude-agent-sdk/sdk-tools";
+
+// Use legacy module resolution in tsconfig.json:
+// "moduleResolution": "node10"
+// Then the subpath import works again.
+```
+**Note**: This subpath is only needed when implementing custom MCP tool validators or SDK MCP servers that inspect built-in tool input schemas.
+
 ---
 
-## Changelog Highlights (v0.2.12 → v0.2.70)
+## Changelog Highlights (v0.2.12 → v0.2.71)
 
 | Version | Change |
 |---------|--------|
@@ -1321,4 +1346,4 @@ const q = query({
 
 ---
 
-**Last verified**: 2026-03-06 | **SDK version**: 0.2.70
+**Last verified**: 2026-03-07 | **SDK version**: 0.2.71

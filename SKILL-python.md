@@ -1,6 +1,6 @@
-# Claude Agent SDK — Python Reference (v0.1.47)
+# Claude Agent SDK — Python Reference (v0.1.48)
 
-**Package**: `claude-agent-sdk==0.1.47` (PyPI)
+**Package**: `claude-agent-sdk==0.1.48` (PyPI)
 **Docs**: https://platform.claude.com/docs/en/agent-sdk/python
 **Repo**: https://github.com/anthropics/claude-agent-sdk-python
 **Requires**: Python 3.10+
@@ -14,7 +14,7 @@
 - [Core API](#core-api) — `query()`, `ClaudeSDKClient`, `@tool`, `create_sdk_mcp_server()`
 - [Options](#options) — Core, Tools & Permissions, Models & Output, Sessions, MCP & Agents, Advanced
 - [Client Methods](#client-methods) — `ClaudeSDKClient` lifecycle and control
-- [Message Types](#message-types) — `Message` union, content blocks, errors
+- [Message Types](#message-types) — `Message` union, task messages, content blocks, errors
 - [Hooks](#hooks) — 10 hook events, matchers, return values, async hooks
 - [Permissions](#permissions) — 4 modes, `can_use_tool` callback
 - [MCP Servers](#mcp-servers) — stdio, HTTP, SSE, SDK in-process
@@ -104,8 +104,11 @@ class ClaudeSDKClient:
     async def rewind_files(self, user_message_id: str) -> None: ...
     async def set_permission_mode(self, mode: str) -> None: ...
     async def set_model(self, model: str | None = None) -> None: ...
-    async def get_mcp_status(self) -> dict[str, Any]: ...
+    async def get_mcp_status(self) -> McpStatusResponse: ...
     async def get_server_info(self) -> dict[str, Any] | None: ...
+    async def reconnect_mcp_server(self, server_name: str) -> None: ...
+    async def toggle_mcp_server(self, server_name: str, enabled: bool) -> None: ...
+    async def stop_task(self, task_id: str) -> None: ...
     async def disconnect(self) -> None: ...
 ```
 
@@ -347,8 +350,11 @@ await client.interrupt()                            # Interrupt current executio
 await client.rewind_files(user_message_id)          # Rewind files to checkpoint
 await client.set_permission_mode(mode)              # Change permission mode mid-conversation
 await client.set_model(model)                       # Switch AI model mid-conversation
-status = await client.get_mcp_status()              # Get MCP server connection status
+status = await client.get_mcp_status()              # Get MCP server connection status (returns McpStatusResponse)
 info = await client.get_server_info()               # Get server initialization info
+await client.reconnect_mcp_server(server_name)      # Reconnect a failed or disconnected MCP server
+await client.toggle_mcp_server(server_name, True)   # Enable (True) or disable (False) an MCP server
+await client.stop_task(task_id)                     # Stop a running Task; emits task_notification with status 'stopped'
 ```
 
 ### Iteration methods
@@ -452,6 +458,7 @@ Key subtypes:
 - `init` — session initialization (contains `session_id`, `model`, `tools`, `cwd`, `mcp_servers`)
 - `status` — status updates (e.g., `"compacting"`)
 - `hook_started` / `hook_progress` / `hook_response` — hook lifecycle
+- `task_started` / `task_progress` / `task_notification` — task lifecycle (use typed subclasses below)
 
 ### `ResultMessage`
 
@@ -464,6 +471,7 @@ class ResultMessage:
     is_error: bool
     num_turns: int
     session_id: str
+    stop_reason: str | None = None           # Raw stop reason from Anthropic API
     total_cost_usd: float | None = None
     usage: dict[str, Any] | None = None
     result: str | None = None
@@ -488,6 +496,70 @@ class StreamEvent:
     session_id: str
     event: dict[str, Any]                    # Raw Anthropic API stream event
     parent_tool_use_id: str | None = None
+```
+
+### Task Messages (SystemMessage subclasses)
+
+Three typed subclasses of `SystemMessage` are emitted for task lifecycle events. All inherit `subtype` and `data` from `SystemMessage`, so existing `isinstance(msg, SystemMessage)` checks continue to match.
+
+```python
+from claude_agent_sdk import (
+    TaskStartedMessage, TaskProgressMessage, TaskNotificationMessage,
+    TaskUsage, TaskNotificationStatus
+)
+
+class TaskUsage(TypedDict):
+    total_tokens: int
+    tool_uses: int
+    duration_ms: int
+
+TaskNotificationStatus = Literal["completed", "failed", "stopped"]
+
+@dataclass
+class TaskStartedMessage(SystemMessage):       # subtype == "task_started"
+    task_id: str
+    description: str
+    uuid: str
+    session_id: str
+    tool_use_id: str | None = None
+    task_type: str | None = None
+
+@dataclass
+class TaskProgressMessage(SystemMessage):      # subtype == "task_progress"
+    task_id: str
+    description: str
+    usage: TaskUsage
+    uuid: str
+    session_id: str
+    tool_use_id: str | None = None
+    last_tool_name: str | None = None
+
+@dataclass
+class TaskNotificationMessage(SystemMessage):  # subtype == "task_notification"
+    task_id: str
+    status: TaskNotificationStatus             # "completed" | "failed" | "stopped"
+    output_file: str
+    summary: str
+    uuid: str
+    session_id: str
+    tool_use_id: str | None = None
+    usage: TaskUsage | None = None
+```
+
+**Usage**: Use `isinstance` to distinguish task messages from generic `SystemMessage`:
+
+```python
+from claude_agent_sdk import (
+    SystemMessage, TaskStartedMessage, TaskProgressMessage, TaskNotificationMessage
+)
+
+async for msg in query(prompt="...", options=options):
+    if isinstance(msg, TaskNotificationMessage):
+        print(f"Task {msg.task_id} {msg.status}: {msg.summary}")
+    elif isinstance(msg, TaskProgressMessage):
+        print(f"Task progress: {msg.description}, tokens={msg.usage['total_tokens']}")
+    elif isinstance(msg, SystemMessage):
+        print(f"System: {msg.subtype}")
 ```
 
 ### Content Block Types
@@ -1536,6 +1608,7 @@ except ProcessError as e:
 
 | Version | Change |
 |---------|--------|
+| v0.1.48 | Added `reconnect_mcp_server()`, `toggle_mcp_server()`, `stop_task()` to `ClaudeSDKClient`; added typed task message classes `TaskStartedMessage`, `TaskProgressMessage`, `TaskNotificationMessage`; added `ResultMessage.stop_reason` field |
 | v0.1.44 | Fixed `rate_limit_event` crash in message parser — unknown CLI message types now skipped gracefully; bundled CLI updated to v2.1.59 |
 | v0.1.36 | Added `thinking` (`ThinkingConfig` types: adaptive/enabled/disabled) and `effort` options; deprecated `max_thinking_tokens` |
 | v0.1.35 | Sub-agent registration via `@filepath` syntax fixed; agents now reliably registered |
@@ -1543,4 +1616,4 @@ except ProcessError as e:
 
 ---
 
-**Last verified**: 2026-03-06 | **SDK version**: 0.1.47
+**Last verified**: 2026-03-07 | **SDK version**: 0.1.48

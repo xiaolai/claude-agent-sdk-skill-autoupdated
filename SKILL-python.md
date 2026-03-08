@@ -670,18 +670,20 @@ async def my_hook(
 
 # HookInput is a union of all event-specific input types:
 HookInput = (
-    PreToolUseHookInput        # + tool_name, tool_input, tool_use_id
-    | PostToolUseHookInput     # + tool_name, tool_input, tool_use_id, tool_response
-    | PostToolUseFailureHookInput  # + tool_name, tool_input, tool_use_id, error, is_interrupt
+    PreToolUseHookInput        # + tool_name, tool_input, tool_use_id; agent_id/agent_type (opt, subagent context)
+    | PostToolUseHookInput     # + tool_name, tool_input, tool_use_id, tool_response; agent_id/agent_type (opt)
+    | PostToolUseFailureHookInput  # + tool_name, tool_input, tool_use_id, error, is_interrupt; agent_id/agent_type (opt)
     | UserPromptSubmitHookInput    # + prompt
     | StopHookInput            # + stop_hook_active
     | SubagentStopHookInput    # + stop_hook_active, agent_id, agent_transcript_path, agent_type
     | PreCompactHookInput      # + trigger ("manual"|"auto"), custom_instructions
     | NotificationHookInput    # + message, title (optional), notification_type
     | SubagentStartHookInput   # + agent_id, agent_type
-    | PermissionRequestHookInput  # + tool_name, tool_input, permission_suggestions
+    | PermissionRequestHookInput  # + tool_name, tool_input, permission_suggestions; agent_id/agent_type (opt)
 )
 ```
+
+> **Subagent attribution in tool-lifecycle hooks**: `agent_id` and `agent_type` are optional on `PreToolUse`, `PostToolUse`, `PostToolUseFailure`, and `PermissionRequest` inputs. They are present when the hook fires from inside a Task-spawned subagent, and absent on the main agent thread. When multiple subagents run in parallel, their hooks interleave on the same channel — use `agent_id` to attribute each event to the correct subagent.
 
 ### Hook Configuration
 
@@ -815,9 +817,10 @@ Common fields on all hooks: `session_id`, `transcript_path`, `cwd`, `permission_
 | `tool_name`, `tool_input` | PermissionRequest |
 | `tool_response` | PostToolUse |
 | `error`, `is_interrupt` | PostToolUseFailure |
+| `agent_id` *(optional)*, `agent_type` *(optional)* | PreToolUse, PostToolUse, PostToolUseFailure, PermissionRequest — present when hook fires inside a subagent |
 | `prompt` | UserPromptSubmit |
 | `stop_hook_active` | Stop, SubagentStop |
-| `agent_id`, `agent_type` | SubagentStart, SubagentStop |
+| `agent_id`, `agent_type` *(required)* | SubagentStart, SubagentStop |
 | `agent_transcript_path` | SubagentStop |
 | `trigger` (`"manual" \| "auto"`) | PreCompact |
 | `custom_instructions` | PreCompact |
@@ -1003,6 +1006,23 @@ from claude_agent_sdk.types import (
 
 # In-process SDK server (from create_sdk_mcp_server)
 {"type": "sdk", "name": "my-server", "instance": mcp_server_instance}
+```
+
+**Status-response-only config types** (returned by `get_mcp_status()`, not used for configuration):
+
+```python
+from claude_agent_sdk.types import McpSdkServerConfigStatus, McpClaudeAIProxyServerConfig
+
+# SDK server config in status responses (no 'instance' field — not serializable)
+class McpSdkServerConfigStatus(TypedDict):
+    type: Literal["sdk"]
+    name: str
+
+# Claude.ai proxy server (auto-discovered cloud MCP servers)
+class McpClaudeAIProxyServerConfig(TypedDict):
+    type: Literal["claudeai-proxy"]
+    url: str
+    id: str
 ```
 
 **Tool naming**: `mcp__<server-name>__<tool-name>` (double underscores)
@@ -1616,4 +1636,4 @@ except ProcessError as e:
 
 ---
 
-**Last verified**: 2026-03-07 | **SDK version**: 0.1.48
+**Last verified**: 2026-03-08 | **SDK version**: 0.1.48

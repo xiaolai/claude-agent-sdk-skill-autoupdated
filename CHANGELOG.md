@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-03-08
+
+- Research only, no version change (TS v0.2.71, Python v0.1.48)
+- Python: added subagent attribution docs, McpSdkServerConfigStatus/McpClaudeAIProxyServerConfig types, and TypedDict dot-notation rule (issue #623)
+- Typecheck step false-positive (script artifact, non-blocking)
+- [Full report](reports/2026-03-08.md)
+
 ## 2026-03-06
 
 - SDK TS v0.2.69 → v0.2.70, Python v0.1.46 → v0.1.47; verify passed (28/28 checks, no mending)

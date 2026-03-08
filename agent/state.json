@@ -619,11 +619,30 @@
         "researchedAt": "2026-02-23",
         "verdict": "skipped",
         "reason": "Security edge case, 0 reactions, 0 comments; workarounds are drastic (disable Edit tool); CLI-level issue with no SDK API workaround"
+      },
+      "623": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "TypedDict attribute access raises AttributeError at runtime",
+        "state": "open",
+        "researchedAt": "2026-03-08",
+        "verdict": "added_rule",
+        "reason": "Common mistake: using dot-notation on TypedDict instances (plain dicts). Auto-correction rule already added to rules/claude-agent-sdk-py.md"
       }
     },
     "trackedIssuesExternal": {},
-    "lastScannedIssueNumber": 604,
-    "lastAuditedVersion": "0.1.44"
+    "lastScannedIssueNumber": 623,
+    "lastAuditedVersion": "0.1.48",
+    "lastAuditSummary": {
+      "date": "2026-03-08",
+      "sdkVersion": "0.1.48",
+      "newOptionsAdded": 0,
+      "newMethodsAdded": 0,
+      "newMessageTypesAdded": 0,
+      "newHookEventsAdded": 0,
+      "updatedEntries": 3,
+      "noChanges": false,
+      "notes": "Added subagent context attribution fields (agent_id/agent_type optional on PreToolUse, PostToolUse, PostToolUseFailure, PermissionRequest hooks); added McpSdkServerConfigStatus and McpClaudeAIProxyServerConfig documentation; GitHub API unavailable so Part B skipped"
+    }
   },
-  "lastUpdated": "2026-03-07T08:01:56Z"
+  "lastUpdated": "2026-03-08T00:00:00Z"
 }

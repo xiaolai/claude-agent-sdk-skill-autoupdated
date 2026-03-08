@@ -1346,4 +1346,4 @@ import type { GlobInput } from "@anthropic-ai/claude-agent-sdk/sdk-tools";
 
 ---
 
-**Last verified**: 2026-03-07 | **SDK version**: 0.2.71
+**Last verified**: 2026-03-08 | **SDK version**: 0.2.71

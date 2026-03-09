@@ -418,7 +418,7 @@ for await (const message of query({ prompt: "...", options })) {
       if (message.subtype === 'hook_progress') console.log('Hook:', message.output);  // also: .stdout, .stderr, .hook_name, .hook_event
       if (message.subtype === 'local_command_output') console.log('Slash cmd output:', message.content);
       if (message.subtype === 'elicitation_complete') console.log('Elicitation done:', message.mcp_server_name, message.elicitation_id);
-      if (message.subtype === 'task_started') console.log('Task started:', message.task_id, message.description, message.task_type);  // task_type?: string
+      if (message.subtype === 'task_started') console.log('Task started:', message.task_id, message.description, message.task_type, message.prompt);  // task_type?: string; prompt?: string
       if (message.subtype === 'task_progress') console.log('Task progress:', message.task_id, message.description, message.last_tool_name, message.usage);  // usage: {total_tokens, tool_uses, duration_ms}; last_tool_name?: string; tool_use_id?: string
       if (message.subtype === 'task_notification') console.log('Task done:', message.task_id, message.status, message.tool_use_id, message.output_file, message.summary);  // output_file: string, summary: string, usage?: {total_tokens, tool_uses, duration_ms}
       break;
@@ -1346,4 +1346,4 @@ import type { GlobInput } from "@anthropic-ai/claude-agent-sdk/sdk-tools";
 
 ---
 
-**Last verified**: 2026-03-08 | **SDK version**: 0.2.71
+**Last verified**: 2026-03-09 | **SDK version**: 0.2.71

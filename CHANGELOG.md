@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-03-09
+
+- Research only, no version change (TS v0.2.71, Python v0.1.48)
+- TS: added `prompt` field to `task_started` message subtype docs; PY: full API surface verified, no changes
+- Typecheck step false-positive (script artifact, non-blocking); same issue as 2026-03-08
+- [Full report](reports/2026-03-09.md)
+
 ## 2026-03-08
 
 - Research only, no version change (TS v0.2.71, Python v0.1.48)

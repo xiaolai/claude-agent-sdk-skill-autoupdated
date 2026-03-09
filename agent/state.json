@@ -633,16 +633,16 @@
     "lastScannedIssueNumber": 623,
     "lastAuditedVersion": "0.1.48",
     "lastAuditSummary": {
-      "date": "2026-03-08",
+      "date": "2026-03-09",
       "sdkVersion": "0.1.48",
       "newOptionsAdded": 0,
       "newMethodsAdded": 0,
       "newMessageTypesAdded": 0,
       "newHookEventsAdded": 0,
-      "updatedEntries": 3,
-      "noChanges": false,
-      "notes": "Added subagent context attribution fields (agent_id/agent_type optional on PreToolUse, PostToolUse, PostToolUseFailure, PermissionRequest hooks); added McpSdkServerConfigStatus and McpClaudeAIProxyServerConfig documentation; GitHub API unavailable so Part B skipped"
+      "updatedEntries": 0,
+      "noChanges": true,
+      "notes": "Part A skipped — lastAuditedVersion already matches installed SDK 0.1.48. Full API surface verified against types.py and __init__.py: all 35 ClaudeAgentOptions fields, 14 ClaudeSDKClient methods, 10 hook events, all message types, MCP types, and sandbox types are correctly documented. Part B skipped — GitHub API unavailable (no GH_TOKEN). Part C checks passed: Known Issues #1-#17 sequential, no duplicate issue refs, version 0.1.48 consistent across all files."
     }
   },
-  "lastUpdated": "2026-03-08T00:00:00Z"
+  "lastUpdated": "2026-03-09T00:00:00Z"
 }

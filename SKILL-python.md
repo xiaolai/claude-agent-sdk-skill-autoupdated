@@ -1584,8 +1584,8 @@ if hasattr(_client_mod, 'parse_message'):
 Then filter `None` messages in your consumer: `if msg is not None: ...`
 
 ### #16: Session File Not Flushed Before Disconnect — Resume Fails
-**Error**: Session resume fails silently — resume creates a new session instead of continuing the expected one, or session file is only a 139-byte stub ([#584](https://github.com/anthropics/claude-agent-sdk-python/issues/584), [#555](https://github.com/anthropics/claude-agent-sdk-python/issues/555))
-**Cause**: The CLI writes session `.jsonl` files asynchronously. `ClaudeSDKClient.disconnect()` and the `async with` context manager exit before the write completes, leaving an incomplete or missing file. On NFS/shared storage, flush timing may require a longer sleep.
+**Error**: Session resume fails silently — resume creates a new session instead of continuing the expected one, or session file contains only queue-operation lines with zero conversation data ([#584](https://github.com/anthropics/claude-agent-sdk-python/issues/584), [#555](https://github.com/anthropics/claude-agent-sdk-python/issues/555), [#625](https://github.com/anthropics/claude-agent-sdk-python/issues/625))
+**Cause**: Two overlapping race conditions: (1) `ClaudeSDKClient.disconnect()` exits before async file write completes; (2) `SubprocessCLITransport.close()` sends SIGTERM immediately after stdin EOF without a graceful wait, killing the subprocess mid-write. Affects `query()` and `ClaudeSDKClient` alike. On NFS/shared storage, flush timing may require a longer sleep.
 **Workaround**: Add a sleep before disconnecting to let the file flush (use 3+ seconds on NFS):
 ```python
 import asyncio, time
@@ -1602,8 +1602,8 @@ await client.disconnect()
 **Note**: The `async with` context manager does NOT apply this workaround automatically — use manual lifecycle if you need to resume the session.
 
 ### #17: `ProcessError.stderr` Contains Hardcoded String, Not Actual Error
-**Error**: When catching `ProcessError`, `e.stderr` is always `"Check stderr output for details"` rather than the actual CLI error output ([#529](https://github.com/anthropics/claude-agent-sdk-python/issues/529))
-**Cause**: The subprocess transport raises `ProcessError` with a hardcoded `stderr` string instead of the captured stderr content. Real error messages (e.g., `"No conversation found with session ID"`) are never surfaced in the exception.
+**Error**: When catching `ProcessError`, `e.stderr` is always `"Check stderr output for details"` rather than the actual CLI error output ([#529](https://github.com/anthropics/claude-agent-sdk-python/issues/529), [#641](https://github.com/anthropics/claude-agent-sdk-python/issues/641))
+**Cause**: The subprocess transport raises `ProcessError` with a hardcoded `stderr` string instead of the captured stderr content. Real error messages (e.g., `"No conversation found with session ID ab2c985b"`) are never surfaced in the exception. PR [#658](https://github.com/anthropics/claude-agent-sdk-python/pull/658) fixes this but is not yet released.
 **Workaround**: Use the `stderr` callback option to capture actual CLI stderr output:
 ```python
 import logging
@@ -1622,6 +1622,36 @@ except ProcessError as e:
     print("Actual error:", "\n".join(stderr_lines))
 ```
 
+### #18: Global `~/.claude/settings.json` Overrides SDK Configuration
+**Error**: SDK uses model or MCP servers from the user's global Claude Code settings instead of the programmatically configured values — causing unexpected model selection (e.g., Opus instead of Sonnet) and unintended MCP tool availability, leading to cost overruns ([#45](https://github.com/anthropics/claude-agent-sdk-python/issues/45))
+**Cause**: The CLI subprocess loads `~/.claude/settings.json` on startup. Global settings (model, MCP servers, API keys in `env`) take precedence over or merge with SDK-provided options. The documentation's claim that "programmatic options always override filesystem settings" does not hold for all settings.
+**Workaround**: Point the subprocess to an isolated home directory to prevent loading global settings:
+```python
+import os
+
+options = ClaudeAgentOptions(
+    model="claude-sonnet-4-5",
+    env={
+        **os.environ,
+        "HOME": "/tmp/claude-sdk-home",  # Prevents loading ~/.claude/settings.json
+    }
+)
+```
+Ensure the isolated directory exists before running: `os.makedirs("/tmp/claude-sdk-home", exist_ok=True)`. You can also set `CLAUDE_CONFIG_DIR` to a unique per-run path if `HOME` override is too broad.
+
+### #19: Passing `dict` as `options` Raises `AttributeError`
+**Error**: `AttributeError: 'dict' object has no attribute 'can_use_tool'` when passing a plain dictionary to `query()` or `ClaudeSDKClient` ([#446](https://github.com/anthropics/claude-agent-sdk-python/issues/446))
+**Cause**: The SDK expects a `ClaudeAgentOptions` dataclass instance. Internally it accesses attributes directly (`options.can_use_tool`), so a plain `dict` fails even though the documentation examples may suggest dicts are accepted.
+**Fix**: Always instantiate `ClaudeAgentOptions` explicitly:
+```python
+# WRONG — dict raises AttributeError
+await query(prompt="Hello", options={"max_turns": 5})
+
+# CORRECT — use ClaudeAgentOptions
+from claude_agent_sdk import ClaudeAgentOptions
+await query(prompt="Hello", options=ClaudeAgentOptions(max_turns=5))
+```
+
 ---
 
 ## Changelog Highlights
@@ -1636,4 +1666,4 @@ except ProcessError as e:
 
 ---
 
-**Last verified**: 2026-03-08 | **SDK version**: 0.1.48
+**Last verified**: 2026-03-10 | **SDK version**: 0.1.48

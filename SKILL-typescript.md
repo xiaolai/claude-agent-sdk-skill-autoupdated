@@ -1,6 +1,6 @@
-# Claude Agent SDK — TypeScript Reference (v0.2.71)
+# Claude Agent SDK — TypeScript Reference (v0.2.72)
 
-**Package**: `@anthropic-ai/claude-agent-sdk@0.2.71`
+**Package**: `@anthropic-ai/claude-agent-sdk@0.2.72`
 **Docs**: https://platform.claude.com/docs/en/agent-sdk/overview
 **Repo**: https://github.com/anthropics/claude-agent-sdk-typescript
 **Migration**: Renamed from `@anthropic-ai/claude-code`. See [migration guide](https://platform.claude.com/docs/en/agent-sdk/migration-guide).
@@ -1327,7 +1327,7 @@ import type { GlobInput } from "@anthropic-ai/claude-agent-sdk/sdk-tools";
 
 ---
 
-## Changelog Highlights (v0.2.12 → v0.2.71)
+## Changelog Highlights (v0.2.12 → v0.2.72)
 
 | Version | Change |
 |---------|--------|
@@ -1346,4 +1346,4 @@ import type { GlobInput } from "@anthropic-ai/claude-agent-sdk/sdk-tools";
 
 ---
 
-**Last verified**: 2026-03-09 | **SDK version**: 0.2.71
+**Last verified**: 2026-03-10 | **SDK version**: 0.2.72

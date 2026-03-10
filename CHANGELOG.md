@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-03-10
+
+- SDK TS v0.2.71 → v0.2.72; Python v0.1.48 unchanged; verify passed (18/18, no mending)
+- Python: added KI #18 (global settings override) and KI #19 (dict as options raises AttributeError); updated KI #16 and #17
+- Typecheck false-positive (recurring script artifact, non-blocking)
+- [Full report](reports/2026-03-10.md)
+
 ## 2026-03-09
 
 - Research only, no version change (TS v0.2.71, Python v0.1.48)

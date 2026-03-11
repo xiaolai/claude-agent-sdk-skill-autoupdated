@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-03-11
+
+- Research only, no version change (TS v0.2.72, Python v0.1.48)
+- TS: added KI #36 (settings.json env overrides options.env); changelog entries for v0.2.71 and v0.2.72
+- PY: added KI #20 (multi-user session confusion) and KI #21 (include_partial_messages breaks Bedrock/Vertex); updated KI #14, #16, #17, #19
+- Typecheck false-positive (recurring script artifact, non-blocking)
+- [Full report](reports/2026-03-11.md)
+
 ## 2026-03-10
 
 - SDK TS v0.2.71 → v0.2.72; Python v0.1.48 unchanged; verify passed (18/18, no mending)

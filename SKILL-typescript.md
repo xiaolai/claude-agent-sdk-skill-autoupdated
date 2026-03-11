@@ -24,7 +24,7 @@
 - [V2 Session API (Preview)](#v2-session-api-preview) — `unstable_v2_createSession`, `unstable_v2_prompt`
 - [Debugging & Error Handling](#debugging--error-handling)
 - [Known Issues](#known-issues)
-- [Changelog Highlights](#changelog-highlights-v0212--v0247)
+- [Changelog Highlights](#changelog-highlights-v0212--v0272)
 
 ---
 
@@ -1325,12 +1325,37 @@ import type { GlobInput } from "@anthropic-ai/claude-agent-sdk/sdk-tools";
 ```
 **Note**: This subpath is only needed when implementing custom MCP tool validators or SDK MCP servers that inspect built-in tool input schemas.
 
+### #36: `env` in `~/.claude/settings.json` takes precedence over `options.env` — API keys not overridable
+**Symptom**: Environment variables passed via `options.env` are silently ignored if the same variable is set in the `env` field of `~/.claude/settings.json`. The settings.json value wins regardless of `settingSources` configuration ([#217](https://github.com/anthropics/claude-agent-sdk-typescript/issues/217))
+**Cause**: The SDK passes `options.env` as OS-level environment variables to the spawned CLI subprocess. However, the CLI's config system loads `settings.json` on startup and its `env` block takes precedence over OS environment variables. Because `options.env` was already downgraded to OS env by the time the CLI reads it, `settings.json` wins.
+**Impact**: Developers who have an `ANTHROPIC_API_KEY` in `~/.claude/settings.json` cannot override it programmatically — a critical problem for multi-tenant apps, API key rotation, or using a different `ANTHROPIC_BASE_URL` for SDK apps vs interactive CLI.
+**Workaround**: Remove the `env` field from `~/.claude/settings.json`, or set `settingSources: []` **and** clear the env block first. There is no pure programmatic workaround.
+```typescript
+// ⚠️ This does NOT work if ~/.claude/settings.json has an `env.ANTHROPIC_API_KEY`
+const q = query({
+  prompt: 'hello',
+  options: {
+    settingSources: [],          // Does not strip settings.json env block
+    env: {
+      ...process.env,
+      ANTHROPIC_API_KEY: 'sk-your-key',  // Silently ignored
+    }
+  }
+});
+
+// Fix: remove the env block from ~/.claude/settings.json manually,
+// or wait for the SDK fix to be released.
+```
+**Note**: A fix has been merged by Anthropic — check if your SDK version includes it.
+
 ---
 
 ## Changelog Highlights (v0.2.12 → v0.2.72)
 
 | Version | Change |
 |---------|--------|
+| v0.2.72 | Fixed `SubagentStart`/`SubagentStop` hook `agent_type` always reporting `"general-purpose"` — now correctly reports the agent key from the `agents` map ([#226](https://github.com/anthropics/claude-agent-sdk-typescript/issues/226)) |
+| v0.2.71 | Fixed `Agent` tool returning `"Unknown tool: Agent"` in `query()` mode — subagent invocation via `tools: ['Agent']` + `agents` map now works ([#210](https://github.com/anthropics/claude-agent-sdk-typescript/issues/210)) |
 | v0.2.63 | Fixed `SDKRateLimitEvent` and `SDKPromptSuggestionMessage` missing from `sdk.d.ts` — `SDKMessage` now has full type safety ([#196](https://github.com/anthropics/claude-agent-sdk-typescript/issues/196), [#206](https://github.com/anthropics/claude-agent-sdk-typescript/issues/206)) |
 | v0.2.58 | Version bump |
 | v0.2.57 | `getSessionMessages()` exported — reads transcript messages by session ID; `SessionMessage` type exported |
@@ -1346,4 +1371,4 @@ import type { GlobInput } from "@anthropic-ai/claude-agent-sdk/sdk-tools";
 
 ---
 
-**Last verified**: 2026-03-10 | **SDK version**: 0.2.72
+**Last verified**: 2026-03-11 | **SDK version**: 0.2.72

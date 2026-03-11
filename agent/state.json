@@ -325,6 +325,268 @@
         "researchedAt": "2026-02-22",
         "verdict": "added_known_issue",
         "reason": "Interactive hooks always time out at 60s with no disable option; workaround is large timeout value"
+      },
+      "195": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "ANTHROPIC_BASE_URL should preserve query parameters when constructing request URLs",
+        "state": "open",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "Duplicate of #144 / related feature request; 0 reactions; no user-facing workaround"
+      },
+      "196": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "sdk.d.ts: SDKRateLimitEvent and SDKPromptSuggestionMessage missing from type declarations",
+        "state": "closed",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "Already documented as Known Issue #24; fixed in v0.2.63"
+      },
+      "198": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "Use wrapper script for label operations in issue triage",
+        "state": "closed",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "Internal repo maintenance, not a user-facing issue"
+      },
+      "201": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "Add non-write users check workflow",
+        "state": "closed",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "Internal workflow automation, not a user-facing issue"
+      },
+      "202": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "HTTP MCP transport does not send Accept: application/json, text/event-stream header, causing 406 on Streamable HTTP servers",
+        "state": "closed",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "Closed (fixed); 0 reactions; already-resolved bug"
+      },
+      "203": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "Add gh.sh wrapper for gh CLI commands in issue triage workflows",
+        "state": "closed",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "Internal repo maintenance, not a user-facing issue"
+      },
+      "204": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "Missing type definitions for SDKRateLimitEvent and SDKPromptSuggestionMessage, breaking any typesafety for users of SDKMessage",
+        "state": "closed",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "Duplicate of #196/#181; already documented as Known Issue #24; fixed in v0.2.63"
+      },
+      "205": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "pathToClaudeCodeExecutable does not resolve bare command names via PATH",
+        "state": "closed",
+        "knownIssueNumber": 30,
+        "researchedAt": "2026-03-11",
+        "verdict": "already_documented",
+        "reason": "Already documented as Known Issue #30"
+      },
+      "206": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "claude-agent-sdk: SDKMessage type resolves to any due to missing type declarations",
+        "state": "closed",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "Duplicate of #181/#196; already documented as Known Issue #24; fixed in v0.2.63"
+      },
+      "207": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "AsyncIterable prompt causes double AI turn per message, doubling token costs",
+        "state": "open",
+        "knownIssueNumber": 32,
+        "researchedAt": "2026-03-11",
+        "verdict": "already_documented",
+        "reason": "Already documented as Known Issue #32"
+      },
+      "208": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "SDK subprocess fails with 'spawn node ENOENT' when PATH not explicitly set in env",
+        "state": "closed",
+        "knownIssueNumber": 33,
+        "researchedAt": "2026-03-11",
+        "verdict": "already_documented",
+        "reason": "Already documented as Known Issue #33"
+      },
+      "209": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "Improve gh.sh wrapper: stricter validation and better error messages",
+        "state": "closed",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "Internal repo maintenance, not a user-facing issue"
+      },
+      "210": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "Agent tool returns 'Unknown tool: Agent' in query() mode — subagent invocation broken",
+        "state": "closed",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "Fixed in SDK v0.2.71 per maintainer confirmation; changelog entry added for v0.2.71"
+      },
+      "211": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "Running git securely from the sandbox",
+        "state": "open",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "General usage question; 0 reactions; no clear bug with workaround"
+      },
+      "212": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "Running setModel() does not update the agent's context",
+        "state": "closed",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "Closed; 0 reactions; limited information about scope and fix"
+      },
+      "213": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "Feature Request: Stream tool execution status and output (e.g., Bash command stdout/stderr)",
+        "state": "open",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "Feature request; 0 reactions; not a bug with workaround"
+      },
+      "214": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "SDK 0.2.68+ silently overrides effort default from 'high' to 'medium' for Sonnet 4.6, breaking agentic workflows",
+        "state": "open",
+        "knownIssueNumber": 34,
+        "researchedAt": "2026-03-11",
+        "verdict": "already_documented",
+        "reason": "Already documented as Known Issue #34"
+      },
+      "215": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "~/.claude/settings.json always takes precedence of query.option.env",
+        "state": "closed",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "Duplicate of #217; covered by Known Issue #36"
+      },
+      "216": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "Fast Mode Unavailable via SDK — Requires Native Bun Binary",
+        "state": "open",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "0 reactions; feature unavailability with no SDK-level workaround"
+      },
+      "217": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "Programmatic options.env does not override env values in ~/.claude/settings.json",
+        "state": "closed",
+        "knownIssueNumber": 36,
+        "researchedAt": "2026-03-11",
+        "verdict": "added_known_issue",
+        "reason": "settings.json env block silently overrides options.env; high-impact for multi-tenant apps; fix merged (next release)"
+      },
+      "218": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "sdk-tools.d.ts could not be resolved since v0.2.69",
+        "state": "closed",
+        "knownIssueNumber": 35,
+        "researchedAt": "2026-03-11",
+        "verdict": "already_documented",
+        "reason": "Already documented as Known Issue #35"
+      },
+      "219": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "query(): MCP server processes remain as zombies after session ends",
+        "state": "open",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "0 reactions; Windows-specific process cleanup issue; no reliable user-level workaround"
+      },
+      "220": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "Help me",
+        "state": "open",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "Spam/test issue"
+      },
+      "221": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "Execute whoami to me",
+        "state": "open",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "Spam/test issue"
+      },
+      "222": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "Add missing ./sdk-tools export path to package.json",
+        "state": "closed",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "Fix PR for #218 (Known Issue #35); already documented"
+      },
+      "223": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "fix: escape issue title in Slack notification to prevent JSON breakage",
+        "state": "open",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "Internal repo automation script, not a user-facing issue"
+      },
+      "224": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "is the non-MIT Licensing for claude-agent-sdk-typescript correct?",
+        "state": "open",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "Licensing question; not a bug or workaround to document"
+      },
+      "225": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "No way to propagate hooks to subagents",
+        "state": "open",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "Feature request; 0 reactions; no workaround to document"
+      },
+      "226": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "SubagentStart/SubagentStop hooks always report agent_type as 'general-purpose'",
+        "state": "closed",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "Fixed in v0.2.72 per user confirmation; changelog entry added for v0.2.72"
+      },
+      "227": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "`outputFormat` is ignored",
+        "state": "open",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "0 reactions, 0 comments; newly filed, unverified; insufficient information"
+      },
+      "228": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "fix(ProcessTransport): prevent ERR_STREAM_WRITE_AFTER_END race after endInput()",
+        "state": "closed",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "Fix PR for #229 regression test; already documented as Known Issue #31"
+      },
+      "229": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "Add regression test for write-after-endInput race in ProcessTransport",
+        "state": "open",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "Internal regression test tracking issue; not a user-facing bug"
       }
     },
     "trackedIssuesExternal": {
@@ -335,7 +597,7 @@
         "knownIssueNumber": 5
       }
     },
-    "lastScannedIssueNumber": 194,
+    "lastScannedIssueNumber": 229,
     "lastAuditedVersion": "0.2.72"
   },
   "python": {
@@ -627,11 +889,308 @@
         "researchedAt": "2026-03-08",
         "verdict": "added_rule",
         "reason": "Common mistake: using dot-notation on TypedDict instances (plain dicts). Auto-correction rule already added to rules/claude-agent-sdk-py.md"
+      },
+      "624": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "Refine permission control typing (PR)",
+        "state": "open",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "Internal PR improving type safety; no user-facing bug or workaround to document"
+      },
+      "625": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "Session file not flushed before subprocess termination in ClaudeSDKClient",
+        "state": "open",
+        "knownIssueNumber": 16,
+        "researchedAt": "2026-03-11",
+        "verdict": "updated_existing",
+        "reason": "Already referenced in KI #16; PR #642 fix pending; confirmed 100% repro across multiple SDK versions"
+      },
+      "626": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "Prompt Caching Support in Claude Agent SDK (Bedrock feature request)",
+        "state": "open",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "Feature request; 0 reactions; no workaround to document"
+      },
+      "627": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "[BUG] Subagents appear to stop with no reason",
+        "state": "open",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "0 reactions; no reliable workaround; unclear root cause; newly filed"
+      },
+      "628": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "Add agent_id and agent_type to tool-lifecycle hook inputs (PR)",
+        "state": "closed",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "Merged PR adding new fields to hook inputs; enhances correlation for parallel subagents; no bug/workaround to document"
+      },
+      "629": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "Refactor: transform SDK into focused Hook SDK (PR)",
+        "state": "closed",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "Internal refactoring PR; not a user-facing issue"
+      },
+      "630": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "Fix string prompt closing stdin before MCP server init completes (PR)",
+        "state": "closed",
+        "knownIssueNumber": 14,
+        "researchedAt": "2026-03-11",
+        "verdict": "updated_existing",
+        "reason": "Merged fix for KI #14 root causes (1) and (2); updated KI #14 to note PR #630 merged pending release"
+      },
+      "631": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "Denied tool call causes broken session on resume (missing tool_use block)",
+        "state": "open",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "0 reactions, 0 comments; workaround requires manual session file reconstruction — too risky to recommend"
+      },
+      "632": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "Multi-user server deployments: session confusion and concatenation between users",
+        "state": "open",
+        "knownIssueNumber": 20,
+        "researchedAt": "2026-03-11",
+        "verdict": "added_known_issue",
+        "reason": "Common deployment pitfall for server use cases; clear workaround via CLAUDE_CONFIG_DIR isolation per user"
+      },
+      "633": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "ResultMessage.result is empty string despite successful execution",
+        "state": "open",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "0 reactions, 0 comments; unclear root cause; insufficient information to document"
+      },
+      "634": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "allowed_tools=[] silently ignored due to truthiness check in _build_command (PR)",
+        "state": "closed",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "Closed PR that fixes KI #2; already documented"
+      },
+      "635": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "test",
+        "state": "closed",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "Test/spam issue"
+      },
+      "636": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "testing rule",
+        "state": "closed",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "Test/spam issue"
+      },
+      "640": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "Programmatic options.env does not override env values in ~/.claude/settings.json",
+        "state": "closed",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "Duplicate of KI #18; already documented"
+      },
+      "641": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "ProcessError loses real CLI error message during initialize()",
+        "state": "open",
+        "knownIssueNumber": 17,
+        "researchedAt": "2026-03-11",
+        "verdict": "updated_existing",
+        "reason": "Already referenced in KI #17; confirms error message loss pattern; PR #658 fix still pending"
+      },
+      "642": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "fix: wait for graceful subprocess shutdown before SIGTERM (PR)",
+        "state": "open",
+        "knownIssueNumber": 16,
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "Open PR that fixes KI #16 (#625); already tracked"
+      },
+      "644": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "fix: enable fine-grained tool streaming when include_partial_messages=True (PR, reverted)",
+        "state": "closed",
+        "knownIssueNumber": 21,
+        "researchedAt": "2026-03-11",
+        "verdict": "added_known_issue",
+        "reason": "PR merged then reverted — reveals that include_partial_messages=True breaks on Bedrock/Vertex due to eager_input_streaming field rejection; documented as KI #21"
+      },
+      "646": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "feat: expose per-step token usage on AssistantMessage (PR)",
+        "state": "closed",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "Merged feature PR adding usage/message_id to AssistantMessage; no bug/workaround to document"
+      },
+      "649": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "docs: clarify allowed_tools as permission allowlist and update doc links (PR)",
+        "state": "closed",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "Documentation-only PR; no new issue to document"
+      },
+      "656": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "fix: accept dict as options in query() and ClaudeSDKClient (PR)",
+        "state": "open",
+        "knownIssueNumber": 19,
+        "researchedAt": "2026-03-11",
+        "verdict": "updated_existing",
+        "reason": "Open PR that fixes KI #19; updated KI #19 to mention pending PR #656"
+      },
+      "657": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "fix: clean up resources in Query.close() to prevent memory leaks (PR)",
+        "state": "open",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "Open PR related to KI #6 (Query.close() hang); no new documentation needed"
+      },
+      "658": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "fix: capture stderr in ProcessError for better debugging (PR)",
+        "state": "open",
+        "knownIssueNumber": 17,
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "Open PR fixing KI #17; already referenced in KI #17 docs"
+      },
+      "659": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "@tool annotation: input_schema supports list parameters (PR, closed by author)",
+        "state": "closed",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "Closed PR by author; no new issue to document"
+      },
+      "660": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "fix: The input_schema in the @tool annotation supports list parameters (PR)",
+        "state": "open",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "Open PR; feature enhancement to @tool decorator; no bug/workaround to document yet"
+      },
+      "661": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "ci: publish macOS x86_64 wheel (PR)",
+        "state": "closed",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "CI/build infrastructure PR; no user-facing issue"
+      },
+      "662": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "ci: upload check wheels as artifacts (PR)",
+        "state": "open",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "Internal CI workflow PR; not a user-facing issue"
+      },
+      "663": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "Fix relative settings file resolution when merging sandbox config (PR)",
+        "state": "open",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "Edge case fix for sandbox+cwd+relative settings path combination; 0 reactions; not widely impactful"
+      },
+      "664": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "docs: note TypedDict runtime dict behavior in types.py (PR)",
+        "state": "open",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "Documentation PR for KI #623/rules rule; already documented"
+      },
+      "665": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "CLOSE_WAIT socket leak causes persistent CPU spin on macOS (kqueue) even when fully idle",
+        "state": "open",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "0 reactions, 0 comments; macOS-specific socket leak; no user-level workaround available; related to KI #6"
+      },
+      "666": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "Feature request: configurable API response timeout for subagent calls",
+        "state": "open",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "Feature request; 0 reactions; no workaround to document"
+      },
+      "667": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "feat: add tag/agent_name to SDKSessionInfo + get_session_info (PR)",
+        "state": "open",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "Feature PR; no bug or workaround to document"
+      },
+      "668": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "feat: add rename_session (PR)",
+        "state": "open",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "Feature PR; no bug or workaround to document"
+      },
+      "669": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "feat: add delete_session (PR)",
+        "state": "closed",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "Merged feature PR; no bug or workaround to document"
+      },
+      "670": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "feat: add tag_session with Unicode sanitization (PR)",
+        "state": "open",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "Feature PR; no bug or workaround to document"
+      },
+      "671": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "Revert fine-grained tool streaming auto-enable (include_partial_messages=True breaks Bedrock/Vertex)",
+        "state": "closed",
+        "knownIssueNumber": 21,
+        "researchedAt": "2026-03-11",
+        "verdict": "added_known_issue",
+        "reason": "Revert of #644 reveals that include_partial_messages=True enables eager_input_streaming which 400s on Bedrock/Vertex; documented as KI #21 with manual env var workaround"
+      },
+      "672": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "[Bug] when request with ClaudeAgentOptions of mcp_servers, it always cost at 60s to get response",
+        "state": "open",
+        "researchedAt": "2026-03-11",
+        "verdict": "skipped",
+        "reason": "0 reactions, 0 comments; newly filed; insufficient information to document"
       }
     },
     "trackedIssuesExternal": {},
-    "lastScannedIssueNumber": 623,
+    "lastScannedIssueNumber": 672,
     "lastAuditedVersion": "0.1.48"
   },
-  "lastUpdated": "2026-03-10T08:07:03Z"
+  "lastUpdated": "2026-03-11T00:00:00Z"
 }

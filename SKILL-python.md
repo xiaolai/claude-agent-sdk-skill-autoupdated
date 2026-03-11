@@ -1547,7 +1547,7 @@ class SessionWorker:
 
 ### #14: SDK MCP Servers Completely Non-functional with String Prompts
 **Error**: SDK MCP servers created via `create_sdk_mcp_server()` are completely invisible to Claude when using string prompts. Tool calls either raise `CLIConnectionError: ProcessTransport is not ready for writing` or silently fail with the model unable to see any MCP tools ([#578](https://github.com/anthropics/claude-agent-sdk-python/issues/578), [#597](https://github.com/anthropics/claude-agent-sdk-python/issues/597))
-**Cause**: Three root causes: (1) `sdkMcpServers` field is missing from the initialization control request in non-streaming mode, preventing CLI registration of SDK MCP servers; (2) String prompt code path closes stdin immediately after sending user message, blocking the control protocol; (3) `_stream_close_timeout` defaults to 60s, causing premature stdin close for long interactions.
+**Cause**: Three root causes: (1) `sdkMcpServers` field is missing from the initialization control request in non-streaming mode, preventing CLI registration of SDK MCP servers; (2) String prompt code path closes stdin immediately after sending user message, blocking the control protocol; (3) `_stream_close_timeout` defaults to 60s, causing premature stdin close for long interactions. PR [#630](https://github.com/anthropics/claude-agent-sdk-python/pull/630) fixes root causes (1) and (2) and has been merged but not yet released.
 **Workaround**: Use `AsyncIterable` prompt instead of string:
 ```python
 async def prompt_gen():
@@ -1641,7 +1641,7 @@ Ensure the isolated directory exists before running: `os.makedirs("/tmp/claude-s
 
 ### #19: Passing `dict` as `options` Raises `AttributeError`
 **Error**: `AttributeError: 'dict' object has no attribute 'can_use_tool'` when passing a plain dictionary to `query()` or `ClaudeSDKClient` ([#446](https://github.com/anthropics/claude-agent-sdk-python/issues/446))
-**Cause**: The SDK expects a `ClaudeAgentOptions` dataclass instance. Internally it accesses attributes directly (`options.can_use_tool`), so a plain `dict` fails even though the documentation examples may suggest dicts are accepted.
+**Cause**: The SDK expects a `ClaudeAgentOptions` dataclass instance. Internally it accesses attributes directly (`options.can_use_tool`), so a plain `dict` fails even though the documentation examples may suggest dicts are accepted. PR [#656](https://github.com/anthropics/claude-agent-sdk-python/pull/656) adds dict→`ClaudeAgentOptions` coercion but is not yet released.
 **Fix**: Always instantiate `ClaudeAgentOptions` explicitly:
 ```python
 # WRONG — dict raises AttributeError
@@ -1651,6 +1651,38 @@ await query(prompt="Hello", options={"max_turns": 5})
 from claude_agent_sdk import ClaudeAgentOptions
 await query(prompt="Hello", options=ClaudeAgentOptions(max_turns=5))
 ```
+
+### #20: Multi-User Server Deployments Suffer Session Confusion
+**Error**: In server deployments where multiple users share one process, Claude sessions interleave or concatenate responses across different users. Messages intended for user A appear in user B's session ([#632](https://github.com/anthropics/claude-agent-sdk-python/issues/632))
+**Cause**: The CLI subprocess determines session identity from the working directory (`cwd`) and an auto-generated or reused session ID. When a `ClaudeSDKClient` instance is shared or when two concurrent requests use the same `cwd`, sessions collide. `ClaudeSDKClient` is not safe to reuse across concurrent ASGI request tasks (see also KI #13).
+**Fix**: Isolate sessions per user with a unique `CLAUDE_CONFIG_DIR` and per-request `ClaudeSDKClient` instances:
+```python
+import os, uuid
+from claude_agent_sdk import ClaudeSDKClient, ClaudeAgentOptions
+
+async def handle_request(user_id: str, prompt: str):
+    config_dir = f"/tmp/claude-sessions/{user_id}"
+    os.makedirs(config_dir, exist_ok=True)
+    options = ClaudeAgentOptions(
+        env={**os.environ, "CLAUDE_CONFIG_DIR": config_dir}
+    )
+    async with ClaudeSDKClient(options=options) as client:
+        await client.query(prompt)
+        async for msg in client.receive_response():
+            yield msg
+```
+
+### #21: `include_partial_messages=True` Breaks Tool Input Streaming on Bedrock/Vertex
+**Error**: `400 Bad Request` with `"unexpected field: eager_input_streaming"` or tool input delta events stop arriving when using `include_partial_messages=True` with Bedrock, Vertex, or strict-schema proxies ([#644](https://github.com/anthropics/claude-agent-sdk-python/pull/644), [#671](https://github.com/anthropics/claude-agent-sdk-python/pull/671))
+**Cause**: CLI v2.1.40 moved fine-grained tool streaming behind a feature flag. PR #644 (v0.1.x) tried to auto-enable it when `include_partial_messages=True`, but the underlying `eager_input_streaming` field is only accepted by the direct Anthropic API and Claude 4.6+. On Bedrock/Vertex or behind strict proxies the field causes 400 errors. PR #671 reverted #644, leaving `input_json_delta` events disabled by default.
+**Workaround**: To re-enable fine-grained tool streaming on a compatible endpoint, set the environment variable manually:
+```python
+options = ClaudeAgentOptions(
+    include_partial_messages=True,
+    env={**os.environ, "CLAUDE_CODE_ENABLE_FINE_GRAINED_TOOL_STREAMING": "1"}
+)
+```
+Only set this variable when targeting the direct Anthropic API with Claude 4.6+. Omit it when using Bedrock, Vertex, or any proxy that rejects unknown fields.
 
 ---
 
@@ -1666,4 +1698,4 @@ await query(prompt="Hello", options=ClaudeAgentOptions(max_turns=5))
 
 ---
 
-**Last verified**: 2026-03-10 | **SDK version**: 0.1.48
+**Last verified**: 2026-03-11 | **SDK version**: 0.1.48

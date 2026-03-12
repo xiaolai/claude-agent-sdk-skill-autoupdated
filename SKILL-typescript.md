@@ -1,6 +1,6 @@
-# Claude Agent SDK — TypeScript Reference (v0.2.72)
+# Claude Agent SDK — TypeScript Reference (v0.2.74)
 
-**Package**: `@anthropic-ai/claude-agent-sdk@0.2.72`
+**Package**: `@anthropic-ai/claude-agent-sdk@0.2.74`
 **Docs**: https://platform.claude.com/docs/en/agent-sdk/overview
 **Repo**: https://github.com/anthropics/claude-agent-sdk-typescript
 **Migration**: Renamed from `@anthropic-ai/claude-code`. See [migration guide](https://platform.claude.com/docs/en/agent-sdk/migration-guide).
@@ -10,7 +10,7 @@
 ## Table of Contents
 
 - [Breaking Changes](#breaking-changes-v010)
-- [Core API](#core-api) — `query()`, `tool()`, `createSdkMcpServer()`, `listSessions()`, `getSessionMessages()`
+- [Core API](#core-api) — `query()`, `tool()`, `createSdkMcpServer()`, `listSessions()`, `getSessionMessages()`, `renameSession()`
 - [Options](#options) — Core, Tools & Permissions, Models & Output, Sessions, MCP & Agents, Advanced
 - [Query Object Methods](#query-object-methods)
 - [Message Types](#message-types) — All 22 SDKMessage types
@@ -161,6 +161,28 @@ for (const msg of messages) {
 }
 ```
 
+### `renameSession()`
+
+Renames a session by appending a custom-title entry to the session's JSONL file. The new title appears in `listSessions()` results as `customTitle`.
+
+```typescript
+import { renameSession } from "@anthropic-ai/claude-agent-sdk";
+
+function renameSession(
+  sessionId: string,
+  title: string,
+  options?: { dir?: string }  // Project directory; searches all projects if omitted
+): Promise<void>
+```
+
+Example:
+
+```typescript
+await renameSession(sessionId, "Authentication refactor session");
+const sessions = await listSessions();
+console.log(sessions[0].customTitle); // "Authentication refactor session"
+```
+
 ---
 
 ## Options
@@ -200,6 +222,7 @@ for (const msg of messages) {
 | `betas` | `SdkBeta[]` | `[]` | Beta features (e.g., `['context-1m-2025-08-07']`) |
 | `includePartialMessages` | `boolean` | `false` | Include streaming partial messages |
 | `promptSuggestions` | `boolean` | `false` | Emit `SDKPromptSuggestionMessage` after each turn with a predicted next user prompt (arrives after result; suppressed on first turn, after errors, in plan mode) |
+| `agentProgressSummaries` | `boolean` | `false` | Enable periodic AI-generated progress summaries for running subagents. Every ~30s, forks the subagent's conversation to produce a short present-tense description emitted on `task_progress` events via the `summary` field. Applies to foreground and background subagents. |
 
 ### Sessions
 
@@ -308,6 +331,7 @@ type ModelInfo = {
   supportedEffortLevels?: ('low' | 'medium' | 'high' | 'max')[];  // Available effort levels
   supportsAdaptiveThinking?: boolean;                   // Whether this model supports adaptive thinking
   supportsFastMode?: boolean;                           // Whether this model supports fast mode (rate-limit speed optimization)
+  supportsAutoMode?: boolean;                           // Whether this model supports auto mode
 };
 
 type AccountInfo = {
@@ -419,7 +443,7 @@ for await (const message of query({ prompt: "...", options })) {
       if (message.subtype === 'local_command_output') console.log('Slash cmd output:', message.content);
       if (message.subtype === 'elicitation_complete') console.log('Elicitation done:', message.mcp_server_name, message.elicitation_id);
       if (message.subtype === 'task_started') console.log('Task started:', message.task_id, message.description, message.task_type, message.prompt);  // task_type?: string; prompt?: string
-      if (message.subtype === 'task_progress') console.log('Task progress:', message.task_id, message.description, message.last_tool_name, message.usage);  // usage: {total_tokens, tool_uses, duration_ms}; last_tool_name?: string; tool_use_id?: string
+      if (message.subtype === 'task_progress') console.log('Task progress:', message.task_id, message.description, message.last_tool_name, message.usage, message.summary);  // usage: {total_tokens, tool_uses, duration_ms}; last_tool_name?: string; tool_use_id?: string; summary?: string (from agentProgressSummaries)
       if (message.subtype === 'task_notification') console.log('Task done:', message.task_id, message.status, message.tool_use_id, message.output_file, message.summary);  // output_file: string, summary: string, usage?: {total_tokens, tool_uses, duration_ms}
       break;
     case 'assistant':
@@ -1350,11 +1374,11 @@ const q = query({
 
 ---
 
-## Changelog Highlights (v0.2.12 → v0.2.72)
+## Changelog Highlights (v0.2.12 → v0.2.74)
 
 | Version | Change |
 |---------|--------|
-| v0.2.72 | Fixed `SubagentStart`/`SubagentStop` hook `agent_type` always reporting `"general-purpose"` — now correctly reports the agent key from the `agents` map ([#226](https://github.com/anthropics/claude-agent-sdk-typescript/issues/226)) |
+| v0.2.74 | Fixed `SubagentStart`/`SubagentStop` hook `agent_type` always reporting `"general-purpose"` — now correctly reports the agent key from the `agents` map ([#226](https://github.com/anthropics/claude-agent-sdk-typescript/issues/226)) |
 | v0.2.71 | Fixed `Agent` tool returning `"Unknown tool: Agent"` in `query()` mode — subagent invocation via `tools: ['Agent']` + `agents` map now works ([#210](https://github.com/anthropics/claude-agent-sdk-typescript/issues/210)) |
 | v0.2.63 | Fixed `SDKRateLimitEvent` and `SDKPromptSuggestionMessage` missing from `sdk.d.ts` — `SDKMessage` now has full type safety ([#196](https://github.com/anthropics/claude-agent-sdk-typescript/issues/196), [#206](https://github.com/anthropics/claude-agent-sdk-typescript/issues/206)) |
 | v0.2.58 | Version bump |
@@ -1371,4 +1395,4 @@ const q = query({
 
 ---
 
-**Last verified**: 2026-03-11 | **SDK version**: 0.2.72
+**Last verified**: 2026-03-12 | **SDK version**: 0.2.74

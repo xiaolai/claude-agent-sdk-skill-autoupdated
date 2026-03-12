@@ -1450,10 +1450,20 @@ async for msg in query(
 **Cause**: Since v0.1.29, new hook events (`SubagentStop`, `Notification`, `PermissionRequest`) attempt to communicate over a closed stream when operating in `bypassPermissions` mode.
 **Fix**: Downgrade to v0.1.28 (CLI v2.1.30) or wait for fix. The errors are cosmetic—tools execute successfully despite the noise.
 
-### #2: Empty `allowed_tools=[]` Allows All Tools
-**Error**: Passing `allowed_tools=[]` to restrict all tools fails silently; all tools become available instead ([#523](https://github.com/anthropics/claude-agent-sdk-python/issues/523))
-**Cause**: Empty list is treated as falsy in Python, causing `--allowedTools` flag to be omitted from CLI command.
-**Fix**: Use `allowed_tools=None` for default behavior, or pass a dummy tool name if you need to restrict tools programmatically. A proper fix would check `if allowed_tools is not None` instead of truthiness.
+### #2: `allowed_tools` Is a Permission Allowlist, Not a Tool Restriction
+**Error**: Passing `allowed_tools=[]` to disable all tools fails silently; all tools remain available instead ([#523](https://github.com/anthropics/claude-agent-sdk-python/issues/523), [#634](https://github.com/anthropics/claude-agent-sdk-python/issues/634))
+**Cause**: `allowed_tools` maps to `--allowedTools` (a permission pre-approval list), NOT to `--tools` (tool availability). Additionally, empty lists are falsy, so `allowed_tools=[]` omits the flag entirely. These are two distinct options:
+- `tools` — controls **which tools are available** (maps to `--tools`)
+- `allowed_tools` — controls **which tools are pre-approved** for permission prompts (maps to `--allowedTools`)
+**Fix**: Use `tools=[]` to disable all tools, or `tools=["Read", "Grep"]` to restrict to specific tools. `allowed_tools` should only be used to pre-approve specific tools in a broader permission workflow.
+```python
+# WRONG — allowed_tools is for permission pre-approval, not tool restriction
+options = ClaudeAgentOptions(allowed_tools=[])  # Does nothing
+
+# CORRECT — use tools= to control tool availability
+options = ClaudeAgentOptions(tools=[])               # Disables all tools
+options = ClaudeAgentOptions(tools=["Read", "Grep"])  # Only these tools
+```
 
 ### #3: Sub-agents Not Registered When Command Exceeds 100k Chars (Fixed in v0.1.35)
 **Error**: Custom agents silently fail to register when CLI command string exceeds Linux's 100k character limit ([#567](https://github.com/anthropics/claude-agent-sdk-python/issues/567))
@@ -1683,6 +1693,28 @@ options = ClaudeAgentOptions(
 )
 ```
 Only set this variable when targeting the direct Anthropic API with Claude 4.6+. Omit it when using Bedrock, Vertex, or any proxy that rejects unknown fields.
+
+### #22: Early Generator Exit Raises `RuntimeError` and Poisons Event Loop
+**Error**: Breaking out of the `query()` async generator early causes `RuntimeError: Attempted to exit cancel scope in a different task than it was entered in`. In production, this error can poison the entire event loop — every subsequent `await` in that loop raises `CancelledError` ([#454](https://github.com/anthropics/claude-agent-sdk-python/issues/454))
+**Cause**: The query task group's `__aenter__()` is called in one async context, but `__aexit__()` runs during generator cleanup in a different task context. AnyIO cancel scopes require enter/exit to happen in the same task. Occurs when using `async for msg in query(...): break` or when stopping after `ResultMessage`.
+**Impact**: Production impact documented — once triggered, all subsequent `await` calls in that event loop get `CancelledError`. This affects parallel query execution with `asyncio.gather()`.
+**Workaround**: Avoid breaking out of the generator early. If you must stop at `ResultMessage`, fully consume the generator:
+```python
+# RISKY — early break can poison event loop
+async for msg in query(prompt="...", options=options):
+    if isinstance(msg, ResultMessage):
+        break  # May raise RuntimeError
+
+# SAFER — consume all messages naturally
+messages = []
+async for msg in query(prompt="...", options=options):
+    messages.append(msg)  # Generator exhausts naturally at ResultMessage
+
+# PRODUCTION WORKAROUND — subprocess isolation per query
+# (resource-intensive but guarantees clean event loop)
+import subprocess, sys
+result = subprocess.run([sys.executable, "-c", query_script], capture_output=True)
+```
 
 ---
 

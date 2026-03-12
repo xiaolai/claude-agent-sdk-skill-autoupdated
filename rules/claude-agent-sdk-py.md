@@ -87,18 +87,18 @@ options = ClaudeAgentOptions(
 )
 ```
 
-### Use allowed_tools=None to disable tools, not []
+### Use `tools=` to restrict tool availability, not `allowed_tools=`
 ```python
-# WRONG — empty list is treated as falsy, all tools enabled
-options = ClaudeAgentOptions(allowed_tools=[])
+# WRONG — allowed_tools is a permission allowlist, NOT a tool restriction
+options = ClaudeAgentOptions(allowed_tools=[])        # Does nothing (falsy, omitted)
+options = ClaudeAgentOptions(allowed_tools=["Read"])  # Pre-approves "Read" permission
 
-# CORRECT — use None or omit the parameter to get default behavior
-options = ClaudeAgentOptions(allowed_tools=None)
-
-# Or explicitly list only the tools you want
-options = ClaudeAgentOptions(allowed_tools=["Read", "Grep"])
+# CORRECT — use tools= to control which tools are available
+options = ClaudeAgentOptions(tools=[])               # Disables all tools
+options = ClaudeAgentOptions(tools=["Read", "Grep"]) # Only these tools enabled
+options = ClaudeAgentOptions(tools=None)             # Default toolset (omits --tools flag)
 ```
-**Why**: Empty list `[]` is falsy in Python, so the `--allowedTools` flag is omitted from the CLI command, making all tools available. Issue [#523](https://github.com/anthropics/claude-agent-sdk-python/issues/523).
+**Why**: `allowed_tools` maps to `--allowedTools` (permission pre-approval), not `--tools` (tool availability). An empty `allowed_tools=[]` is also falsy, so it's silently omitted. To disable or restrict tools, always use the `tools` parameter. Issues [#523](https://github.com/anthropics/claude-agent-sdk-python/issues/523), [#634](https://github.com/anthropics/claude-agent-sdk-python/issues/634).
 
 ### Use thinking config instead of max_thinking_tokens for Opus 4.6+
 ```python
@@ -175,3 +175,19 @@ output = SyncHookJSONOutput(continue_=True)
 output["continue_"]  # ✅
 ```
 **Why**: `TypedDict` classes (e.g., `ThinkingConfig*`, `SyncHookJSONOutput`, `AsyncHookJSONOutput`, `HookSpecificOutput` variants, `McpStdioServerConfig`, `McpSSEServerConfig`, `McpHttpServerConfig`, `SandboxSettings`) are plain `dict` at runtime. Attribute access like `.budget_tokens` raises `AttributeError`. Only `@dataclass` types (e.g., `AgentDefinition`, `HookMatcher`, `TextBlock`, `ResultMessage`) support dot-notation. Issue [#623](https://github.com/anthropics/claude-agent-sdk-python/issues/623).
+
+### Don't break out of query() generator early — can poison event loop
+```python
+# WRONG — breaking early can raise RuntimeError and cancel all subsequent awaits
+async for msg in query(prompt="...", options=options):
+    if isinstance(msg, ResultMessage):
+        break  # RuntimeError: cancel scope in different task
+
+# CORRECT — let the generator exhaust naturally (it ends at ResultMessage automatically)
+async for msg in query(prompt="...", options=options):
+    process(msg)  # Generator stops naturally after ResultMessage
+
+# ALSO CORRECT — collect all messages first
+messages = [msg async for msg in query(prompt="...", options=options)]
+```
+**Why**: The query task group enters a cancel scope in one async context and exits in another during generator cleanup. AnyIO forbids this, raising `RuntimeError` which in production can cascade to `CancelledError` on all subsequent `await` calls in that event loop. Issue [#454](https://github.com/anthropics/claude-agent-sdk-python/issues/454).

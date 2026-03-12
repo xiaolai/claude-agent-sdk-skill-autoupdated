@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-03-12
+
+- SDK TS v0.2.72 → v0.2.74; Python v0.1.48 unchanged; verify passed (18/18, 1 mending run)
+- TS: documented `renameSession()`, `agentProgressSummaries` option, `supportsAutoMode` model field
+- PY: added KI #22 (early async generator exit poisons event loop); revised KI #2 (`allowed_tools` vs `tools` semantics); updated KI #14, #16, #17, #20
+- Typecheck false-positive (recurring script artifact, non-blocking)
+- [Full report](reports/2026-03-12.md)
+
 ## 2026-03-11
 
 - Research only, no version change (TS v0.2.72, Python v0.1.48)

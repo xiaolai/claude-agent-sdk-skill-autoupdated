@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-03-13
+
+- Research only, no version change (TS v0.2.74, Python v0.1.48)
+- PY: documented 3 hook output types (`PreToolUseHookSpecificOutput`, `PostToolUseHookSpecificOutput`, `UserPromptSubmitHookSpecificOutput`)
+- TS: full API audit confirmed consistent; last-verified date updated
+- Typecheck false-positive (recurring script artifact, non-blocking)
+- [Full report](reports/2026-03-13.md)
+
 ## 2026-03-12
 
 - SDK TS v0.2.72 → v0.2.74; Python v0.1.48 unchanged; verify passed (18/18, 1 mending run)

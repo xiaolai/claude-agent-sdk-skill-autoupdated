@@ -798,6 +798,13 @@ from claude_agent_sdk import (
 #                             decision, systemMessage, reason, hookSpecificOutput
 # AsyncHookJSONOutput covers: async_ (True), asyncTimeout (int, optional)
 # Both can be imported from claude_agent_sdk.types if needed
+
+# Additional hook-specific output types (not in __all__, import from claude_agent_sdk.types):
+from claude_agent_sdk.types import (
+    PreToolUseHookSpecificOutput,         # hookEventName, permissionDecision, permissionDecisionReason, updatedInput, additionalContext
+    PostToolUseHookSpecificOutput,        # hookEventName, additionalContext, updatedMCPToolOutput
+    UserPromptSubmitHookSpecificOutput,   # hookEventName, additionalContext
+)
 ```
 
 ### Async Hooks
@@ -1730,4 +1737,4 @@ result = subprocess.run([sys.executable, "-c", query_script], capture_output=Tru
 
 ---
 
-**Last verified**: 2026-03-11 | **SDK version**: 0.1.48
+**Last verified**: 2026-03-13 | **SDK version**: 0.1.48

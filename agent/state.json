@@ -1,7 +1,7 @@
 {
   "typescript": {
     "registry": {
-      "version": "0.2.74",
+      "version": "0.2.76",
       "peerDependencies": {
         "zod": "^4.0.0"
       },
@@ -598,18 +598,7 @@
       }
     },
     "lastScannedIssueNumber": 229,
-    "lastAuditedVersion": "0.2.74",
-    "lastAuditSummary": {
-      "date": "2026-03-13",
-      "sdkVersion": "0.2.74",
-      "newOptionsAdded": 0,
-      "newMethodsAdded": 0,
-      "newMessageTypesAdded": 0,
-      "newHookEventsAdded": 0,
-      "updatedEntries": 1,
-      "noChanges": false,
-      "notes": "Version unchanged from last audit (0.2.74). GitHub API unavailable (no GH_TOKEN). Updated Last verified date to 2026-03-13. All API surface verified consistent with sdk.d.ts: 22 SDKMessage types, 21 hook events, 36 known issues, all Options documented."
-    }
+    "lastAuditedVersion": "0.2.76"
   },
   "python": {
     "registry": {
@@ -1201,17 +1190,7 @@
     },
     "trackedIssuesExternal": {},
     "lastScannedIssueNumber": 672,
-    "lastAuditedVersion": "0.1.48",
-    "lastAuditSummary": {
-      "auditedAt": "2026-03-13",
-      "sdkVersion": "0.1.48",
-      "issuesEvaluated": 57,
-      "knownIssuesTotal": 22,
-      "knownIssuesAdded": 0,
-      "knownIssuesUpdated": 0,
-      "apiChanges": "No new options or types added since last scan. Documented PreToolUseHookSpecificOutput, PostToolUseHookSpecificOutput, UserPromptSubmitHookSpecificOutput in Hook Output Types section (importable from claude_agent_sdk.types). GitHub API unavailable — no new issues could be fetched beyond lastScannedIssueNumber 672.",
-      "notes": "Full SDK audit against v0.1.48 types.py confirms all ClaudeAgentOptions fields, message types, hook events, and content blocks are accurately documented. AssistantMessage does not yet have usage/message_id fields (PR #646 not merged). StreamEvent correctly noted as not in __all__."
-    }
+    "lastAuditedVersion": "0.1.48"
   },
-  "lastUpdated": "2026-03-13T00:00:00Z"
+  "lastUpdated": "2026-03-14T08:03:59Z"
 }

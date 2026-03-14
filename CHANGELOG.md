@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-03-14
+
+- SDK TS v0.2.74 → v0.2.76; Python v0.1.48 unchanged
+- Added `getSessionInfo()`, `forkSession()` APIs; `listSessions()` pagination (`offset`); `SDKSessionInfo` gains `tag`, `createdAt` fields; hook count 21 → 22
+- Research agents found no new issues (all issues already current through TS #229, PY #672)
+- [Full report](reports/2026-03-14.md)
+
 ## 2026-03-13
 
 - Research only, no version change (TS v0.2.74, Python v0.1.48)

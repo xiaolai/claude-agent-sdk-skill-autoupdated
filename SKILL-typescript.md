@@ -1,6 +1,6 @@
-# Claude Agent SDK — TypeScript Reference (v0.2.74)
+# Claude Agent SDK — TypeScript Reference (v0.2.76)
 
-**Package**: `@anthropic-ai/claude-agent-sdk@0.2.74`
+**Package**: `@anthropic-ai/claude-agent-sdk@0.2.76`
 **Docs**: https://platform.claude.com/docs/en/agent-sdk/overview
 **Repo**: https://github.com/anthropics/claude-agent-sdk-typescript
 **Migration**: Renamed from `@anthropic-ai/claude-code`. See [migration guide](https://platform.claude.com/docs/en/agent-sdk/migration-guide).
@@ -10,11 +10,11 @@
 ## Table of Contents
 
 - [Breaking Changes](#breaking-changes-v010)
-- [Core API](#core-api) — `query()`, `tool()`, `createSdkMcpServer()`, `listSessions()`, `getSessionMessages()`, `renameSession()`
+- [Core API](#core-api) — `query()`, `tool()`, `createSdkMcpServer()`, `listSessions()`, `getSessionMessages()`, `getSessionInfo()`, `renameSession()`, `forkSession()`
 - [Options](#options) — Core, Tools & Permissions, Models & Output, Sessions, MCP & Agents, Advanced
 - [Query Object Methods](#query-object-methods)
 - [Message Types](#message-types) — All 22 SDKMessage types
-- [Hooks](#hooks) — 21 hook events, matchers, return values, async hooks
+- [Hooks](#hooks) — 22 hook events, matchers, return values, async hooks
 - [Permissions](#permissions) — 5 modes, `canUseTool` callback
 - [MCP Servers](#mcp-servers) — stdio, HTTP, SSE, SDK, claudeai-proxy
 - [Subagents](#subagents) — AgentDefinition, tool enforcement workaround
@@ -103,6 +103,7 @@ import { listSessions } from "@anthropic-ai/claude-agent-sdk";
 function listSessions(options?: {
   dir?: string;             // Project directory — filters to sessions for that dir (and its worktrees)
   limit?: number;           // Max sessions to return
+  offset?: number;          // Number of sessions to skip from the start (for pagination, default: 0)
   includeWorktrees?: boolean; // When dir is inside a git repo, include sessions from all worktree paths (default: true)
 }): Promise<SDKSessionInfo[]>
 
@@ -110,11 +111,13 @@ type SDKSessionInfo = {
   sessionId: string;         // UUID — pass to options.resume
   summary: string;           // Display title (custom title, auto-summary, or first prompt)
   lastModified: number;      // Milliseconds since epoch
-  fileSize: number;          // Session file size in bytes
+  fileSize?: number;         // Session file size in bytes (only populated for local JSONL storage)
   customTitle?: string;      // User-set title via /rename
   firstPrompt?: string;      // First meaningful user prompt
   gitBranch?: string;        // Git branch at end of session
   cwd?: string;              // Working directory for the session
+  tag?: string;              // User-set session tag
+  createdAt?: number;        // Creation time in milliseconds since epoch
 };
 ```
 
@@ -181,6 +184,54 @@ Example:
 await renameSession(sessionId, "Authentication refactor session");
 const sessions = await listSessions();
 console.log(sessions[0].customTitle); // "Authentication refactor session"
+```
+
+### `getSessionInfo()`
+
+Reads metadata for a single session by ID. Unlike `listSessions()`, only reads one session file. Returns `undefined` if the session is not found or has no extractable summary.
+
+```typescript
+import { getSessionInfo } from "@anthropic-ai/claude-agent-sdk";
+
+function getSessionInfo(
+  sessionId: string,
+  options?: { dir?: string }  // Project directory; searches all projects if omitted
+): Promise<SDKSessionInfo | undefined>
+```
+
+Example:
+
+```typescript
+const info = await getSessionInfo(sessionId);
+if (info) console.log(info.summary, info.lastModified);
+```
+
+### `forkSession()`
+
+Forks a session into a new branch with fresh UUIDs. Copies transcript messages from the source session, optionally up to a specific message. Forked sessions start without undo history.
+
+```typescript
+import { forkSession } from "@anthropic-ai/claude-agent-sdk";
+
+function forkSession(
+  sessionId: string,
+  options?: {
+    dir?: string;              // Project directory; searches all projects if omitted
+    upToMessageId?: string;    // Fork up to this message UUID (inclusive); full copy if omitted
+    title?: string;            // Custom title for the fork; derives from original + " (fork)" if omitted
+  }
+): Promise<{ sessionId: string }>  // UUID of the new forked session
+```
+
+Example:
+
+```typescript
+const { sessionId: forkId } = await forkSession(sessionId, {
+  upToMessageId: checkpointMessageId,
+  title: "GraphQL experiment"
+});
+// Resume the fork with a different approach
+for await (const msg of query({ prompt: "Try GraphQL", options: { resume: forkId } })) { ... }
 ```
 
 ---
@@ -483,6 +534,7 @@ Hooks use **callback matchers**: an optional regex `matcher` for tool names and 
 | `SubagentStart` | Subagent spawned | Yes | No |
 | `SubagentStop` | Subagent completed | Yes | Yes |
 | `PreCompact` | Before context compaction | Yes | Yes |
+| `PostCompact` | After context compaction completes | Yes | No |
 | `PermissionRequest` | Permission dialog would show | Yes | No |
 | `SessionStart` | Session begins | Yes | No |
 | `SessionEnd` | Session ends | Yes | No |
@@ -611,6 +663,7 @@ Common fields on all hooks: `session_id`, `transcript_path`, `cwd`, `permission_
 | `agent_id`, `agent_type`, `agent_transcript_path` | SubagentStop |
 | `trigger` (`'init' \| 'maintenance'`) | Setup |
 | `trigger` (`'manual' \| 'auto'`), `custom_instructions` | PreCompact |
+| `trigger` (`'manual' \| 'auto'`), `compact_summary` (the conversation summary produced by compaction) | PostCompact |
 | `source` | SessionStart (`'startup' \| 'resume' \| 'clear' \| 'compact'`) |
 | `agent_type`, `model` | SessionStart |
 | `reason` | SessionEnd |
@@ -1374,11 +1427,11 @@ const q = query({
 
 ---
 
-## Changelog Highlights (v0.2.12 → v0.2.74)
+## Changelog Highlights (v0.2.12 → v0.2.76)
 
 | Version | Change |
 |---------|--------|
-| v0.2.74 | Fixed `SubagentStart`/`SubagentStop` hook `agent_type` always reporting `"general-purpose"` — now correctly reports the agent key from the `agents` map ([#226](https://github.com/anthropics/claude-agent-sdk-typescript/issues/226)) |
+| v0.2.76 | Version bump; includes fix for `SubagentStart`/`SubagentStop` hook `agent_type` always reporting `"general-purpose"` — now correctly reports the agent key from the `agents` map ([#226](https://github.com/anthropics/claude-agent-sdk-typescript/issues/226)) |
 | v0.2.71 | Fixed `Agent` tool returning `"Unknown tool: Agent"` in `query()` mode — subagent invocation via `tools: ['Agent']` + `agents` map now works ([#210](https://github.com/anthropics/claude-agent-sdk-typescript/issues/210)) |
 | v0.2.63 | Fixed `SDKRateLimitEvent` and `SDKPromptSuggestionMessage` missing from `sdk.d.ts` — `SDKMessage` now has full type safety ([#196](https://github.com/anthropics/claude-agent-sdk-typescript/issues/196), [#206](https://github.com/anthropics/claude-agent-sdk-typescript/issues/206)) |
 | v0.2.58 | Version bump |
@@ -1395,4 +1448,4 @@ const q = query({
 
 ---
 
-**Last verified**: 2026-03-13 | **SDK version**: 0.2.74
+**Last verified**: 2026-03-14 | **SDK version**: 0.2.76

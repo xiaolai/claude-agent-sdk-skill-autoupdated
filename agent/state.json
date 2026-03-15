@@ -480,7 +480,8 @@
         "state": "open",
         "researchedAt": "2026-03-11",
         "verdict": "skipped",
-        "reason": "0 reactions; feature unavailability with no SDK-level workaround"
+        "reason": "0 reactions; feature unavailability with no SDK-level workaround",
+        "knownIssueNumber": 37
       },
       "217": {
         "repo": "anthropics/claude-agent-sdk-typescript",
@@ -506,7 +507,8 @@
         "state": "open",
         "researchedAt": "2026-03-11",
         "verdict": "skipped",
-        "reason": "0 reactions; Windows-specific process cleanup issue; no reliable user-level workaround"
+        "reason": "0 reactions; Windows-specific process cleanup issue; no reliable user-level workaround",
+        "knownIssueNumber": 38
       },
       "220": {
         "repo": "anthropics/claude-agent-sdk-typescript",
@@ -587,6 +589,18 @@
         "researchedAt": "2026-03-11",
         "verdict": "skipped",
         "reason": "Internal regression test tracking issue; not a user-facing bug"
+      },
+      "230": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "Agent SDK does not reliably honor Claude settings files in query()",
+        "state": "open",
+        "knownIssueNumber": null
+      },
+      "231": {
+        "repo": "anthropics/claude-agent-sdk-typescript",
+        "title": "Sandbox cannot be locked down to current working directory",
+        "state": "open",
+        "knownIssueNumber": null
       }
     },
     "trackedIssuesExternal": {
@@ -1190,7 +1204,74 @@
     },
     "trackedIssuesExternal": {},
     "lastScannedIssueNumber": 672,
-    "lastAuditedVersion": "0.1.48"
+    "lastAuditedVersion": "0.1.48",
+    "lastAuditSummary": {
+      "date": "2026-03-15",
+      "sdkVersion": "0.1.48",
+      "newOptionsAdded": 0,
+      "newMethodsAdded": 0,
+      "newMessageTypesAdded": 0,
+      "newHookEventsAdded": 0,
+      "updatedEntries": 0,
+      "noChanges": true,
+      "note": "Audit skipped — lastAuditedVersion already matched installed SDK 0.1.48. GitHub issues research skipped — no GH_TOKEN available."
+    }
   },
-  "lastUpdated": "2026-03-14T08:03:59Z"
+  "lastUpdated": "2026-03-15T00:00:00Z",
+  "researchedIssues": {
+    "216": {
+      "title": "Fast Mode Unavailable via SDK — Requires Native Bun Binary",
+      "verdict": "added_known_issue",
+      "reason": "Known Issue #37 added: fast mode silently unavailable in Node.js, requires Bun binary",
+      "researchedAt": "2026-03-15"
+    },
+    "219": {
+      "title": "query(): MCP server processes remain as zombies after session ends",
+      "verdict": "added_known_issue",
+      "reason": "Known Issue #38 added: MCP zombie processes not cleaned up after session ends",
+      "researchedAt": "2026-03-15"
+    },
+    "222": {
+      "title": "Add missing ./sdk-tools export path to package.json",
+      "verdict": "updated_existing",
+      "reason": "Updated Known Issue #35 to mark as fixed in v0.2.76; also added to v0.2.76 changelog",
+      "researchedAt": "2026-03-15"
+    },
+    "225": {
+      "title": "No way to propagate hooks to subagents",
+      "verdict": "skipped",
+      "reason": "Enhancement request with 0 comments, no workaround yet",
+      "researchedAt": "2026-03-15"
+    },
+    "226": {
+      "title": "SubagentStart/SubagentStop hooks always report agent_type as general-purpose",
+      "verdict": "skipped",
+      "reason": "Already documented in v0.2.76 changelog; fixed in v0.2.76",
+      "researchedAt": "2026-03-15"
+    },
+    "227": {
+      "title": "outputFormat is ignored",
+      "verdict": "skipped",
+      "reason": "Likely duplicate of Known Issue #20 (Zod draft-07); 0 comments, no new workaround",
+      "researchedAt": "2026-03-15"
+    },
+    "228": {
+      "title": "fix(ProcessTransport): prevent ERR_STREAM_WRITE_AFTER_END race after endInput()",
+      "verdict": "skipped",
+      "reason": "Fix PR for issue #148 (Known Issue #31); version not confirmed so not marking fixed",
+      "researchedAt": "2026-03-15"
+    },
+    "230": {
+      "title": "Agent SDK does not reliably honor Claude settings files in query()",
+      "verdict": "skipped",
+      "reason": "0 comments, no confirmed workaround; related to permissionMode default injection",
+      "researchedAt": "2026-03-15"
+    },
+    "231": {
+      "title": "Sandbox cannot be locked down to current working directory",
+      "verdict": "skipped",
+      "reason": "Enhancement request with 0 comments, no allowRead mechanism yet",
+      "researchedAt": "2026-03-15"
+    }
+  }
 }

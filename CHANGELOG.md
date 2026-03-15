@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-03-15
+
+- Research only, no version change (TS v0.2.76, Python v0.1.48 unchanged)
+- TS: added KI #37 (fast mode requires Bun binary, unavailable in Node.js), KI #38 (MCP zombie processes after session ends); updated KI #35 (sdk-tools export fixed in v0.2.76)
+- PY: no new findings — version unchanged, GH_TOKEN unavailable for issue scan
+- Typecheck false-positive (recurring script artifact, non-blocking)
+- [Full report](reports/2026-03-15.md)
+
 ## 2026-03-14
 
 - SDK TS v0.2.74 → v0.2.76; Python v0.1.48 unchanged

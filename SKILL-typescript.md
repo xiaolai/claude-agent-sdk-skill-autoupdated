@@ -1388,10 +1388,11 @@ const q = query({ prompt, options: { effort: 'high' } });
 Or set the environment variable before spawning: `CLAUDE_CODE_EFFORT_LEVEL=high`.
 **Bedrock workaround**: Downgrade to v0.2.66 until the `supportsEffort` check correctly handles ARN-format model IDs.
 
-### #35: `sdk-tools.d.ts` subpath unresolvable since v0.2.69 — missing from package exports map
+### #35: `sdk-tools.d.ts` subpath unresolvable since v0.2.69 — missing from package exports map ✅ Fixed in v0.2.76
 **Error**: TypeScript cannot resolve `"@anthropic-ai/claude-agent-sdk/sdk-tools"` in projects using `moduleResolution: bundler`, `node16`, or `nodenext` ([#218](https://github.com/anthropics/claude-agent-sdk-typescript/issues/218))
 **Cause**: SDK v0.2.69 added a package.json `exports` field but omitted `"./sdk-tools"`. In strict ESM environments the exports map is authoritative, so the physical `sdk-tools.d.ts` file (which contains input schemas for all built-in tools: `BashInput`, `GlobInput`, `GrepInput`, etc.) is inaccessible via the subpath import.
-**Workaround**: Switch to `moduleResolution: node10` (legacy), which ignores the exports map and resolves directly from the file system. Alternatively, reference the types via a relative import from `node_modules` (non-portable):
+**Status**: Fixed in v0.2.76 — the `./sdk-tools` entry has been added to `package.json`'s exports map ([#222](https://github.com/anthropics/claude-agent-sdk-typescript/issues/222)). Upgrade to v0.2.76+ to resolve.
+**Workaround** (for older versions): Switch to `moduleResolution: node10` (legacy), which ignores the exports map and resolves directly from the file system. Alternatively, reference the types via a relative import from `node_modules` (non-portable):
 ```typescript
 // Instead of (broken in bundler/node16/nodenext moduleResolution):
 import type { GlobInput } from "@anthropic-ai/claude-agent-sdk/sdk-tools";
@@ -1425,13 +1426,26 @@ const q = query({
 ```
 **Note**: A fix has been merged by Anthropic — check if your SDK version includes it.
 
+### #37: Fast mode silently unavailable in Node.js — requires native Bun binary
+**Error**: No error thrown — fast mode silently falls back to standard mode ([#216](https://github.com/anthropics/claude-agent-sdk-typescript/issues/216))
+**Cause**: The SDK checks for the native streaming binary using `typeof Bun !== "undefined"`, which always returns `false` in Node.js. The server-side feature flag then rejects fast mode and silently falls back to standard Opus 4.6. Fast mode requires the native Bun-compiled CLI distribution that ships alongside Claude Code.
+**Impact**: Affects claude.ai Pro subscribers who have fast mode available — `settings.fastMode` is silently ignored in Node.js environments despite TypeScript types suggesting it is available.
+**Workaround**: Run your application with the Bun runtime (`bun run app.ts`), which enables the native binary required for fast mode. There is no workaround for Node.js-only environments.
+
+### #38: MCP server processes remain as zombies after session ends
+**Error**: `node.exe` / `python.exe` processes accumulate after multiple sessions ([#219](https://github.com/anthropics/claude-agent-sdk-typescript/issues/219))
+**Cause**: The SDK does not guarantee cleanup of spawned MCP server child processes when sessions end — including timeouts, errors, and `close()` calls. No session-scoped process grouping is applied.
+**Impact**: After 5–10 sessions, dozens of orphaned processes accumulate, consuming memory and causing port conflicts.
+**Partial workaround**: Use externally-managed MCP servers (e.g., `stdio` servers you start and stop yourself) rather than relying on the SDK to spawn them. For SDK-managed servers, you can snapshot PIDs before and after a session and kill the difference — but this approach fails for concurrent sessions since processes from different sessions cannot be distinguished.
+**Note**: Using `stdio` MCP servers launched and managed outside the SDK lifecycle avoids this issue entirely.
+
 ---
 
 ## Changelog Highlights (v0.2.12 → v0.2.76)
 
 | Version | Change |
 |---------|--------|
-| v0.2.76 | Version bump; includes fix for `SubagentStart`/`SubagentStop` hook `agent_type` always reporting `"general-purpose"` — now correctly reports the agent key from the `agents` map ([#226](https://github.com/anthropics/claude-agent-sdk-typescript/issues/226)) |
+| v0.2.76 | Fixed `SubagentStart`/`SubagentStop` hook `agent_type` always reporting `"general-purpose"` — now correctly reports the agent key from the `agents` map ([#226](https://github.com/anthropics/claude-agent-sdk-typescript/issues/226)); fixed missing `./sdk-tools` entry in `package.json` exports map, resolving TypeScript subpath import failures in `bundler`/`node16`/`nodenext` moduleResolution ([#222](https://github.com/anthropics/claude-agent-sdk-typescript/issues/222)) |
 | v0.2.71 | Fixed `Agent` tool returning `"Unknown tool: Agent"` in `query()` mode — subagent invocation via `tools: ['Agent']` + `agents` map now works ([#210](https://github.com/anthropics/claude-agent-sdk-typescript/issues/210)) |
 | v0.2.63 | Fixed `SDKRateLimitEvent` and `SDKPromptSuggestionMessage` missing from `sdk.d.ts` — `SDKMessage` now has full type safety ([#196](https://github.com/anthropics/claude-agent-sdk-typescript/issues/196), [#206](https://github.com/anthropics/claude-agent-sdk-typescript/issues/206)) |
 | v0.2.58 | Version bump |
@@ -1448,4 +1462,4 @@ const q = query({
 
 ---
 
-**Last verified**: 2026-03-14 | **SDK version**: 0.2.76
+**Last verified**: 2026-03-15 | **SDK version**: 0.2.76

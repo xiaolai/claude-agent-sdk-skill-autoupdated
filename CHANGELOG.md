@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-03-16
+
+- Research only, no version change (TS v0.2.76, Python v0.1.48 unchanged)
+- TS: added `tagSession()` docs to SKILL-typescript.md (was exported but undocumented); updated BaseHookInput to include `agent_id?` / `agent_type?`; GitHub API unavailable, no new issues scanned
+- PY: consistency audit passed (no changes); GH_TOKEN unavailable for issue scan
+- Typecheck false-positive (recurring script artifact, non-blocking)
+- [Full report](reports/2026-03-16.md)
+
 ## 2026-03-15
 
 - Research only, no version change (TS v0.2.76, Python v0.1.48 unchanged)

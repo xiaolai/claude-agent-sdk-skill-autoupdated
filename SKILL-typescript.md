@@ -10,7 +10,7 @@
 ## Table of Contents
 
 - [Breaking Changes](#breaking-changes-v010)
-- [Core API](#core-api) — `query()`, `tool()`, `createSdkMcpServer()`, `listSessions()`, `getSessionMessages()`, `getSessionInfo()`, `renameSession()`, `forkSession()`
+- [Core API](#core-api) — `query()`, `tool()`, `createSdkMcpServer()`, `listSessions()`, `getSessionMessages()`, `getSessionInfo()`, `renameSession()`, `forkSession()`, `tagSession()`
 - [Options](#options) — Core, Tools & Permissions, Models & Output, Sessions, MCP & Agents, Advanced
 - [Query Object Methods](#query-object-methods)
 - [Message Types](#message-types) — All 22 SDKMessage types
@@ -232,6 +232,31 @@ const { sessionId: forkId } = await forkSession(sessionId, {
 });
 // Resume the fork with a different approach
 for await (const msg of query({ prompt: "Try GraphQL", options: { resume: forkId } })) { ... }
+```
+
+### `tagSession()`
+
+Adds or clears a tag on a session. Tags appear in `listSessions()` results as `tag`. Pass `null` to clear the tag.
+
+```typescript
+import { tagSession } from "@anthropic-ai/claude-agent-sdk";
+
+function tagSession(
+  sessionId: string,
+  tag: string | null,
+  options?: { dir?: string }  // Project directory; searches all projects if omitted
+): Promise<void>
+```
+
+Example:
+
+```typescript
+await tagSession(sessionId, "needs-review");
+const sessions = await listSessions();
+console.log(sessions[0].tag); // "needs-review"
+
+// Clear the tag
+await tagSession(sessionId, null);
 ```
 
 ---
@@ -649,7 +674,7 @@ return { async: true, asyncTimeout: 30000 };  // 30s timeout
 
 ### Hook Input Fields
 
-Common fields on all hooks: `session_id`, `transcript_path`, `cwd`, `permission_mode`
+Common fields on all hooks: `session_id`, `transcript_path`, `cwd`, `permission_mode?`, `agent_id?` (set when hook fires from within a subagent), `agent_type?` (set when hook fires from within a subagent, or on the main thread of a session started with `--agent`)
 
 | Field | Hooks |
 |-------|-------|
@@ -1462,4 +1487,4 @@ const q = query({
 
 ---
 
-**Last verified**: 2026-03-15 | **SDK version**: 0.2.76
+**Last verified**: 2026-03-16 | **SDK version**: 0.2.76

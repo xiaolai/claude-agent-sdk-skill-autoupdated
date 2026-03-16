@@ -612,7 +612,19 @@
       }
     },
     "lastScannedIssueNumber": 229,
-    "lastAuditedVersion": "0.2.76"
+    "lastAuditedVersion": "0.2.76",
+    "lastAuditSummary": {
+      "date": "2026-03-16",
+      "sdkVersion": "0.2.76",
+      "newOptionsAdded": 0,
+      "newMethodsAdded": 0,
+      "newMessageTypesAdded": 0,
+      "newHookEventsAdded": 0,
+      "updatedEntries": 2,
+      "noChanges": false,
+      "notes": "Added tagSession() to Core API (was exported in sdk.d.ts but missing from SKILL-typescript.md). Updated BaseHookInput common fields documentation to include agent_id? and agent_type? which are present on all hook inputs since they are part of BaseHookInput. GitHub API unavailable during this run; no new issues researched."
+    },
+    "researchedIssues": {}
   },
   "python": {
     "registry": {
@@ -1206,7 +1218,7 @@
     "lastScannedIssueNumber": 672,
     "lastAuditedVersion": "0.1.48",
     "lastAuditSummary": {
-      "date": "2026-03-15",
+      "date": "2026-03-16",
       "sdkVersion": "0.1.48",
       "newOptionsAdded": 0,
       "newMethodsAdded": 0,
@@ -1214,10 +1226,10 @@
       "newHookEventsAdded": 0,
       "updatedEntries": 0,
       "noChanges": true,
-      "note": "Audit skipped — lastAuditedVersion already matched installed SDK 0.1.48. GitHub issues research skipped — no GH_TOKEN available."
+      "note": "Audit skipped — lastAuditedVersion already matched installed SDK 0.1.48. GitHub issues research skipped — no GH_TOKEN available. Part C checks passed: JSON valid, versions consistent (0.1.48 throughout), Known Issues #1-22 sequentially numbered, no spurious duplicate issue refs."
     }
   },
-  "lastUpdated": "2026-03-15T00:00:00Z",
+  "lastUpdated": "2026-03-16T00:00:00Z",
   "researchedIssues": {
     "216": {
       "title": "Fast Mode Unavailable via SDK — Requires Native Bun Binary",

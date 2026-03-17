@@ -1,6 +1,6 @@
-# Claude Agent SDK — TypeScript Reference (v0.2.76)
+# Claude Agent SDK — TypeScript Reference (v0.2.77)
 
-**Package**: `@anthropic-ai/claude-agent-sdk@0.2.76`
+**Package**: `@anthropic-ai/claude-agent-sdk@0.2.77`
 **Docs**: https://platform.claude.com/docs/en/agent-sdk/overview
 **Repo**: https://github.com/anthropics/claude-agent-sdk-typescript
 **Migration**: Renamed from `@anthropic-ai/claude-code`. See [migration guide](https://platform.claude.com/docs/en/agent-sdk/migration-guide).
@@ -13,7 +13,7 @@
 - [Core API](#core-api) — `query()`, `tool()`, `createSdkMcpServer()`, `listSessions()`, `getSessionMessages()`, `getSessionInfo()`, `renameSession()`, `forkSession()`, `tagSession()`
 - [Options](#options) — Core, Tools & Permissions, Models & Output, Sessions, MCP & Agents, Advanced
 - [Query Object Methods](#query-object-methods)
-- [Message Types](#message-types) — All 22 SDKMessage types
+- [Message Types](#message-types) — All 23 SDKMessage types
 - [Hooks](#hooks) — 22 hook events, matchers, return values, async hooks
 - [Permissions](#permissions) — 5 modes, `canUseTool` callback
 - [MCP Servers](#mcp-servers) — stdio, HTTP, SSE, SDK, claudeai-proxy
@@ -368,6 +368,7 @@ await q.supportedCommands();                // List slash commands
 await q.mcpServerStatus();                  // MCP server status
 await q.accountInfo();                      // Account info
 await q.initializationResult();             // Full init response (commands, models, account, styles)
+await q.applyFlagSettings(settings);        // Merge settings into flag layer mid-session (shallow-merge per top-level key)
 
 // MCP management
 await q.reconnectMcpServer("server-name");  // Reconnect MCP server (v0.2.21)
@@ -416,6 +417,7 @@ type AccountInfo = {
   subscriptionType?: string;
   tokenSource?: string;
   apiKeySource?: string;
+  apiProvider?: 'firstParty' | 'bedrock' | 'vertex' | 'foundry';  // Active API backend
 };
 ```
 
@@ -423,7 +425,7 @@ type AccountInfo = {
 
 ## Message Types
 
-The SDK emits 22 message types through the async generator:
+The SDK emits 23 message types through the async generator:
 
 ```typescript
 type SDKMessage =
@@ -437,6 +439,7 @@ type SDKMessage =
   | SDKCompactBoundaryMessage     // type: 'system', subtype: 'compact_boundary'
   // Status & progress
   | SDKStatusMessage              // type: 'system', subtype: 'status' — status updates (e.g., 'compacting')
+  | SDKAPIRetryMessage            // type: 'system', subtype: 'api_retry' — transient API error being retried (v0.2.77)
   | SDKToolProgressMessage        // type: 'tool_progress' — tool execution progress with elapsed time
   | SDKToolUseSummaryMessage      // type: 'tool_use_summary' — summary of tool usage
   | SDKAuthStatusMessage          // type: 'auth_status' — authentication status
@@ -456,6 +459,19 @@ type SDKMessage =
   | SDKRateLimitEvent             // type: 'rate_limit_event' — rate limit status for claude.ai subscriptions
   | SDKPromptSuggestionMessage    // type: 'prompt_suggestion' — predicted next user prompt (requires promptSuggestions: true)
 ```
+
+### SDKAPIRetryMessage (v0.2.77)
+
+```typescript
+{ type: 'system', subtype: 'api_retry', uuid, session_id,
+  attempt: number,             // Current attempt number (1-based)
+  max_retries: number,         // Maximum number of retries
+  retry_delay_ms: number,      // Delay before next attempt in ms
+  error_status: number | null, // HTTP status code, or null for connection errors (e.g. timeouts)
+  error: SDKAssistantMessageError }
+```
+
+Emitted when a transient API error is automatically retried. Use to show retry indicators in UIs or log retry storms.
 
 ### SDKResultMessage
 
@@ -515,6 +531,7 @@ for await (const message of query({ prompt: "...", options })) {
     case 'system':
       if (message.subtype === 'init') sessionId = message.session_id;
       if (message.subtype === 'status') console.log('Status:', message.status, message.permissionMode);  // permissionMode?: PermissionMode
+      if (message.subtype === 'api_retry') console.log(`Retrying (${message.attempt}/${message.max_retries}), delay ${message.retry_delay_ms}ms, http_status: ${message.error_status}`);
       if (message.subtype === 'hook_progress') console.log('Hook:', message.output);  // also: .stdout, .stderr, .hook_name, .hook_event
       if (message.subtype === 'local_command_output') console.log('Slash cmd output:', message.content);
       if (message.subtype === 'elicitation_complete') console.log('Elicitation done:', message.mcp_server_name, message.elicitation_id);
@@ -701,7 +718,7 @@ Common fields on all hooks: `session_id`, `transcript_path`, `cwd`, `permission_
 | `worktree_path` | WorktreeRemove (path of removed worktree) |
 | `mcp_server_name`, `message`, `mode?`, `url?`, `elicitation_id?`, `requested_schema?` | Elicitation |
 | `mcp_server_name`, `elicitation_id?`, `mode?`, `action`, `content?` | ElicitationResult |
-| `file_path`, `memory_type` (`'User' \| 'Project' \| 'Local' \| 'Managed'`), `load_reason` (`'session_start' \| 'nested_traversal' \| 'path_glob_match' \| 'include'`), `globs?`, `trigger_file_path?`, `parent_file_path?` | InstructionsLoaded |
+| `file_path`, `memory_type` (`'User' \| 'Project' \| 'Local' \| 'Managed'`), `load_reason` (`'session_start' \| 'nested_traversal' \| 'path_glob_match' \| 'include' \| 'compact'`), `globs?`, `trigger_file_path?`, `parent_file_path?` | InstructionsLoaded |
 
 ---
 
@@ -731,6 +748,9 @@ type CanUseTool = (
     suggestions?: PermissionUpdate[];  // Permission suggestions from Claude
     blockedPath?: string;              // Path that triggered a permission check
     decisionReason?: string;           // Why this permission check was triggered
+    title?: string;                    // Full permission prompt sentence (e.g. "Claude wants to read foo.txt")
+    displayName?: string;              // Short noun phrase for the action (e.g. "Read file") — for button labels
+    description?: string;              // Human-readable subtitle (e.g. "Claude will have read access to ~/Downloads")
     toolUseID: string;                 // ID of the tool use block
     agentID?: string;                  // Subagent ID (if called from a subagent)
   }
@@ -960,9 +980,11 @@ type SandboxSettings = {
     allowManagedDomainsOnly?: boolean;  // Only allow managed domains
   };
   filesystem?: {
-    allowWrite?: string[];          // Paths allowed for writing (glob patterns)
-    denyWrite?: string[];           // Paths denied for writing (glob patterns)
-    denyRead?: string[];            // Paths denied for reading (glob patterns)
+    allowWrite?: string[];               // Paths allowed for writing (glob patterns)
+    denyWrite?: string[];                // Paths denied for writing (glob patterns)
+    denyRead?: string[];                 // Paths denied for reading (glob patterns)
+    allowRead?: string[];                // Re-allow reading within denyRead regions (takes precedence over denyRead)
+    allowManagedReadPathsOnly?: boolean; // (managed settings) restrict reads to managed allowRead paths only
   };
   ignoreViolations?: Record<string, string[]>;  // Generic violation categories
   enableWeakerNestedSandbox?: boolean;
@@ -1413,10 +1435,10 @@ const q = query({ prompt, options: { effort: 'high' } });
 Or set the environment variable before spawning: `CLAUDE_CODE_EFFORT_LEVEL=high`.
 **Bedrock workaround**: Downgrade to v0.2.66 until the `supportsEffort` check correctly handles ARN-format model IDs.
 
-### #35: `sdk-tools.d.ts` subpath unresolvable since v0.2.69 — missing from package exports map ✅ Fixed in v0.2.76
+### #35: `sdk-tools.d.ts` subpath unresolvable since v0.2.69 — missing from package exports map ✅ Fixed in v0.2.77
 **Error**: TypeScript cannot resolve `"@anthropic-ai/claude-agent-sdk/sdk-tools"` in projects using `moduleResolution: bundler`, `node16`, or `nodenext` ([#218](https://github.com/anthropics/claude-agent-sdk-typescript/issues/218))
 **Cause**: SDK v0.2.69 added a package.json `exports` field but omitted `"./sdk-tools"`. In strict ESM environments the exports map is authoritative, so the physical `sdk-tools.d.ts` file (which contains input schemas for all built-in tools: `BashInput`, `GlobInput`, `GrepInput`, etc.) is inaccessible via the subpath import.
-**Status**: Fixed in v0.2.76 — the `./sdk-tools` entry has been added to `package.json`'s exports map ([#222](https://github.com/anthropics/claude-agent-sdk-typescript/issues/222)). Upgrade to v0.2.76+ to resolve.
+**Status**: Fixed in v0.2.77 — the `./sdk-tools` entry has been added to `package.json`'s exports map ([#222](https://github.com/anthropics/claude-agent-sdk-typescript/issues/222)). Upgrade to v0.2.77+ to resolve.
 **Workaround** (for older versions): Switch to `moduleResolution: node10` (legacy), which ignores the exports map and resolves directly from the file system. Alternatively, reference the types via a relative import from `node_modules` (non-portable):
 ```typescript
 // Instead of (broken in bundler/node16/nodenext moduleResolution):
@@ -1464,13 +1486,30 @@ const q = query({
 **Partial workaround**: Use externally-managed MCP servers (e.g., `stdio` servers you start and stop yourself) rather than relying on the SDK to spawn them. For SDK-managed servers, you can snapshot PIDs before and after a session and kill the difference — but this approach fails for concurrent sessions since processes from different sessions cannot be distinguished.
 **Note**: Using `stdio` MCP servers launched and managed outside the SDK lifecycle avoids this issue entirely.
 
+### #39: Sandbox cannot be locked down to the project directory — default allows full filesystem read access
+**Error**: No error thrown — sandbox with `filesystem.denyRead` cannot be used to restrict reads to just the working directory ([#231](https://github.com/anthropics/claude-agent-sdk-typescript/issues/231))
+**Cause**: There is no option to restrict reads to a specific subtree. `filesystem.denyRead: ['/']` (or `['//']`) also blocks the project directory itself because `allowWrite` rules cannot override a parent `denyRead`. The sandbox has no concept of "allow only CWD reads."
+**Impact**: Multi-user or security-hardened deployments cannot use the sandbox to isolate file access to the working directory alone. The sandbox currently protects writes but not reads.
+**Workaround**: Explicitly enumerate every top-level directory to deny (e.g., `/bin`, `/etc`, `/usr`, `/var`, `/home/other_user`, etc.), leaving only the path chain to your project directory visible. This is fragile — newly-created directories are not covered.
+```typescript
+sandbox: {
+  enabled: true,
+  filesystem: {
+    // Deny-list everything except the path to your project:
+    denyRead: ['/bin', '/boot', '/etc', '/lib', '/media', '/opt', '/proc', '/root', '/run', '/srv', '/sys', '/tmp', '/usr', '/var']
+    // Note: /home and other user directories must also be added manually
+  }
+}
+```
+**Note**: There is no configuration option to invert this to "allow only CWD." A feature request for a `allowReadCwdOnly` or similar option is tracked in [#231](https://github.com/anthropics/claude-agent-sdk-typescript/issues/231).
+
 ---
 
-## Changelog Highlights (v0.2.12 → v0.2.76)
+## Changelog Highlights (v0.2.12 → v0.2.77)
 
 | Version | Change |
 |---------|--------|
-| v0.2.76 | Fixed `SubagentStart`/`SubagentStop` hook `agent_type` always reporting `"general-purpose"` — now correctly reports the agent key from the `agents` map ([#226](https://github.com/anthropics/claude-agent-sdk-typescript/issues/226)); fixed missing `./sdk-tools` entry in `package.json` exports map, resolving TypeScript subpath import failures in `bundler`/`node16`/`nodenext` moduleResolution ([#222](https://github.com/anthropics/claude-agent-sdk-typescript/issues/222)) |
+| v0.2.77 | Added `SDKAPIRetryMessage` (`type: 'system', subtype: 'api_retry'`) — emitted when a transient API error is automatically retried; exposes attempt count, max retries, delay, and error status; fixed `SubagentStart`/`SubagentStop` hook `agent_type` always reporting `"general-purpose"` — now correctly reports the agent key from the `agents` map ([#226](https://github.com/anthropics/claude-agent-sdk-typescript/issues/226)); fixed missing `./sdk-tools` entry in `package.json` exports map ([#222](https://github.com/anthropics/claude-agent-sdk-typescript/issues/222)) |
 | v0.2.71 | Fixed `Agent` tool returning `"Unknown tool: Agent"` in `query()` mode — subagent invocation via `tools: ['Agent']` + `agents` map now works ([#210](https://github.com/anthropics/claude-agent-sdk-typescript/issues/210)) |
 | v0.2.63 | Fixed `SDKRateLimitEvent` and `SDKPromptSuggestionMessage` missing from `sdk.d.ts` — `SDKMessage` now has full type safety ([#196](https://github.com/anthropics/claude-agent-sdk-typescript/issues/196), [#206](https://github.com/anthropics/claude-agent-sdk-typescript/issues/206)) |
 | v0.2.58 | Version bump |
@@ -1487,4 +1526,4 @@ const q = query({
 
 ---
 
-**Last verified**: 2026-03-16 | **SDK version**: 0.2.76
+**Last verified**: 2026-03-17 | **SDK version**: 0.2.77

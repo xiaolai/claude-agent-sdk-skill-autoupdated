@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-03-17
+
+- SDK TS v0.2.76 → v0.2.77; Python v0.1.48 → v0.1.49 (both bumped)
+- TS v0.2.77: new `SDKAPIRetryMessage` (23rd type), `applyFlagSettings()`, `AccountInfo.apiProvider`, richer `CanUseTool` fields (`title`, `displayName`, `description`), new `'compact'` InstructionsLoaded load_reason
+- Research: tracked 2 new TS issues (#230, #231, pending KI assignment); PY no new findings
+- [Full report](reports/2026-03-17.md)
+
 ## 2026-03-16
 
 - Research only, no version change (TS v0.2.76, Python v0.1.48 unchanged)

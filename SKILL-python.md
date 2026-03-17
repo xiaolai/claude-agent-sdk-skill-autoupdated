@@ -1,6 +1,6 @@
-# Claude Agent SDK — Python Reference (v0.1.48)
+# Claude Agent SDK — Python Reference (v0.1.49)
 
-**Package**: `claude-agent-sdk==0.1.48` (PyPI)
+**Package**: `claude-agent-sdk==0.1.49` (PyPI)
 **Docs**: https://platform.claude.com/docs/en/agent-sdk/python
 **Repo**: https://github.com/anthropics/claude-agent-sdk-python
 **Requires**: Python 3.10+
@@ -1729,7 +1729,6 @@ result = subprocess.run([sys.executable, "-c", query_script], capture_output=Tru
 
 | Version | Change |
 |---------|--------|
-| v0.1.48 | Added `reconnect_mcp_server()`, `toggle_mcp_server()`, `stop_task()` to `ClaudeSDKClient`; added typed task message classes `TaskStartedMessage`, `TaskProgressMessage`, `TaskNotificationMessage`; added `ResultMessage.stop_reason` field |
 | v0.1.44 | Fixed `rate_limit_event` crash in message parser — unknown CLI message types now skipped gracefully; bundled CLI updated to v2.1.59 |
 | v0.1.36 | Added `thinking` (`ThinkingConfig` types: adaptive/enabled/disabled) and `effort` options; deprecated `max_thinking_tokens` |
 | v0.1.35 | Sub-agent registration via `@filepath` syntax fixed; agents now reliably registered |
@@ -1737,4 +1736,4 @@ result = subprocess.run([sys.executable, "-c", query_script], capture_output=Tru
 
 ---
 
-**Last verified**: 2026-03-13 | **SDK version**: 0.1.48
+**Last verified**: 2026-03-17 | **SDK version**: 0.1.49

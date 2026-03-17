@@ -1,7 +1,7 @@
 {
   "typescript": {
     "registry": {
-      "version": "0.2.76",
+      "version": "0.2.77",
       "peerDependencies": {
         "zod": "^4.0.0"
       },
@@ -612,23 +612,11 @@
       }
     },
     "lastScannedIssueNumber": 229,
-    "lastAuditedVersion": "0.2.76",
-    "lastAuditSummary": {
-      "date": "2026-03-16",
-      "sdkVersion": "0.2.76",
-      "newOptionsAdded": 0,
-      "newMethodsAdded": 0,
-      "newMessageTypesAdded": 0,
-      "newHookEventsAdded": 0,
-      "updatedEntries": 2,
-      "noChanges": false,
-      "notes": "Added tagSession() to Core API (was exported in sdk.d.ts but missing from SKILL-typescript.md). Updated BaseHookInput common fields documentation to include agent_id? and agent_type? which are present on all hook inputs since they are part of BaseHookInput. GitHub API unavailable during this run; no new issues researched."
-    },
-    "researchedIssues": {}
+    "lastAuditedVersion": "0.2.77"
   },
   "python": {
     "registry": {
-      "version": "0.1.48"
+      "version": "0.1.49"
     },
     "github": {
       "repo": "anthropics/claude-agent-sdk-python",
@@ -1216,74 +1204,7 @@
     },
     "trackedIssuesExternal": {},
     "lastScannedIssueNumber": 672,
-    "lastAuditedVersion": "0.1.48",
-    "lastAuditSummary": {
-      "date": "2026-03-16",
-      "sdkVersion": "0.1.48",
-      "newOptionsAdded": 0,
-      "newMethodsAdded": 0,
-      "newMessageTypesAdded": 0,
-      "newHookEventsAdded": 0,
-      "updatedEntries": 0,
-      "noChanges": true,
-      "note": "Audit skipped — lastAuditedVersion already matched installed SDK 0.1.48. GitHub issues research skipped — no GH_TOKEN available. Part C checks passed: JSON valid, versions consistent (0.1.48 throughout), Known Issues #1-22 sequentially numbered, no spurious duplicate issue refs."
-    }
+    "lastAuditedVersion": "0.1.48"
   },
-  "lastUpdated": "2026-03-16T00:00:00Z",
-  "researchedIssues": {
-    "216": {
-      "title": "Fast Mode Unavailable via SDK — Requires Native Bun Binary",
-      "verdict": "added_known_issue",
-      "reason": "Known Issue #37 added: fast mode silently unavailable in Node.js, requires Bun binary",
-      "researchedAt": "2026-03-15"
-    },
-    "219": {
-      "title": "query(): MCP server processes remain as zombies after session ends",
-      "verdict": "added_known_issue",
-      "reason": "Known Issue #38 added: MCP zombie processes not cleaned up after session ends",
-      "researchedAt": "2026-03-15"
-    },
-    "222": {
-      "title": "Add missing ./sdk-tools export path to package.json",
-      "verdict": "updated_existing",
-      "reason": "Updated Known Issue #35 to mark as fixed in v0.2.76; also added to v0.2.76 changelog",
-      "researchedAt": "2026-03-15"
-    },
-    "225": {
-      "title": "No way to propagate hooks to subagents",
-      "verdict": "skipped",
-      "reason": "Enhancement request with 0 comments, no workaround yet",
-      "researchedAt": "2026-03-15"
-    },
-    "226": {
-      "title": "SubagentStart/SubagentStop hooks always report agent_type as general-purpose",
-      "verdict": "skipped",
-      "reason": "Already documented in v0.2.76 changelog; fixed in v0.2.76",
-      "researchedAt": "2026-03-15"
-    },
-    "227": {
-      "title": "outputFormat is ignored",
-      "verdict": "skipped",
-      "reason": "Likely duplicate of Known Issue #20 (Zod draft-07); 0 comments, no new workaround",
-      "researchedAt": "2026-03-15"
-    },
-    "228": {
-      "title": "fix(ProcessTransport): prevent ERR_STREAM_WRITE_AFTER_END race after endInput()",
-      "verdict": "skipped",
-      "reason": "Fix PR for issue #148 (Known Issue #31); version not confirmed so not marking fixed",
-      "researchedAt": "2026-03-15"
-    },
-    "230": {
-      "title": "Agent SDK does not reliably honor Claude settings files in query()",
-      "verdict": "skipped",
-      "reason": "0 comments, no confirmed workaround; related to permissionMode default injection",
-      "researchedAt": "2026-03-15"
-    },
-    "231": {
-      "title": "Sandbox cannot be locked down to current working directory",
-      "verdict": "skipped",
-      "reason": "Enhancement request with 0 comments, no allowRead mechanism yet",
-      "researchedAt": "2026-03-15"
-    }
-  }
+  "lastUpdated": "2026-03-17T08:10:55Z"
 }

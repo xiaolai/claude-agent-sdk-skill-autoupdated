@@ -898,6 +898,8 @@ PermissionMode = Literal[
 
 ### `can_use_tool`
 
+> **⚠️ Known Issue**: The `can_use_tool` callback is currently non-functional — callbacks are never invoked by the CLI even when correctly configured. See [KI #27](#27-can_use_tool-callback-never-invoked-issue-469). Use `PreToolUse` hooks instead for permission enforcement.
+
 ```python
 from claude_agent_sdk.types import PermissionResultAllow, PermissionResultDeny
 
@@ -1690,8 +1692,8 @@ async def handle_request(user_id: str, prompt: str):
 ```
 
 ### #21: `include_partial_messages=True` Breaks Tool Input Streaming on Bedrock/Vertex
-**Error**: `400 Bad Request` with `"unexpected field: eager_input_streaming"` or tool input delta events stop arriving when using `include_partial_messages=True` with Bedrock, Vertex, or strict-schema proxies ([#644](https://github.com/anthropics/claude-agent-sdk-python/pull/644), [#671](https://github.com/anthropics/claude-agent-sdk-python/pull/671))
-**Cause**: CLI v2.1.40 moved fine-grained tool streaming behind a feature flag. PR #644 (v0.1.x) tried to auto-enable it when `include_partial_messages=True`, but the underlying `eager_input_streaming` field is only accepted by the direct Anthropic API and Claude 4.6+. On Bedrock/Vertex or behind strict proxies the field causes 400 errors. PR #671 reverted #644, leaving `input_json_delta` events disabled by default.
+**Error**: `400 Bad Request` with `"unexpected field: eager_input_streaming"` or tool input delta events stop arriving when using `include_partial_messages=True` with Bedrock, Vertex, or strict-schema proxies ([#644](https://github.com/anthropics/claude-agent-sdk-python/pull/644), [#671](https://github.com/anthropics/claude-agent-sdk-python/pull/671), [#694](https://github.com/anthropics/claude-agent-sdk-python/issues/694))
+**Cause**: PR #644 (merged into v0.1.48) auto-enabled fine-grained tool streaming (`eager_input_streaming: true`) when `include_partial_messages=True`. This field is only accepted by the direct Anthropic API and Claude 4.6+. On Bedrock/Vertex or behind strict proxies the field causes 400 errors. PR #671 reverted #644 but is only available in v0.1.49 — which is [partially released](#26-v0149-pypi-release-incomplete-issue-687) and unavailable on Linux/Windows. Users on v0.1.48 targeting Bedrock/Vertex are affected.
 **Workaround**: To re-enable fine-grained tool streaming on a compatible endpoint, set the environment variable manually:
 ```python
 options = ClaudeAgentOptions(
@@ -1702,6 +1704,7 @@ options = ClaudeAgentOptions(
 Only set this variable when targeting the direct Anthropic API with Claude 4.6+. Omit it when using Bedrock, Vertex, or any proxy that rejects unknown fields.
 
 ### #22: Early Generator Exit Raises `RuntimeError` and Poisons Event Loop
+
 **Error**: Breaking out of the `query()` async generator early causes `RuntimeError: Attempted to exit cancel scope in a different task than it was entered in`. In production, this error can poison the entire event loop — every subsequent `await` in that loop raises `CancelledError` ([#454](https://github.com/anthropics/claude-agent-sdk-python/issues/454))
 **Cause**: The query task group's `__aenter__()` is called in one async context, but `__aexit__()` runs during generator cleanup in a different task context. AnyIO cancel scopes require enter/exit to happen in the same task. Occurs when using `async for msg in query(...): break` or when stopping after `ResultMessage`.
 **Impact**: Production impact documented — once triggered, all subsequent `await` calls in that event loop get `CancelledError`. This affects parallel query execution with `asyncio.gather()`.
@@ -1723,12 +1726,68 @@ import subprocess, sys
 result = subprocess.run([sys.executable, "-c", query_script], capture_output=True)
 ```
 
+### #23: `thinking={"type":"disabled"}` Converted to `--max-thinking-tokens 0`, Breaking Compatible Providers
+**Error**: Providers that distinguish between *omitted* thinking settings and *explicitly disabled* thinking fail or behave unexpectedly when using `thinking={"type": "disabled"}` ([#693](https://github.com/anthropics/claude-agent-sdk-python/issues/693))
+**Cause**: The SDK converts `thinking={"type": "disabled"}` to `--max-thinking-tokens 0` rather than transmitting the structured `thinking` configuration end-to-end. Anthropic-compatible providers (Bedrock, Vertex, third-party proxies) that parse the `thinking` field directly are affected.
+**Workaround**: Omit the `thinking` option entirely if the provider accepts "thinking not configured" as equivalent to disabled. If explicit disablement is required, there is no workaround — the SDK cannot currently pass the structured form.
+```python
+# WRONG — converts to --max-thinking-tokens 0 (breaks some providers)
+options = ClaudeAgentOptions(thinking={"type": "disabled"})
+
+# BETTER — omit entirely (provider interprets as no thinking)
+options = ClaudeAgentOptions()  # No thinking configured
+```
+
+### #24: SDK MCP Server Tool Calls Fail with "Stream closed" After ~70 Seconds
+**Error**: Tool calls to `create_sdk_mcp_server()` in-process servers return `"Stream closed"` errors after approximately 60–70 seconds of operation. Built-in tools (Read, Grep, Bash) continue working; only custom SDK MCP tools fail ([#676](https://github.com/anthropics/claude-agent-sdk-python/issues/676))
+**Cause**: The bundled CLI does not reset its internal `lastActivityTime` counter when receiving responses from SDK MCP servers. After the inactivity threshold (~15s) is exceeded, subsequent MCP tool calls are immediately rejected. Built-in tools bypass this mechanism.
+**Workaround**: Send periodic heartbeat activity from your MCP tool handler during long-running operations. If tools routinely take longer than 15 seconds, split work into smaller subtasks with intermediate responses. No SDK-level workaround; a CLI fix is required.
+
+### #25: `output_format` Schema Not Enforced When Resuming Sessions
+**Error**: When using `output_format` with `resume`, the JSON schema constraint is not applied to the resumed turn — the model responds in plain text instead of JSON ([#682](https://github.com/anthropics/claude-agent-sdk-python/issues/682))
+**Cause**: CLI-level issue — schema constraints are not re-applied when loading prior session context. Both SDK flags are passed correctly, but the CLI drops the schema requirement when resuming.
+**Workaround**: None currently. Avoid using `output_format` with `resume`/`continue_conversation`. Run structured output queries as fresh sessions.
+
+### #26: v0.1.49 PyPI Release Incomplete — Linux/Windows Unavailable
+**Error**: `pip install claude-agent-sdk==0.1.49` fails on Linux and Windows: only a `macosx_11_0_arm64` wheel was published to PyPI ([#687](https://github.com/anthropics/claude-agent-sdk-python/issues/687))
+**Cause**: The automated release workflow uploaded the macOS ARM64 wheel successfully, then encountered a 400 error on the second upload. The remaining wheels (Linux x86_64/aarch64, Windows amd64, macOS x86_64) and the source distribution were not published.
+**Fix**: Pin to v0.1.48 until a corrected release is published:
+```
+pip install "claude-agent-sdk>=0.1.48,<0.1.49"
+```
+Note: v0.1.49 includes new `AgentDefinition` fields (`skills`, `memory`, `mcpServers`), per-turn usage on `AssistantMessage`, `rename_session()`, `delete_session()`, `tag_session()`, and typed `RateLimitEvent` messages — these features are only available on macOS ARM64 until a corrected release lands.
+
+### #27: `can_use_tool` Callback Never Invoked (Issue #469)
+**Error**: `can_use_tool` callbacks are never called despite correct configuration — tools execute without triggering the permission handler. Confirmed across SDK versions 0.1.19–0.1.48+ and CLI versions 2.1.7–2.1.73+ ([#469](https://github.com/anthropics/claude-agent-sdk-python/issues/469))
+**Cause**: The CLI does not emit `control_request` messages with subtype `can_use_tool` as expected by the SDK, even when `--permission-prompt-tool stdio` is active. The SDK's permission callback infrastructure is implemented but never activated by the CLI.
+**Impact**: Any permission enforcement via `can_use_tool` is silently bypassed. Do not rely on `can_use_tool` for security-critical tool gating.
+**Workaround**: Use `PreToolUse` hooks for permission enforcement instead:
+```python
+# WRONG — can_use_tool never fires
+options = ClaudeAgentOptions(
+    can_use_tool=my_permission_handler
+)
+
+# CORRECT — use PreToolUse hooks
+async def permission_hook(input_data, tool_use_id, context):
+    if input_data["tool_name"] == "Write":
+        # Enforce your permission logic here
+        return {"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny"}}
+    return {}
+
+options = ClaudeAgentOptions(
+    hooks={"PreToolUse": [HookMatcher(hooks=[permission_hook])]}
+)
+```
+
 ---
 
 ## Changelog Highlights
 
 | Version | Change |
 |---------|--------|
+| v0.1.49 | Added `skills`, `memory`, `mcpServers` to `AgentDefinition`; per-turn usage on `AssistantMessage`; `rename_session()`, `delete_session()`, `tag_session()`, typed `RateLimitEvent`; reverted Bedrock-breaking eager_input_streaming (PR #671). **Partial release** — only macOS ARM64 wheel published (see [#26](#26-v0149-pypi-release-incomplete-issue-687)) |
+| v0.1.48 | Introduced `eager_input_streaming` with `include_partial_messages=True` (breaks Bedrock/Vertex — see [#21](#21-include_partial_messagestrue-breaks-tool-input-streaming-on-bedrockvertex)) |
 | v0.1.44 | Fixed `rate_limit_event` crash in message parser — unknown CLI message types now skipped gracefully; bundled CLI updated to v2.1.59 |
 | v0.1.36 | Added `thinking` (`ThinkingConfig` types: adaptive/enabled/disabled) and `effort` options; deprecated `max_thinking_tokens` |
 | v0.1.35 | Sub-agent registration via `@filepath` syntax fixed; agents now reliably registered |
@@ -1736,4 +1795,4 @@ result = subprocess.run([sys.executable, "-c", query_script], capture_output=Tru
 
 ---
 
-**Last verified**: 2026-03-17 | **SDK version**: 0.1.49
+**Last verified**: 2026-03-18 | **SDK version**: 0.1.48 (v0.1.49 partially released — macOS ARM64 only)

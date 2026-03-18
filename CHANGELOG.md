@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-03-18
+
+- Research only, no version change (TS v0.2.77, Python v0.1.49 unchanged)
+- TS: added KI #40 (file checkpointing no-op in SDK mode), KI #41 (subagents hardcoded to deny `bypassPermissions`)
+- PY: added KI #23 (thinking=disabled breaks compatible providers), KI #24 (MCP tool calls fail after ~70s), KI #25 (output_format+resume broken), KI #26 (v0.1.49 incomplete PyPI wheels — Linux/Windows blocked), KI #27 (can_use_tool never fires — critical security no-op); new auto-correction rule for can_use_tool
+- Typecheck false-positive (recurring script artifact, non-blocking)
+- [Full report](reports/2026-03-18.md)
+
 ## 2026-03-17
 
 - SDK TS v0.2.76 → v0.2.77; Python v0.1.48 → v0.1.49 (both bumped)

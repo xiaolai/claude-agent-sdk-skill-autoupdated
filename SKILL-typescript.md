@@ -1503,6 +1503,18 @@ sandbox: {
 ```
 **Note**: There is no configuration option to invert this to "allow only CWD." A feature request for a `allowReadCwdOnly` or similar option is tracked in [#231](https://github.com/anthropics/claude-agent-sdk-typescript/issues/231).
 
+### #40: `enableFileCheckpointing` has no effect in SDK (non-interactive) mode — `rewindFiles()` always returns `canRewind: false`
+**Error**: `rewindFiles()` always returns `{ canRewind: false, error: "No file checkpoint found for this message." }` even with `enableFileCheckpointing: true` ([#236](https://github.com/anthropics/claude-agent-sdk-typescript/issues/236))
+**Cause**: The snapshot creation function that tags file state to each user message UUID is only invoked from React/Ink interactive UI render code. In non-interactive SDK mode (`isInteractive = false`), those call sites are never reached. Without an initial snapshot, the file-tracking code silently bails (`FileHistory: Missing most recent snapshot`), so no file state is ever recorded.
+**Impact**: The `enableFileCheckpointing` option and `Query.rewindFiles()` method are entirely non-functional when using the SDK programmatically. The option has no effect.
+**Status**: No workaround available. This is a CLI-side bug; the SDK cannot compensate.
+
+### #41: `bypassPermissions` mode not propagated to subagents — `allowDangerouslySkipPermissions` hardcoded to false
+**Error**: Subagents spawned via the Task tool cannot use `bypassPermissions` mode even when the parent session has it enabled ([#117](https://github.com/anthropics/claude-agent-sdk-typescript/issues/117))
+**Cause**: The SDK hardcodes `allowDangerouslySkipPermissions: false` when spawning subagent child processes, regardless of the parent session's configuration. Since `bypassPermissions` requires `allowDangerouslySkipPermissions: true` to function, subagents effectively cannot bypass permissions.
+**Impact**: Automated pipelines that use `permissionMode: 'bypassPermissions'` with `allowDangerouslySkipPermissions: true` will have subagents block or prompt on permission checks, hanging in headless environments.
+**Workaround**: Use `permissionMode: 'acceptEdits'` instead of `'bypassPermissions'` for workflows requiring subagents. `acceptEdits` automatically approves file edits without the safety flag requirement. For completely unrestricted tool use, set explicit permissions via `allowedTools` and a `canUseTool` callback that always allows.
+
 ---
 
 ## Changelog Highlights (v0.2.12 → v0.2.77)
@@ -1526,4 +1538,4 @@ sandbox: {
 
 ---
 
-**Last verified**: 2026-03-17 | **SDK version**: 0.2.77
+**Last verified**: 2026-03-18 | **SDK version**: 0.2.77

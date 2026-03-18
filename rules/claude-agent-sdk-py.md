@@ -63,16 +63,17 @@ from anthropic.sdk import query
 from claude_agent_sdk import ClaudeSDKClient, query, tool, create_sdk_mcp_server
 ```
 
-### Use can_use_tool callback with correct signature
+### Use can_use_tool callback with correct signature (NOTE: callback never fires — see below)
 ```python
 # WRONG — missing updated_input
 async def can_use_tool(tool_name, tool_input, options):
     return {"behavior": "allow"}
 
-# CORRECT
+# CORRECT signature (but callback is non-functional — use PreToolUse hooks instead)
 async def can_use_tool(tool_name, tool_input, options):
     return {"behavior": "allow", "updated_input": tool_input}
 ```
+**Important**: Despite the correct signature, `can_use_tool` callbacks are never invoked by the CLI. See rule below: "Don't rely on `can_use_tool` for permission enforcement".
 
 ### Don't use ANTHROPIC_LOG=debug with SDK
 ```python
@@ -175,6 +176,28 @@ output = SyncHookJSONOutput(continue_=True)
 output["continue_"]  # ✅
 ```
 **Why**: `TypedDict` classes (e.g., `ThinkingConfig*`, `SyncHookJSONOutput`, `AsyncHookJSONOutput`, `HookSpecificOutput` variants, `McpStdioServerConfig`, `McpSSEServerConfig`, `McpHttpServerConfig`, `SandboxSettings`) are plain `dict` at runtime. Attribute access like `.budget_tokens` raises `AttributeError`. Only `@dataclass` types (e.g., `AgentDefinition`, `HookMatcher`, `TextBlock`, `ResultMessage`) support dot-notation. Issue [#623](https://github.com/anthropics/claude-agent-sdk-python/issues/623).
+
+### Don't rely on `can_use_tool` for permission enforcement — it never fires
+```python
+# WRONG — can_use_tool callback is never invoked by the CLI (SDK v0.1.48+)
+async def my_permission_handler(tool_name, tool_input, context):
+    if tool_name == "Write":
+        return PermissionResultDeny(message="Blocked")
+    return PermissionResultAllow()
+
+options = ClaudeAgentOptions(can_use_tool=my_permission_handler)  # Silent no-op
+
+# CORRECT — use PreToolUse hooks for permission enforcement
+async def permission_hook(input_data, tool_use_id, context):
+    if input_data.get("tool_name") == "Write":
+        return {"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny", "permissionDecisionReason": "Blocked"}}
+    return {}
+
+options = ClaudeAgentOptions(
+    hooks={"PreToolUse": [HookMatcher(hooks=[permission_hook])]}
+)
+```
+**Why**: The CLI does not emit `can_use_tool` control protocol messages even when `--permission-prompt-tool stdio` is active. All `can_use_tool` callbacks are silently bypassed. Issue [#469](https://github.com/anthropics/claude-agent-sdk-python/issues/469).
 
 ### Don't break out of query() generator early — can poison event loop
 ```python

@@ -1728,7 +1728,7 @@ result = subprocess.run([sys.executable, "-c", query_script], capture_output=Tru
 
 ### #23: `thinking={"type":"disabled"}` Converted to `--max-thinking-tokens 0`, Breaking Compatible Providers
 **Error**: Providers that distinguish between *omitted* thinking settings and *explicitly disabled* thinking fail or behave unexpectedly when using `thinking={"type": "disabled"}` ([#693](https://github.com/anthropics/claude-agent-sdk-python/issues/693))
-**Cause**: The SDK converts `thinking={"type": "disabled"}` to `--max-thinking-tokens 0` rather than transmitting the structured `thinking` configuration end-to-end. Anthropic-compatible providers (Bedrock, Vertex, third-party proxies) that parse the `thinking` field directly are affected.
+**Cause**: The SDK converts `thinking={"type": "disabled"}` to `--max-thinking-tokens 0` rather than transmitting the structured `thinking` configuration end-to-end. Anthropic-compatible providers (Bedrock, Vertex, third-party proxies) that parse the `thinking` field directly are affected. PR [#699](https://github.com/anthropics/claude-agent-sdk-python/pull/699) proposes fixing this by using a `--thinking-disabled` flag instead, but has not yet been released.
 **Workaround**: Omit the `thinking` option entirely if the provider accepts "thinking not configured" as equivalent to disabled. If explicit disablement is required, there is no workaround — the SDK cannot currently pass the structured form.
 ```python
 # WRONG — converts to --max-thinking-tokens 0 (breaks some providers)
@@ -1780,6 +1780,19 @@ options = ClaudeAgentOptions(
 )
 ```
 
+### #28: `DEBUG` Environment Variable Corrupts JSON Protocol in Docker/Linux
+**Error**: SDK queries silently return no messages (or raise `Control request timeout: initialize`) when the `DEBUG` environment variable is set to any value in a Docker/Linux environment ([#347](https://github.com/anthropics/claude-agent-sdk-python/issues/347))
+**Cause**: When `DEBUG` is set, the bundled Claude CLI's sandbox layer writes `[SandboxDebug]` diagnostic messages directly to **stdout** (not stderr). The SDK's `SubprocessCLITransport` reads all stdout lines and tries to parse them as JSON. The non-JSON debug lines accumulate in the buffer, causing all subsequent JSON parsing to fail — preventing the SDK from receiving any messages.
+**Impact**: Affects Docker/Linux deployments (ARM64 or x64) where sandbox mode is active. macOS is unaffected. Setting `DEBUG=false` or `DEBUG=0` still triggers the issue (any non-empty value activates it).
+**Workaround**: Override `DEBUG` to an empty string (or unset it) via the `env` option:
+```python
+import os
+options = ClaudeAgentOptions(
+    env={**os.environ, "DEBUG": ""},  # Suppress sandbox debug output to stdout
+)
+```
+Alternatively, use `ANTHROPIC_LOG` instead of `DEBUG` for Anthropic SDK logging — it is not affected by this issue.
+
 ---
 
 ## Changelog Highlights
@@ -1795,4 +1808,4 @@ options = ClaudeAgentOptions(
 
 ---
 
-**Last verified**: 2026-03-18 | **SDK version**: 0.1.48 (v0.1.49 partially released — macOS ARM64 only)
+**Last verified**: 2026-03-19 | **SDK version**: 0.1.48 (v0.1.49 partially released — macOS ARM64 only)

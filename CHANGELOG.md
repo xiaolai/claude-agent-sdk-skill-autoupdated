@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-03-19
+
+- SDK TS v0.2.77 → v0.2.79; Python v0.1.49 unchanged
+- TS: documented new `StopFailure` hook event (23rd hook); cleaned up KI #35 fix-version note; cross-referenced issues #230, #231, #236, #117
+- PY: added KI #28 (`DEBUG` env var corrupts JSON in Docker/Linux); updated KI #23 with pending fix PR #699
+- Verify passed on attempt 2 (1 mending run); typecheck false-positive (recurring, non-blocking)
+- [Full report](reports/2026-03-19.md)
+
 ## 2026-03-18
 
 - Research only, no version change (TS v0.2.77, Python v0.1.49 unchanged)

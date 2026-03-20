@@ -1320,15 +1320,25 @@ async for msg in query(
 
 Requires `enable_file_checkpointing=True`. Available on `ClaudeSDKClient` only.
 
+To rewind to a specific user message you must also capture the `UserMessage.uuid`. Pass `extra_args={"replay-user-messages": None}` so that `UserMessage` objects with a populated `uuid` field are emitted in the response stream.
+
 ```python
-async with ClaudeSDKClient(
-    options=ClaudeAgentOptions(enable_file_checkpointing=True)
-) as client:
+from claude_agent_sdk import ClaudeSDKClient, ClaudeAgentOptions, UserMessage
+
+options = ClaudeAgentOptions(
+    enable_file_checkpointing=True,
+    extra_args={"replay-user-messages": None},  # Required to get UserMessage.uuid
+)
+async with ClaudeSDKClient(options) as client:
+    checkpoint_id = None
     await client.query("Refactor auth module")
     async for msg in client.receive_response():
-        pass
-    # Rewind to a specific user message checkpoint
-    await client.rewind_files(user_message_id)
+        if isinstance(msg, UserMessage) and msg.uuid:
+            checkpoint_id = msg.uuid  # Save for later rewind
+
+    # Rewind files to their state at that user message
+    if checkpoint_id:
+        await client.rewind_files(checkpoint_id)
 ```
 
 ### Listing & Reading Sessions
@@ -1808,4 +1818,4 @@ Alternatively, use `ANTHROPIC_LOG` instead of `DEBUG` for Anthropic SDK logging 
 
 ---
 
-**Last verified**: 2026-03-19 | **SDK version**: 0.1.48 (v0.1.49 partially released — macOS ARM64 only)
+**Last verified**: 2026-03-20 | **SDK version**: 0.1.48 (v0.1.49 partially released — macOS ARM64 only)

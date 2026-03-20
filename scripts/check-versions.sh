@@ -39,7 +39,7 @@ check_package() {
 }
 
 echo "Dependencies:"
-check_package "@anthropic-ai/claude-agent-sdk" "0.2.79"
+check_package "@anthropic-ai/claude-agent-sdk" "0.2.80"
 check_package "zod" "3.24.1"
 
 echo ""

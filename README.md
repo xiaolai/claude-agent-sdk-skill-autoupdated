@@ -2,7 +2,7 @@
 
 A self-updating Claude Code skill for building AI agents with the Claude Agent SDK — covering both [TypeScript](https://github.com/anthropics/claude-agent-sdk-typescript) and [Python](https://github.com/anthropics/claude-agent-sdk-python).
 
-**SDK Version**: TypeScript v0.2.79 | Python v0.1.49 | **This skill is auto-updated**: 2026-03-19
+**SDK Version**: TypeScript v0.2.80 | Python v0.1.49 | **This skill is auto-updated**: 2026-03-20
 
 ## What It Does
 
@@ -73,7 +73,7 @@ Both SDKs wrap the Claude Code CLI and share the same core concepts, but they di
 
 | | TypeScript | Python |
 |---|---|---|
-| **Version** | v0.2.79 | v0.1.49 |
+| **Version** | v0.2.80 | v0.1.49 |
 | **GitHub stars** | ~800 | ~4,800 |
 | **Open issues** | ~176 | ~570 |
 | **Release cadence** | ~daily | ~daily |
@@ -198,13 +198,13 @@ flowchart LR
 
 | Date | SDK Version | Update | Research | Report | Total | Notes |
 |------|-------------|--------|----------|--------|-------|-------|
+| 2026-03-20 | — | $0.24 | — | $0.23 | **$0.47** | SDK v0.2.79→v0.2.80 |
 | 2026-03-19 | — | $0.25 | — | $0.25 | **$0.51** | SDK v0.2.77→v0.2.79 |
 | 2026-03-18 | — | — | — | $0.20 | **$0.20** | Research only |
 | 2026-03-17 | — | $0.43 | — | $0.23 | **$0.65** | SDK v0.2.76→v0.2.77 |
 | 2026-03-16 | — | — | — | $0.19 | **$0.19** | Research only |
 | 2026-03-15 | — | — | — | $0.20 | **$0.20** | Research only |
 | 2026-03-14 | — | $0.29 | — | $0.20 | **$0.49** | SDK v0.2.74→v0.2.76 |
-| 2026-03-13 | — | — | — | $0.19 | **$0.19** | Research only |
 
 _Last 7 days only. Updated automatically by the report agent. See [reports/](reports/) for full history._
 

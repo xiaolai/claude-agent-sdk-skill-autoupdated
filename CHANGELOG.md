@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-03-21
+
+- SDK TS v0.2.80 → v0.2.81; Python v0.1.49 → v0.1.50 (both bumped)
+- Typecheck false-positive (recurring stray-comma in import-check script); fixed by mending agent, verify passed on attempt 2
+- Research: no new known issues added today
+- [Full report](reports/2026-03-21.md)
+
 ## 2026-03-20
 
 - SDK TS v0.2.79 → v0.2.80; Python v0.1.49 unchanged

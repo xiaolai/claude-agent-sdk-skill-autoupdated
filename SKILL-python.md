@@ -1,6 +1,6 @@
-# Claude Agent SDK — Python Reference (v0.1.49)
+# Claude Agent SDK — Python Reference (v0.1.50)
 
-**Package**: `claude-agent-sdk==0.1.49` (PyPI)
+**Package**: `claude-agent-sdk==0.1.50` (PyPI)
 **Docs**: https://platform.claude.com/docs/en/agent-sdk/python
 **Repo**: https://github.com/anthropics/claude-agent-sdk-python
 **Requires**: Python 3.10+
@@ -402,15 +402,15 @@ asyncio.run(main())
 
 ## Message Types
 
-The SDK emits 5 message types:
+The SDK emits 6 message types:
 
 ```python
 from claude_agent_sdk import (
-    UserMessage, AssistantMessage, SystemMessage, ResultMessage
+    UserMessage, AssistantMessage, SystemMessage, ResultMessage,
+    StreamEvent, RateLimitEvent
 )
-from claude_agent_sdk.types import StreamEvent  # not re-exported from main package
 
-Message = UserMessage | AssistantMessage | SystemMessage | ResultMessage | StreamEvent
+Message = UserMessage | AssistantMessage | SystemMessage | ResultMessage | StreamEvent | RateLimitEvent
 ```
 
 ### `UserMessage`
@@ -433,6 +433,7 @@ class AssistantMessage:
     model: str
     parent_tool_use_id: str | None = None
     error: AssistantMessageError | None = None
+    usage: dict[str, Any] | None = None    # Per-turn token usage (added v0.1.50)
 
 # AssistantMessageError type
 AssistantMessageError = Literal[
@@ -496,6 +497,46 @@ class StreamEvent:
     session_id: str
     event: dict[str, Any]                    # Raw Anthropic API stream event
     parent_tool_use_id: str | None = None
+```
+
+### `RateLimitEvent`
+
+Emitted whenever the CLI detects a rate limit status change (e.g., from `allowed` to `allowed_warning`). Use this to warn users before they hit a hard limit or to gracefully back off when rejected.
+
+```python
+from claude_agent_sdk import RateLimitEvent, RateLimitInfo
+
+@dataclass
+class RateLimitEvent:
+    rate_limit_info: RateLimitInfo
+    uuid: str
+    session_id: str
+
+@dataclass
+class RateLimitInfo:
+    status: RateLimitStatus                    # "allowed" | "allowed_warning" | "rejected"
+    resets_at: int | None = None               # Unix timestamp when limit window resets
+    rate_limit_type: RateLimitType | None = None  # Which rate limit window applies
+    utilization: float | None = None           # Fraction consumed (0.0 – 1.0)
+    overage_status: RateLimitStatus | None = None
+    overage_resets_at: int | None = None
+    overage_disabled_reason: str | None = None
+    raw: dict[str, Any] = field(default_factory=dict)  # Full CLI payload
+
+# Supporting literals
+RateLimitStatus = Literal["allowed", "allowed_warning", "rejected"]
+RateLimitType = Literal["five_hour", "seven_day", "seven_day_opus", "seven_day_sonnet", "overage"]
+```
+
+```python
+# Handling rate limit events
+async for msg in query(prompt="...", options=options):
+    if isinstance(msg, RateLimitEvent):
+        info = msg.rate_limit_info
+        if info.status == "rejected":
+            print(f"Rate limit hit! Resets at {info.resets_at}")
+        elif info.status == "allowed_warning":
+            print(f"Approaching limit: {info.utilization:.0%} used")
 ```
 
 ### Task Messages (SystemMessage subclasses)
@@ -1090,6 +1131,9 @@ class AgentDefinition:
     prompt: str                                              # System prompt
     tools: list[str] | None = None                           # Allowed tools (inherits if omitted)
     model: Literal["sonnet", "opus", "haiku", "inherit"] | None = None
+    skills: list[str] | None = None                          # Skill names to load (added v0.1.50)
+    memory: Literal["user", "project", "local"] | None = None  # Memory setting source (added v0.1.50)
+    mcpServers: list[str | dict[str, Any]] | None = None     # MCP servers: name strings or inline configs (added v0.1.50)
 ```
 
 Include `Task` in parent's `allowed_tools` — subagents are invoked via the Task tool.
@@ -1343,10 +1387,10 @@ async with ClaudeSDKClient(options) as client:
 
 ### Listing & Reading Sessions
 
-Use `list_sessions()` and `get_session_messages()` to browse historical session metadata and read transcripts without running a new query. Both functions are synchronous and read directly from `~/.claude/projects/`.
+Use `list_sessions()`, `get_session_info()`, and `get_session_messages()` to browse historical session metadata and read transcripts without running a new query. All functions are synchronous and read directly from `~/.claude/projects/`.
 
 ```python
-from claude_agent_sdk import list_sessions, get_session_messages, SDKSessionInfo, SessionMessage
+from claude_agent_sdk import list_sessions, get_session_info, get_session_messages, SDKSessionInfo, SessionMessage
 
 # List sessions for a specific project directory
 sessions: list[SDKSessionInfo] = list_sessions(
@@ -1361,11 +1405,21 @@ for s in sessions:
     # .session_id     str           — UUID
     # .summary        str           — auto title, custom title, or first prompt
     # .last_modified  int           — milliseconds since epoch
-    # .file_size      int           — bytes
+    # .file_size      int | None    — bytes (None for remote storage)
     # .custom_title   str | None    — user-set via /rename
     # .first_prompt   str | None    — first meaningful user prompt
     # .git_branch     str | None    — git branch at end of session
     # .cwd            str | None    — working directory
+    # .tag            str | None    — user-set session tag
+    # .created_at     int | None    — creation time in ms since epoch
+
+# Look up a single session by ID (no directory scan)
+info: SDKSessionInfo | None = get_session_info(
+    session_id="550e8400-e29b-41d4-a716-446655440000",
+    directory="/path/to/project",  # optional
+)
+if info:
+    print(info.summary, info.custom_title)
 
 # Read all messages from a session transcript
 messages: list[SessionMessage] = get_session_messages(
@@ -1386,6 +1440,43 @@ for msg in messages:
 ```
 
 > **Note**: `list_sessions()` uses only `stat` + head/tail reads — no full JSONL parsing — so it is fast even for large session files.
+
+### Session Mutations
+
+Use `rename_session()` and `tag_session()` to annotate historical sessions without running a new query. Both functions are synchronous and write directly to the session's JSONL file.
+
+```python
+from claude_agent_sdk import rename_session, tag_session
+
+# Rename a session (sets custom title; last write wins)
+rename_session(
+    session_id="550e8400-e29b-41d4-a716-446655440000",
+    title="My refactoring session",
+    directory="/path/to/project",  # optional; searches all projects if omitted
+)
+
+# Tag a session for filtering (last write wins)
+tag_session(
+    session_id="550e8400-e29b-41d4-a716-446655440000",
+    tag="experiment",
+    directory="/path/to/project",
+)
+
+# Clear a tag
+tag_session(session_id, None)
+```
+
+**Signatures**:
+
+```python
+def rename_session(session_id: str, title: str, directory: str | None = None) -> None:
+    """Raises ValueError (invalid UUID or empty title), FileNotFoundError (session not found)."""
+
+def tag_session(session_id: str, tag: str | None, directory: str | None = None) -> None:
+    """Pass None to clear the tag. Raises ValueError, FileNotFoundError."""
+```
+
+> **Note**: Tags are Unicode-sanitized (removes zero-width chars, directional marks, private-use characters). Repeated calls are safe — `list_sessions()` reads the last entry.
 
 ---
 
@@ -1703,7 +1794,7 @@ async def handle_request(user_id: str, prompt: str):
 
 ### #21: `include_partial_messages=True` Breaks Tool Input Streaming on Bedrock/Vertex
 **Error**: `400 Bad Request` with `"unexpected field: eager_input_streaming"` or tool input delta events stop arriving when using `include_partial_messages=True` with Bedrock, Vertex, or strict-schema proxies ([#644](https://github.com/anthropics/claude-agent-sdk-python/pull/644), [#671](https://github.com/anthropics/claude-agent-sdk-python/pull/671), [#694](https://github.com/anthropics/claude-agent-sdk-python/issues/694))
-**Cause**: PR #644 (merged into v0.1.48) auto-enabled fine-grained tool streaming (`eager_input_streaming: true`) when `include_partial_messages=True`. This field is only accepted by the direct Anthropic API and Claude 4.6+. On Bedrock/Vertex or behind strict proxies the field causes 400 errors. PR #671 reverted #644 but is only available in v0.1.49 — which is [partially released](#26-v0149-pypi-release-incomplete-issue-687) and unavailable on Linux/Windows. Users on v0.1.48 targeting Bedrock/Vertex are affected.
+**Cause**: PR #644 (merged into v0.1.48) auto-enabled fine-grained tool streaming (`eager_input_streaming: true`) when `include_partial_messages=True`. This field is only accepted by the direct Anthropic API and Claude 4.6+. On Bedrock/Vertex or behind strict proxies the field causes 400 errors. PR #671 reverted #644 and is fully available in v0.1.50+. Users on v0.1.48 targeting Bedrock/Vertex are affected.
 **Workaround**: To re-enable fine-grained tool streaming on a compatible endpoint, set the environment variable manually:
 ```python
 options = ClaudeAgentOptions(
@@ -1758,14 +1849,14 @@ options = ClaudeAgentOptions()  # No thinking configured
 **Cause**: CLI-level issue — schema constraints are not re-applied when loading prior session context. Both SDK flags are passed correctly, but the CLI drops the schema requirement when resuming.
 **Workaround**: None currently. Avoid using `output_format` with `resume`/`continue_conversation`. Run structured output queries as fresh sessions.
 
-### #26: v0.1.49 PyPI Release Incomplete — Linux/Windows Unavailable
-**Error**: `pip install claude-agent-sdk==0.1.49` fails on Linux and Windows: only a `macosx_11_0_arm64` wheel was published to PyPI ([#687](https://github.com/anthropics/claude-agent-sdk-python/issues/687))
+### #26: PyPI Release Was Incomplete — Fixed in v0.1.50
+**Error**: On Linux and Windows, only a `macosx_11_0_arm64` wheel was published to PyPI ([#687](https://github.com/anthropics/claude-agent-sdk-python/issues/687))
 **Cause**: The automated release workflow uploaded the macOS ARM64 wheel successfully, then encountered a 400 error on the second upload. The remaining wheels (Linux x86_64/aarch64, Windows amd64, macOS x86_64) and the source distribution were not published.
-**Fix**: Pin to v0.1.48 until a corrected release is published:
+**Fix**: **Resolved in v0.1.50.** Upgrade to v0.1.50 or later to get all features on all platforms:
 ```
-pip install "claude-agent-sdk>=0.1.48,<0.1.49"
+pip install "claude-agent-sdk>=0.1.50"
 ```
-Note: v0.1.49 includes new `AgentDefinition` fields (`skills`, `memory`, `mcpServers`), per-turn usage on `AssistantMessage`, `rename_session()`, `delete_session()`, `tag_session()`, and typed `RateLimitEvent` messages — these features are only available on macOS ARM64 until a corrected release lands.
+These features — `AgentDefinition` fields (`skills`, `memory`, `mcpServers`), per-turn `usage` on `AssistantMessage`, `rename_session()`, `tag_session()`, and typed `RateLimitEvent` messages — are all available in v0.1.50 on all supported platforms.
 
 ### #27: `can_use_tool` Callback Never Invoked (Issue #469)
 **Error**: `can_use_tool` callbacks are never called despite correct configuration — tools execute without triggering the permission handler. Confirmed across SDK versions 0.1.19–0.1.48+ and CLI versions 2.1.7–2.1.73+ ([#469](https://github.com/anthropics/claude-agent-sdk-python/issues/469))
@@ -1809,7 +1900,7 @@ Alternatively, use `ANTHROPIC_LOG` instead of `DEBUG` for Anthropic SDK logging 
 
 | Version | Change |
 |---------|--------|
-| v0.1.49 | Added `skills`, `memory`, `mcpServers` to `AgentDefinition`; per-turn usage on `AssistantMessage`; `rename_session()`, `delete_session()`, `tag_session()`, typed `RateLimitEvent`; reverted Bedrock-breaking eager_input_streaming (PR #671). **Partial release** — only macOS ARM64 wheel published (see [#26](#26-v0149-pypi-release-incomplete-issue-687)) |
+| v0.1.50 | Full cross-platform release. All platforms now get: `skills`, `memory`, `mcpServers` on `AgentDefinition`; `usage` field on `AssistantMessage`; `rename_session()`, `tag_session()`; typed `RateLimitEvent`/`RateLimitInfo` message types; reverted Bedrock-breaking eager_input_streaming (see [#26](#26-pypi-release-was-incomplete--fixed-in-v0150)) |
 | v0.1.48 | Introduced `eager_input_streaming` with `include_partial_messages=True` (breaks Bedrock/Vertex — see [#21](#21-include_partial_messagestrue-breaks-tool-input-streaming-on-bedrockvertex)) |
 | v0.1.44 | Fixed `rate_limit_event` crash in message parser — unknown CLI message types now skipped gracefully; bundled CLI updated to v2.1.59 |
 | v0.1.36 | Added `thinking` (`ThinkingConfig` types: adaptive/enabled/disabled) and `effort` options; deprecated `max_thinking_tokens` |
@@ -1818,4 +1909,4 @@ Alternatively, use `ANTHROPIC_LOG` instead of `DEBUG` for Anthropic SDK logging 
 
 ---
 
-**Last verified**: 2026-03-20 | **SDK version**: 0.1.48 (v0.1.49 partially released — macOS ARM64 only)
+**Last verified**: 2026-03-21 | **SDK version**: 0.1.50

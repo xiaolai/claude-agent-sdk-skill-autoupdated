@@ -203,7 +203,7 @@
         "state": "open",
         "researchedAt": "2026-02-22",
         "verdict": "skipped",
-        "reason": "Fixed in v0.2.40 — thinking and effort options now supported; already covered by Known Issue #13 note"
+        "reason": "Fixed in v0.2.40 \u2014 thinking and effort options now supported; already covered by Known Issue #13 note"
       },
       "181": {
         "repo": "anthropics/claude-agent-sdk-typescript",
@@ -216,7 +216,7 @@
       },
       "182": {
         "repo": "anthropics/claude-agent-sdk-typescript",
-        "title": "Opus 4.6 via query() has no effort control — 'opus' shorthand silently upgrades from 4.5",
+        "title": "Opus 4.6 via query() has no effort control \u2014 'opus' shorthand silently upgrades from 4.5",
         "state": "open",
         "knownIssueNumber": 28,
         "researchedAt": "2026-02-22",
@@ -427,7 +427,7 @@
       },
       "210": {
         "repo": "anthropics/claude-agent-sdk-typescript",
-        "title": "Agent tool returns 'Unknown tool: Agent' in query() mode — subagent invocation broken",
+        "title": "Agent tool returns 'Unknown tool: Agent' in query() mode \u2014 subagent invocation broken",
         "state": "closed",
         "researchedAt": "2026-03-11",
         "verdict": "skipped",
@@ -476,7 +476,7 @@
       },
       "216": {
         "repo": "anthropics/claude-agent-sdk-typescript",
-        "title": "Fast Mode Unavailable via SDK — Requires Native Bun Binary",
+        "title": "Fast Mode Unavailable via SDK \u2014 Requires Native Bun Binary",
         "state": "open",
         "researchedAt": "2026-03-11",
         "verdict": "skipped",
@@ -594,25 +594,37 @@
         "repo": "anthropics/claude-agent-sdk-typescript",
         "title": "Agent SDK does not reliably honor Claude settings files in query()",
         "state": "open",
-        "knownIssueNumber": null
+        "knownIssueNumber": null,
+        "researchedAt": "2026-03-22",
+        "verdict": "skipped",
+        "reason": "GitHub API unavailable for research; may relate to Known Issue #36 (settings.json env precedence) \u2014 needs follow-up when API access is available"
       },
       "231": {
         "repo": "anthropics/claude-agent-sdk-typescript",
         "title": "Sandbox cannot be locked down to current working directory",
         "state": "open",
-        "knownIssueNumber": null
+        "knownIssueNumber": 39,
+        "researchedAt": "2026-03-22",
+        "verdict": "already_documented",
+        "reason": "Already documented as Known Issue #39 (Sandbox cannot be locked down to project directory)"
       },
       "236": {
         "repo": "anthropics/claude-agent-sdk-typescript",
         "title": "File checkpointing snapshots not created in SDK (non-interactive) mode",
         "state": "open",
-        "knownIssueNumber": 40
+        "knownIssueNumber": 40,
+        "researchedAt": "2026-03-22",
+        "verdict": "already_documented",
+        "reason": "Already documented as Known Issue #40 (enableFileCheckpointing has no effect in SDK mode)"
       },
       "117": {
         "repo": "anthropics/claude-agent-sdk-typescript",
         "title": "SDK missing model aliases; allowDangerouslySkipPermissions hardcoded false for subagents",
         "state": "open",
-        "knownIssueNumber": 41
+        "knownIssueNumber": 41,
+        "researchedAt": "2026-03-22",
+        "verdict": "already_documented",
+        "reason": "Already documented as Known Issue #41 (bypassPermissions not propagated to subagents)"
       }
     },
     "trackedIssuesExternal": {
@@ -980,7 +992,7 @@
         "state": "open",
         "researchedAt": "2026-03-11",
         "verdict": "skipped",
-        "reason": "0 reactions, 0 comments; workaround requires manual session file reconstruction — too risky to recommend"
+        "reason": "0 reactions, 0 comments; workaround requires manual session file reconstruction \u2014 too risky to recommend"
       },
       "632": {
         "repo": "anthropics/claude-agent-sdk-python",
@@ -1056,7 +1068,7 @@
         "knownIssueNumber": 21,
         "researchedAt": "2026-03-11",
         "verdict": "added_known_issue",
-        "reason": "PR merged then reverted — reveals that include_partial_messages=True breaks on Bedrock/Vertex due to eager_input_streaming field rejection; documented as KI #21"
+        "reason": "PR merged then reverted \u2014 reveals that include_partial_messages=True breaks on Bedrock/Vertex due to eager_input_streaming field rejection; documented as KI #21"
       },
       "646": {
         "repo": "anthropics/claude-agent-sdk-python",
@@ -1220,7 +1232,7 @@
         "knownIssueNumber": 27,
         "researchedAt": "2026-03-18",
         "verdict": "added_known_issue",
-        "reason": "Critical: can_use_tool callback silently never fires across all SDK/CLI versions tested (0.1.19-0.1.48+). Security-critical — any permission enforcement via can_use_tool is a no-op. Added KI #27 + auto-correction rule."
+        "reason": "Critical: can_use_tool callback silently never fires across all SDK/CLI versions tested (0.1.19-0.1.48+). Security-critical \u2014 any permission enforcement via can_use_tool is a no-op. Added KI #27 + auto-correction rule."
       },
       "676": {
         "repo": "anthropics/claude-agent-sdk-python",
@@ -1229,7 +1241,7 @@
         "knownIssueNumber": 24,
         "researchedAt": "2026-03-18",
         "verdict": "added_known_issue",
-        "reason": "2 reactions; CLI does not reset lastActivityTime on MCP responses — calls fail after ~70s. Periodic heartbeat workaround documented."
+        "reason": "2 reactions; CLI does not reset lastActivityTime on MCP responses \u2014 calls fail after ~70s. Periodic heartbeat workaround documented."
       },
       "682": {
         "repo": "anthropics/claude-agent-sdk-python",
@@ -1238,7 +1250,7 @@
         "knownIssueNumber": 25,
         "researchedAt": "2026-03-18",
         "verdict": "added_known_issue",
-        "reason": "output_format schema constraint silently not enforced when resuming sessions — model responds in plain text instead of JSON."
+        "reason": "output_format schema constraint silently not enforced when resuming sessions \u2014 model responds in plain text instead of JSON."
       },
       "687": {
         "repo": "anthropics/claude-agent-sdk-python",
@@ -1247,7 +1259,7 @@
         "knownIssueNumber": 26,
         "researchedAt": "2026-03-18",
         "verdict": "added_known_issue",
-        "reason": "12 reactions; high impact — Linux/Windows users cannot install 0.1.49. Workaround: pin to >=0.1.48,<0.1.49."
+        "reason": "12 reactions; high impact \u2014 Linux/Windows users cannot install 0.1.49. Workaround: pin to >=0.1.48,<0.1.49."
       },
       "689": {
         "repo": "anthropics/claude-agent-sdk-python",
@@ -1278,7 +1290,20 @@
     },
     "trackedIssuesExternal": {},
     "lastScannedIssueNumber": 694,
-    "lastAuditedVersion": "0.1.48"
+    "lastAuditedVersion": "0.1.50",
+    "lastAuditSummary": {
+      "date": "2026-03-22",
+      "sdkVersion": "0.1.50",
+      "newOptionsAdded": 0,
+      "newMethodsAdded": 0,
+      "newMessageTypesAdded": 0,
+      "newHookEventsAdded": 0,
+      "updatedEntries": 1,
+      "newTypesDocumented": 6,
+      "details": "Added McpServerStatus, McpServerInfo, McpServerConnectionStatus, McpToolAnnotations, McpToolInfo, McpStatusResponse type definitions to MCP Servers section. These were exported in __all__ but undocumented.",
+      "noChanges": false
+    },
+    "researchedIssues": {}
   },
   "lastUpdated": "2026-03-21T08:02:59Z"
 }

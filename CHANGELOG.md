@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-03-22
+
+- Research only, no version change (TS v0.2.81, Python v0.1.50 unchanged)
+- TS: corrected verdicts for 4 tracked issues (#230, #231, #236, #117); GitHub API unavailable, no new issues scanned
+- PY: documented 6 undocumented MCP status types in SKILL-python.md (McpStatusResponse, McpServerStatus, etc.)
+- Typecheck false-positive recurring (stray-comma artifact, non-blocking)
+- [Full report](reports/2026-03-22.md)
+
 ## 2026-03-21
 
 - SDK TS v0.2.80 → v0.2.81; Python v0.1.49 → v0.1.50 (both bumped)

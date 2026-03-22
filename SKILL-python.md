@@ -1075,6 +1075,61 @@ class McpClaudeAIProxyServerConfig(TypedDict):
     id: str
 ```
 
+**`get_mcp_status()` return types** (from `claude_agent_sdk`):
+
+```python
+from claude_agent_sdk import (
+    McpStatusResponse, McpServerStatus, McpServerConnectionStatus,
+    McpServerInfo, McpToolAnnotations, McpToolInfo,
+)
+
+class McpStatusResponse(TypedDict):
+    mcpServers: list[McpServerStatus]          # All configured MCP servers and their state
+
+McpServerConnectionStatus = Literal[
+    "connected",    # Server is connected and tools are available
+    "failed",       # Connection failed (see .error field)
+    "needs-auth",   # Server requires authentication
+    "pending",      # Connection in progress
+    "disabled",     # Server has been toggled off
+]
+
+class McpServerInfo(TypedDict):
+    name: str       # Server name from MCP initialize handshake
+    version: str    # Server version from MCP initialize handshake
+
+class McpToolAnnotations(TypedDict, total=False):
+    readOnly: bool      # Tool only reads data, no side effects
+    destructive: bool   # Tool may have destructive effects
+    openWorld: bool     # Tool may interact with external systems
+
+class McpToolInfo(TypedDict):
+    name: str
+    description: NotRequired[str]
+    annotations: NotRequired[McpToolAnnotations]
+
+class McpServerStatus(TypedDict):
+    name: str                                   # Server name as configured
+    status: McpServerConnectionStatus           # Current connection status
+    serverInfo: NotRequired[McpServerInfo]      # From MCP handshake (available when connected)
+    error: NotRequired[str]                     # Error message (available when status is 'failed')
+    config: NotRequired[McpServerStatusConfig]  # Server configuration (URL, command, etc.)
+    scope: NotRequired[str]                     # Config scope: project, user, local, claudeai, managed
+    tools: NotRequired[list[McpToolInfo]]       # Tools provided by server (available when connected)
+```
+
+```python
+# Example: checking server health and listing tools
+status = await client.get_mcp_status()
+for server in status["mcpServers"]:
+    print(f"{server['name']}: {server['status']}")
+    if server["status"] == "failed":
+        print(f"  Error: {server.get('error')}")
+    elif server["status"] == "connected":
+        for tool in server.get("tools", []):
+            print(f"  Tool: {tool['name']} — {tool.get('description', '')}")
+```
+
 **Tool naming**: `mcp__<server-name>__<tool-name>` (double underscores)
 
 ### In-Process MCP Server Example
@@ -1909,4 +1964,4 @@ Alternatively, use `ANTHROPIC_LOG` instead of `DEBUG` for Anthropic SDK logging 
 
 ---
 
-**Last verified**: 2026-03-21 | **SDK version**: 0.1.50
+**Last verified**: 2026-03-22 | **SDK version**: 0.1.50

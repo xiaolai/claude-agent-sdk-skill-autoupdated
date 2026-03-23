@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-03-23
+
+- Research only, no version change (TS v0.2.81, Python v0.1.50 unchanged)
+- PY: Added KI #29 — SDK MCP Server tool errors not propagated (`isError`/`is_error` camelCase mismatch); 8 issues evaluated
+- TS: Added missing `SessionStart.hookSpecificOutput.initialUserMessage` example; GitHub API unavailable, no issue scan
+- Typecheck false-positive recurring (stray-comma artifact, non-blocking)
+- [Full report](reports/2026-03-23.md)
+
 ## 2026-03-22
 
 - Research only, no version change (TS v0.2.81, Python v0.1.50 unchanged)

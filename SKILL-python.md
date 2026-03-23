@@ -1949,6 +1949,23 @@ options = ClaudeAgentOptions(
 ```
 Alternatively, use `ANTHROPIC_LOG` instead of `DEBUG` for Anthropic SDK logging — it is not affected by this issue.
 
+### #29: SDK MCP Server Tool Errors Not Propagated (`isError` Field Mismatch)
+**Error**: When an in-process SDK MCP tool handler raises an exception, Claude receives what appears to be a successful tool response — it doesn't know the tool failed. Additionally, any `"is_error": True` field in the tool handler's return dict is silently ignored ([#247](https://github.com/anthropics/claude-agent-sdk-python/issues/247))
+**Cause**: The SDK's MCP handler checks `hasattr(result.root, "is_error")` using snake_case, but `mcp` library v1.x uses camelCase `isError`. The `hasattr()` check always returns `False`, so the error flag is never included in the JSON-RPC response to the CLI. The PR to fix this ([#409](https://github.com/anthropics/claude-agent-sdk-python/pull/409)) was not merged.
+**Impact**: Claude cannot distinguish successful tool results from error results in SDK MCP servers. This may cause incorrect reasoning or infinite retry loops when tools fail.
+**Workaround**: Include the error indication in the tool response *content* text, so Claude can read it:
+```python
+@tool("my_tool", "Do something", {"path": str})
+async def my_tool(args: dict[str, Any]) -> dict[str, Any]:
+    try:
+        result = do_work(args["path"])
+        return {"content": [{"type": "text", "text": result}]}
+    except Exception as e:
+        # Can't rely on is_error being propagated — include error in content
+        return {"content": [{"type": "text", "text": f"ERROR: {e}"}]}
+        # is_error=True is silently dropped: {"is_error": True, ...} doesn't work
+```
+
 ---
 
 ## Changelog Highlights
@@ -1964,4 +1981,4 @@ Alternatively, use `ANTHROPIC_LOG` instead of `DEBUG` for Anthropic SDK logging 
 
 ---
 
-**Last verified**: 2026-03-22 | **SDK version**: 0.1.50
+**Last verified**: 2026-03-23 | **SDK version**: 0.1.50

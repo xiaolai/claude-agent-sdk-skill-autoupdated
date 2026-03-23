@@ -669,6 +669,16 @@ return {
   }
 };
 
+// SessionStart only: inject an initial user message at session start
+// (hookSpecificOutput.initialUserMessage overrides what the SDK sends as the first turn)
+return {
+  hookSpecificOutput: {
+    hookEventName: 'SessionStart',
+    initialUserMessage: 'Start by running the test suite.',
+    additionalContext: 'Environment is pre-configured.'
+  }
+};
+
 // Decision-based response (reason is a top-level field, not nested)
 return { decision: 'approve', reason: 'Looks safe' };   // or 'block'
 
@@ -1540,4 +1550,4 @@ sandbox: {
 
 ---
 
-**Last verified**: 2026-03-22 | **SDK version**: 0.2.81
+**Last verified**: 2026-03-23 | **SDK version**: 0.2.81

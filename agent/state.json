@@ -635,8 +635,19 @@
         "knownIssueNumber": 5
       }
     },
-    "lastScannedIssueNumber": 229,
-    "lastAuditedVersion": "0.2.81"
+    "lastScannedIssueNumber": 236,
+    "lastAuditedVersion": "0.2.81",
+    "lastAuditSummary": {
+      "date": "2026-03-23",
+      "sdkVersion": "0.2.81",
+      "newOptionsAdded": 0,
+      "newMethodsAdded": 0,
+      "newMessageTypesAdded": 0,
+      "newHookEventsAdded": 0,
+      "updatedEntries": 1,
+      "noChanges": false,
+      "notes": "Added missing SessionStartHookSpecificOutput.initialUserMessage field to Hook Return Values section. GitHub API unavailable — Part B skipped."
+    }
   },
   "python": {
     "registry": {
@@ -1286,24 +1297,89 @@
         "researchedAt": "2026-03-18",
         "verdict": "updated_existing",
         "reason": "Confirms v0.1.48 is still broken for Bedrock (revert PR #671 is only in partially-released v0.1.49). Updated KI #21 to clarify version timeline."
+      },
+      "247": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "SDK MCP Server Tool Results: is_error field not properly set to True when tool returns error",
+        "state": "open",
+        "knownIssueNumber": 29,
+        "researchedAt": "2026-03-23",
+        "verdict": "added_known_issue",
+        "reason": "3 reactions, confirmed active: hasattr(result.root, 'is_error') always fails because mcp v1.x uses camelCase isError. PR #409 to fix was not merged. Tool error state never reaches Claude."
+      },
+      "409": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "Fix SDK MCP server error handling: use isError instead of is_error",
+        "state": "closed",
+        "knownIssueNumber": 29,
+        "researchedAt": "2026-03-23",
+        "verdict": "skipped",
+        "reason": "PR that attempted to fix KI #29; closed without merging. 8 reactions indicates real user pain. Bug documented in KI #29."
+      },
+      "701": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "Agent SDK CLI hangs indefinitely during synthesis after successful tool calls",
+        "state": "closed",
+        "researchedAt": "2026-03-23",
+        "verdict": "skipped",
+        "reason": "0 reactions, 1 comment (unconfirmed root cause). Closed but no fix described. Insufficient information."
+      },
+      "705": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "ci: add daily PyPI storage quota monitoring",
+        "state": "closed",
+        "researchedAt": "2026-03-23",
+        "verdict": "skipped",
+        "reason": "Internal CI maintenance, not user-facing."
+      },
+      "709": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "structured_output not present in the ResultMessage block if certain tool calls happen after StructuredOutput block",
+        "state": "open",
+        "researchedAt": "2026-03-23",
+        "verdict": "skipped",
+        "reason": "0 reactions, 0 comments; edge case with subagent+StructuredOutput interaction; no workaround yet."
+      },
+      "688": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "fix: close _stdout_stream in SubprocessCLITransport.close()",
+        "state": "open",
+        "researchedAt": "2026-03-23",
+        "verdict": "skipped",
+        "reason": "Open PR fixing CLOSE_WAIT socket leak (#665). No user-level workaround; fix pending merge."
+      },
+      "712": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "fix: close stdout stream explicitly to prevent CLOSE_WAIT socket leak",
+        "state": "open",
+        "researchedAt": "2026-03-23",
+        "verdict": "skipped",
+        "reason": "Open PR (duplicate approach to #688) fixing CLOSE_WAIT socket leak. No user-level workaround."
+      },
+      "713": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "fix: replace assert with runtime checks for -O safety",
+        "state": "open",
+        "researchedAt": "2026-03-23",
+        "verdict": "skipped",
+        "reason": "0 reactions; niche edge case affecting Python -O flag; no user-level workaround documented."
       }
     },
     "trackedIssuesExternal": {},
-    "lastScannedIssueNumber": 694,
+    "lastScannedIssueNumber": 713,
     "lastAuditedVersion": "0.1.50",
     "lastAuditSummary": {
-      "date": "2026-03-22",
+      "date": "2026-03-23",
       "sdkVersion": "0.1.50",
       "newOptionsAdded": 0,
       "newMethodsAdded": 0,
       "newMessageTypesAdded": 0,
       "newHookEventsAdded": 0,
-      "updatedEntries": 1,
-      "newTypesDocumented": 6,
-      "details": "Added McpServerStatus, McpServerInfo, McpServerConnectionStatus, McpToolAnnotations, McpToolInfo, McpStatusResponse type definitions to MCP Servers section. These were exported in __all__ but undocumented.",
-      "noChanges": false
+      "updatedEntries": 0,
+      "noChanges": true,
+      "details": "API surface unchanged since last audit (v0.1.50). No new types or options found."
     },
     "researchedIssues": {}
   },
-  "lastUpdated": "2026-03-21T08:02:59Z"
+  "lastUpdated": "2026-03-23T00:00:00Z"
 }

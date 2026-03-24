@@ -1981,4 +1981,4 @@ async def my_tool(args: dict[str, Any]) -> dict[str, Any]:
 
 ---
 
-**Last verified**: 2026-03-23 | **SDK version**: 0.1.50
+**Last verified**: 2026-03-24 | **SDK version**: 0.1.50

@@ -638,15 +638,15 @@
     "lastScannedIssueNumber": 236,
     "lastAuditedVersion": "0.2.81",
     "lastAuditSummary": {
-      "date": "2026-03-23",
+      "date": "2026-03-24",
       "sdkVersion": "0.2.81",
       "newOptionsAdded": 0,
       "newMethodsAdded": 0,
       "newMessageTypesAdded": 0,
       "newHookEventsAdded": 0,
-      "updatedEntries": 1,
-      "noChanges": false,
-      "notes": "Added missing SessionStartHookSpecificOutput.initialUserMessage field to Hook Return Values section. GitHub API unavailable — Part B skipped."
+      "updatedEntries": 0,
+      "noChanges": true,
+      "notes": "Part A skipped (versions match: 0.2.81). Part B skipped (GitHub API unavailable). Part C verified: 23 hook events, 23 SDKMessage types, 41 Known Issues (#1\u2013#41 sequential), all Options fields, AgentDefinition fields, McpServerConfig variants, SandboxSettings, and SDKSession interface match sdk.d.ts. Updated Last verified date to 2026-03-24."
     }
   },
   "python": {
@@ -1369,7 +1369,7 @@
     "lastScannedIssueNumber": 713,
     "lastAuditedVersion": "0.1.50",
     "lastAuditSummary": {
-      "date": "2026-03-23",
+      "date": "2026-03-24",
       "sdkVersion": "0.1.50",
       "newOptionsAdded": 0,
       "newMethodsAdded": 0,
@@ -1377,7 +1377,7 @@
       "newHookEventsAdded": 0,
       "updatedEntries": 0,
       "noChanges": true,
-      "details": "API surface unchanged since last audit (v0.1.50). No new types or options found."
+      "details": "API surface unchanged since last audit (v0.1.50). No new types or options found. GitHub API unavailable; no issue research performed."
     },
     "researchedIssues": {}
   },

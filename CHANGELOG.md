@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-03-24
+
+- Research only, no version change (TS v0.2.81, Python v0.1.50 unchanged)
+- Both research agents verified skill docs and updated "Last verified" dates; GitHub API unavailable, no new issue scanning
+- No new Known Issues added (TS: 41 total, PY: 29 total)
+- Typecheck false-positive recurring (stray-comma artifact, non-blocking)
+- [Full report](reports/2026-03-24.md)
+
 ## 2026-03-23
 
 - Research only, no version change (TS v0.2.81, Python v0.1.50 unchanged)

@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-03-25
+
+- SDK v0.2.81 → v0.2.83 (TypeScript); Python v0.1.50 unchanged
+- New: `SDKSessionStateChangedMessage`, `CwdChanged`/`FileChanged` hooks, `AgentDefinition.initialPrompt`, `SandboxSettings.failIfUnavailable`, `decisionClassification` on `PermissionResult`
+- Typecheck false-positive recurring (stray-comma artifact, non-blocking); verify passed 18/18 checks
+- [Full report](reports/2026-03-25.md)
+
 ## 2026-03-24
 
 - Research only, no version change (TS v0.2.81, Python v0.1.50 unchanged)

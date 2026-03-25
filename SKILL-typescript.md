@@ -1,6 +1,7 @@
-# Claude Agent SDK — TypeScript Reference (v0.2.81)
+# Claude Agent SDK — TypeScript Reference (v0.2.83)
 
-**Package**: `@anthropic-ai/claude-agent-sdk@0.2.81`
+
+**Package**: `@anthropic-ai/claude-agent-sdk@0.2.83`
 **Docs**: https://platform.claude.com/docs/en/agent-sdk/overview
 **Repo**: https://github.com/anthropics/claude-agent-sdk-typescript
 **Migration**: Renamed from `@anthropic-ai/claude-code`. See [migration guide](https://platform.claude.com/docs/en/agent-sdk/migration-guide).
@@ -13,8 +14,8 @@
 - [Core API](#core-api) — `query()`, `tool()`, `createSdkMcpServer()`, `listSessions()`, `getSessionMessages()`, `getSessionInfo()`, `renameSession()`, `forkSession()`, `tagSession()`
 - [Options](#options) — Core, Tools & Permissions, Models & Output, Sessions, MCP & Agents, Advanced
 - [Query Object Methods](#query-object-methods)
-- [Message Types](#message-types) — All 23 SDKMessage types
-- [Hooks](#hooks) — 23 hook events, matchers, return values, async hooks
+- [Message Types](#message-types) — All 24 SDKMessage types
+- [Hooks](#hooks) — 25 hook events, matchers, return values, async hooks
 - [Permissions](#permissions) — 5 modes, `canUseTool` callback
 - [MCP Servers](#mcp-servers) — stdio, HTTP, SSE, SDK, claudeai-proxy
 - [Subagents](#subagents) — AgentDefinition, tool enforcement workaround
@@ -24,7 +25,7 @@
 - [V2 Session API (Preview)](#v2-session-api-preview) — `unstable_v2_createSession`, `unstable_v2_prompt`
 - [Debugging & Error Handling](#debugging--error-handling)
 - [Known Issues](#known-issues)
-- [Changelog Highlights](#changelog-highlights-v0212--v0272)
+- [Changelog Highlights](#changelog-highlights-v0212--v0283)
 
 ---
 
@@ -73,7 +74,7 @@ function tool<Schema extends ZodRawShape>(
   description: string,
   inputSchema: Schema,
   handler: (args: z.infer<ZodObject<Schema>>, extra: unknown) => Promise<CallToolResult>,
-  _extras?: { annotations?: ToolAnnotations }
+  _extras?: { annotations?: ToolAnnotations; searchHint?: string }
 ): SdkMcpToolDefinition<Schema>
 ```
 
@@ -425,7 +426,7 @@ type AccountInfo = {
 
 ## Message Types
 
-The SDK emits 23 message types through the async generator:
+The SDK emits 24 message types through the async generator:
 
 ```typescript
 type SDKMessage =
@@ -439,7 +440,8 @@ type SDKMessage =
   | SDKCompactBoundaryMessage     // type: 'system', subtype: 'compact_boundary'
   // Status & progress
   | SDKStatusMessage              // type: 'system', subtype: 'status' — status updates (e.g., 'compacting')
-  | SDKAPIRetryMessage            // type: 'system', subtype: 'api_retry' — transient API error being retried (v0.2.81)
+  | SDKSessionStateChangedMessage // type: 'system', subtype: 'session_state_changed' — idle/running/requires_action
+  | SDKAPIRetryMessage            // type: 'system', subtype: 'api_retry' — transient API error being retried (v0.2.83)
   | SDKToolProgressMessage        // type: 'tool_progress' — tool execution progress with elapsed time
   | SDKToolUseSummaryMessage      // type: 'tool_use_summary' — summary of tool usage
   | SDKAuthStatusMessage          // type: 'auth_status' — authentication status
@@ -460,7 +462,7 @@ type SDKMessage =
   | SDKPromptSuggestionMessage    // type: 'prompt_suggestion' — predicted next user prompt (requires promptSuggestions: true)
 ```
 
-### SDKAPIRetryMessage (v0.2.81)
+### SDKAPIRetryMessage (v0.2.83)
 
 ```typescript
 { type: 'system', subtype: 'api_retry', uuid, session_id,
@@ -472,6 +474,15 @@ type SDKMessage =
 ```
 
 Emitted when a transient API error is automatically retried. Use to show retry indicators in UIs or log retry storms.
+
+### SDKSessionStateChangedMessage
+
+```typescript
+{ type: 'system', subtype: 'session_state_changed', uuid, session_id,
+  state: 'idle' | 'running' | 'requires_action' }
+```
+
+Authoritative turn-over signal. `'idle'` fires after the result flushes and the agent exits its response loop — useful for knowing exactly when the agent is ready for the next prompt without polling.
 
 ### SDKResultMessage
 
@@ -532,10 +543,11 @@ for await (const message of query({ prompt: "...", options })) {
       if (message.subtype === 'init') sessionId = message.session_id;
       if (message.subtype === 'status') console.log('Status:', message.status, message.permissionMode);  // permissionMode?: PermissionMode
       if (message.subtype === 'api_retry') console.log(`Retrying (${message.attempt}/${message.max_retries}), delay ${message.retry_delay_ms}ms, http_status: ${message.error_status}`);
+      if (message.subtype === 'session_state_changed') console.log('Session state:', message.state);  // 'idle' | 'running' | 'requires_action'
       if (message.subtype === 'hook_progress') console.log('Hook:', message.output);  // also: .stdout, .stderr, .hook_name, .hook_event
       if (message.subtype === 'local_command_output') console.log('Slash cmd output:', message.content);
       if (message.subtype === 'elicitation_complete') console.log('Elicitation done:', message.mcp_server_name, message.elicitation_id);
-      if (message.subtype === 'task_started') console.log('Task started:', message.task_id, message.description, message.task_type, message.prompt);  // task_type?: string; prompt?: string
+      if (message.subtype === 'task_started') console.log('Task started:', message.task_id, message.description, message.task_type, message.prompt);  // task_type?: string; workflow_name?: string (when task_type is 'local_workflow'); prompt?: string
       if (message.subtype === 'task_progress') console.log('Task progress:', message.task_id, message.description, message.last_tool_name, message.usage, message.summary);  // usage: {total_tokens, tool_uses, duration_ms}; last_tool_name?: string; tool_use_id?: string; summary?: string (from agentProgressSummaries)
       if (message.subtype === 'task_notification') console.log('Task done:', message.task_id, message.status, message.tool_use_id, message.output_file, message.summary);  // output_file: string, summary: string, usage?: {total_tokens, tool_uses, duration_ms}
       break;
@@ -590,6 +602,8 @@ Hooks use **callback matchers**: an optional regex `matcher` for tool names and 
 | `Elicitation` | MCP server requests user input (form or URL auth) | Yes | No |
 | `ElicitationResult` | MCP elicitation completed (result available) | Yes | No |
 | `InstructionsLoaded` | CLAUDE.md / instructions file loaded into context | Yes | No |
+| `CwdChanged` | Working directory changed | Yes | No |
+| `FileChanged` | Watched file changed, added, or removed | Yes | No |
 
 ### Hook Callback Signature
 
@@ -679,6 +693,14 @@ return {
   }
 };
 
+// CwdChanged / FileChanged: update watched paths
+return {
+  hookSpecificOutput: {
+    hookEventName: 'CwdChanged',  // or 'FileChanged'
+    watchPaths: ['/new/path/to/watch']
+  }
+};
+
 // Decision-based response (reason is a top-level field, not nested)
 return { decision: 'approve', reason: 'Looks safe' };   // or 'block'
 
@@ -731,6 +753,8 @@ Common fields on all hooks: `session_id`, `transcript_path`, `cwd`, `permission_
 | `mcp_server_name`, `message`, `mode?`, `url?`, `elicitation_id?`, `requested_schema?` | Elicitation |
 | `mcp_server_name`, `elicitation_id?`, `mode?`, `action`, `content?` | ElicitationResult |
 | `file_path`, `memory_type` (`'User' \| 'Project' \| 'Local' \| 'Managed'`), `load_reason` (`'session_start' \| 'nested_traversal' \| 'path_glob_match' \| 'include' \| 'compact'`), `globs?`, `trigger_file_path?`, `parent_file_path?` | InstructionsLoaded |
+| `old_cwd`, `new_cwd` | CwdChanged |
+| `file_path`, `event` (`'change' \| 'add' \| 'unlink'`) | FileChanged |
 
 ---
 
@@ -769,8 +793,8 @@ type CanUseTool = (
 ) => Promise<PermissionResult>;
 
 type PermissionResult =
-  | { behavior: 'allow'; updatedInput?: Record<string, unknown>; updatedPermissions?: PermissionUpdate[]; toolUseID?: string; }
-  | { behavior: 'deny'; message: string; interrupt?: boolean; toolUseID?: string; };
+  | { behavior: 'allow'; updatedInput?: Record<string, unknown>; updatedPermissions?: PermissionUpdate[]; toolUseID?: string; decisionClassification?: 'user_temporary' | 'user_permanent' | 'user_reject'; }
+  | { behavior: 'deny'; message: string; interrupt?: boolean; toolUseID?: string; decisionClassification?: 'user_temporary' | 'user_permanent' | 'user_reject'; };
 ```
 
 Example:
@@ -868,6 +892,7 @@ type AgentDefinition = {
   mcpServers?: AgentMcpServerSpec[];  // Per-agent MCP servers
   skills?: string[];          // Skill names to preload
   maxTurns?: number;          // Max turns for this subagent
+  initialPrompt?: string;     // Auto-submitted as first user turn (slash commands processed; prepended to user prompt)
   criticalSystemReminder_EXPERIMENTAL?: string;  // Critical reminder added to system prompt
 }
 ```
@@ -979,6 +1004,7 @@ Error subtype `error_max_structured_output_retries` indicates validation failure
 ```typescript
 type SandboxSettings = {
   enabled?: boolean;
+  failIfUnavailable?: boolean;          // Exit with error at startup if sandbox cannot start (managed deployments)
   autoAllowBashIfSandboxed?: boolean;
   excludedCommands?: string[];          // Always bypass sandbox
   allowUnsandboxedCommands?: boolean;   // Let model request unsandboxed execution
@@ -1450,7 +1476,7 @@ Or set the environment variable before spawning: `CLAUDE_CODE_EFFORT_LEVEL=high`
 ### #35: `sdk-tools.d.ts` subpath unresolvable since v0.2.69 — missing from package exports map ✅ Fixed
 **Error**: TypeScript cannot resolve `"@anthropic-ai/claude-agent-sdk/sdk-tools"` in projects using `moduleResolution: bundler`, `node16`, or `nodenext` ([#218](https://github.com/anthropics/claude-agent-sdk-typescript/issues/218))
 **Cause**: SDK v0.2.69 added a package.json `exports` field but omitted `"./sdk-tools"`. In strict ESM environments the exports map is authoritative, so the physical `sdk-tools.d.ts` file (which contains input schemas for all built-in tools: `BashInput`, `GlobInput`, `GrepInput`, etc.) is inaccessible via the subpath import.
-**Status**: Fixed — the `./sdk-tools` entry has been added to `package.json`'s exports map ([#222](https://github.com/anthropics/claude-agent-sdk-typescript/issues/222)). Upgrade to v0.2.81+ to resolve.
+**Status**: Fixed — the `./sdk-tools` entry has been added to `package.json`'s exports map ([#222](https://github.com/anthropics/claude-agent-sdk-typescript/issues/222)). Upgrade to v0.2.83+ to resolve.
 **Workaround** (for older versions): Switch to `moduleResolution: node10` (legacy), which ignores the exports map and resolves directly from the file system. Alternatively, reference the types via a relative import from `node_modules` (non-portable):
 ```typescript
 // Instead of (broken in bundler/node16/nodenext moduleResolution):
@@ -1529,11 +1555,11 @@ sandbox: {
 
 ---
 
-## Changelog Highlights (v0.2.12 → v0.2.81)
+## Changelog Highlights (v0.2.12 → v0.2.83)
 
 | Version | Change |
 |---------|--------|
-| v0.2.81 | Added `SDKAPIRetryMessage` (`type: 'system', subtype: 'api_retry'`) — emitted when a transient API error is automatically retried; exposes attempt count, max retries, delay, and error status; fixed `SubagentStart`/`SubagentStop` hook `agent_type` always reporting `"general-purpose"` — now correctly reports the agent key from the `agents` map ([#226](https://github.com/anthropics/claude-agent-sdk-typescript/issues/226)); fixed missing `./sdk-tools` entry in `package.json` exports map ([#222](https://github.com/anthropics/claude-agent-sdk-typescript/issues/222)) |
+| v0.2.83 | Added `SDKSessionStateChangedMessage` (`type: 'system', subtype: 'session_state_changed'`, `state: 'idle' \| 'running' \| 'requires_action'`) — authoritative turn-over signal; added `CwdChanged` and `FileChanged` hook events (25 total); added `initialPrompt` field to `AgentDefinition`; added `searchHint` to `tool()` extras; added `decisionClassification` to `PermissionResult`; added `failIfUnavailable` to `SandboxSettings`; added `workflow_name` to `SDKTaskStartedMessage` |
 | v0.2.71 | Fixed `Agent` tool returning `"Unknown tool: Agent"` in `query()` mode — subagent invocation via `tools: ['Agent']` + `agents` map now works ([#210](https://github.com/anthropics/claude-agent-sdk-typescript/issues/210)) |
 | v0.2.63 | Fixed `SDKRateLimitEvent` and `SDKPromptSuggestionMessage` missing from `sdk.d.ts` — `SDKMessage` now has full type safety ([#196](https://github.com/anthropics/claude-agent-sdk-typescript/issues/196), [#206](https://github.com/anthropics/claude-agent-sdk-typescript/issues/206)) |
 | v0.2.58 | Version bump |
@@ -1550,4 +1576,4 @@ sandbox: {
 
 ---
 
-**Last verified**: 2026-03-24 | **SDK version**: 0.2.81
+**Last verified**: 2026-03-25 | **SDK version**: 0.2.83 (audited from v0.2.83)

@@ -1,7 +1,7 @@
-# Claude Agent SDK — TypeScript Reference (v0.2.83)
+# Claude Agent SDK — TypeScript Reference (v0.2.84)
 
 
-**Package**: `@anthropic-ai/claude-agent-sdk@0.2.83`
+**Package**: `@anthropic-ai/claude-agent-sdk@0.2.84`
 **Docs**: https://platform.claude.com/docs/en/agent-sdk/overview
 **Repo**: https://github.com/anthropics/claude-agent-sdk-typescript
 **Migration**: Renamed from `@anthropic-ai/claude-code`. See [migration guide](https://platform.claude.com/docs/en/agent-sdk/migration-guide).
@@ -22,7 +22,7 @@
 - [Structured Outputs](#structured-outputs)
 - [Sandbox](#sandbox)
 - [Sessions](#sessions)
-- [V2 Session API (Preview)](#v2-session-api-preview) — `unstable_v2_createSession`, `unstable_v2_prompt`
+- [V2 Session API (Preview)](#v2-session-api-preview) — `unstable_v2_createSession`, `unstable_v2_resumeSession`, `unstable_v2_prompt`
 - [Debugging & Error Handling](#debugging--error-handling)
 - [Known Issues](#known-issues)
 - [Changelog Highlights](#changelog-highlights-v0212--v0283)
@@ -441,7 +441,7 @@ type SDKMessage =
   // Status & progress
   | SDKStatusMessage              // type: 'system', subtype: 'status' — status updates (e.g., 'compacting')
   | SDKSessionStateChangedMessage // type: 'system', subtype: 'session_state_changed' — idle/running/requires_action
-  | SDKAPIRetryMessage            // type: 'system', subtype: 'api_retry' — transient API error being retried (v0.2.83)
+  | SDKAPIRetryMessage            // type: 'system', subtype: 'api_retry' — transient API error being retried (v0.2.84)
   | SDKToolProgressMessage        // type: 'tool_progress' — tool execution progress with elapsed time
   | SDKToolUseSummaryMessage      // type: 'tool_use_summary' — summary of tool usage
   | SDKAuthStatusMessage          // type: 'auth_status' — authentication status
@@ -462,7 +462,7 @@ type SDKMessage =
   | SDKPromptSuggestionMessage    // type: 'prompt_suggestion' — predicted next user prompt (requires promptSuggestions: true)
 ```
 
-### SDKAPIRetryMessage (v0.2.83)
+### SDKAPIRetryMessage (v0.2.84)
 
 ```typescript
 { type: 'system', subtype: 'api_retry', uuid, session_id,
@@ -1476,7 +1476,7 @@ Or set the environment variable before spawning: `CLAUDE_CODE_EFFORT_LEVEL=high`
 ### #35: `sdk-tools.d.ts` subpath unresolvable since v0.2.69 — missing from package exports map ✅ Fixed
 **Error**: TypeScript cannot resolve `"@anthropic-ai/claude-agent-sdk/sdk-tools"` in projects using `moduleResolution: bundler`, `node16`, or `nodenext` ([#218](https://github.com/anthropics/claude-agent-sdk-typescript/issues/218))
 **Cause**: SDK v0.2.69 added a package.json `exports` field but omitted `"./sdk-tools"`. In strict ESM environments the exports map is authoritative, so the physical `sdk-tools.d.ts` file (which contains input schemas for all built-in tools: `BashInput`, `GlobInput`, `GrepInput`, etc.) is inaccessible via the subpath import.
-**Status**: Fixed — the `./sdk-tools` entry has been added to `package.json`'s exports map ([#222](https://github.com/anthropics/claude-agent-sdk-typescript/issues/222)). Upgrade to v0.2.83+ to resolve.
+**Status**: Fixed — the `./sdk-tools` entry has been added to `package.json`'s exports map ([#222](https://github.com/anthropics/claude-agent-sdk-typescript/issues/222)). Upgrade to v0.2.84+ to resolve.
 **Workaround** (for older versions): Switch to `moduleResolution: node10` (legacy), which ignores the exports map and resolves directly from the file system. Alternatively, reference the types via a relative import from `node_modules` (non-portable):
 ```typescript
 // Instead of (broken in bundler/node16/nodenext moduleResolution):
@@ -1553,13 +1553,74 @@ sandbox: {
 **Impact**: Automated pipelines that use `permissionMode: 'bypassPermissions'` with `allowDangerouslySkipPermissions: true` will have subagents block or prompt on permission checks, hanging in headless environments.
 **Workaround**: Use `permissionMode: 'acceptEdits'` instead of `'bypassPermissions'` for workflows requiring subagents. `acceptEdits` automatically approves file edits without the safety flag requirement. For completely unrestricted tool use, set explicit permissions via `allowedTools` and a `canUseTool` callback that always allows.
 
+### #42: `sandbox.enabled: true` silently degrades to unsandboxed execution when `bwrap` is not installed
+**Error**: No error thrown — commands run with full filesystem and network access despite `sandbox.enabled: true` ([#239](https://github.com/anthropics/claude-agent-sdk-typescript/issues/239))
+**Cause**: When `bwrap` (bubblewrap) is not installed, `checkDependencies()` records an error and `isSandboxingEnabled()` returns `false`. The SDK silently skips sandbox initialization and runs all commands without any restriction. `allowUnsandboxedCommands: false` does not prevent this — it only applies per-command when the sandbox is active.
+**Impact**: Security-sensitive deployments that require sandboxing as a hard gate cannot detect silently-degraded execution. All `filesystem.allowWrite`, `network.allowedDomains`, and other sandbox restrictions are completely ignored.
+**Fix**: Set `failIfUnavailable: true` in sandbox settings to make the SDK exit with an error at startup if sandboxing cannot start:
+```typescript
+sandbox: {
+  enabled: true,
+  failIfUnavailable: true,  // Fail loudly if bwrap/sandbox not available
+  filesystem: { allowWrite: ['/sandbox/path'] }
+}
+```
+**Note**: Install bubblewrap with `apt-get install bubblewrap` (Debian/Ubuntu) or `dnf install bubblewrap` (Fedora/RHEL).
+
+### #43: `createSdkMcpServer` drops Zod v4 field `.describe()` metadata from tool input schemas
+**Error**: Field descriptions defined with `.describe()` in Zod v4 schemas are absent from the MCP `tools/list` response — Claude has no per-field guidance ([#243](https://github.com/anthropics/claude-agent-sdk-typescript/issues/243))
+**Cause**: The SDK's internal Zod-to-JSON-Schema converter reads `.describe()` metadata from `schema._def.description` (Zod v3 location). In Zod v4, `.describe()` stores metadata on the schema instance (`schema.description`) and in a metadata registry (`schema.meta()?.description`). The converter does not read from these new locations, so all field descriptions are silently dropped.
+**Impact**: Affects any `tool()` definition using Zod v4 with per-field `.describe()` calls. Tool-level descriptions (the second argument to `tool()`) still work. Only field-level descriptions in the shape object are affected.
+**Workaround**: Downgrade to Zod v3 (`npm install zod@3`) until the SDK updates its converter:
+```typescript
+// With Zod v4 — field descriptions silently dropped:
+tool("create_item", "Create an item", {
+  userId: z.string().describe("related user id"),  // description lost
+}, handler);
+
+// Workaround: use Zod v3 — descriptions preserved correctly
+// npm install zod@3
+```
+
+### #44: `ExitWorktree` state lost across `query()` calls — cannot exit a worktree opened in a previous call
+**Error**: `No-op: there is no active EnterWorktree session to exit. This tool only operates on worktrees created by EnterWorktree in the current session — it will not touch worktrees created manually or in a previous session. No filesystem changes were made.` ([#245](https://github.com/anthropics/claude-agent-sdk-typescript/issues/245))
+**Cause**: The SDK does not persist worktree session state across separate `query()` invocations, even when using the same session ID via `resume`. The `EnterWorktree` state is in-memory and does not survive process restarts or new `query()` calls.
+**Impact**: Multi-turn workflows that open a worktree in one `query()` call and attempt to exit it in a subsequent call will fail. The worktree directory and branch remain on disk as orphans.
+**Workaround**: Always open and close worktrees within the same `query()` call. Structure prompts so the agent performs all worktree-dependent work in a single query, including `ExitWorktree`:
+```typescript
+// WRONG — ExitWorktree will fail in the second query()
+const q1 = query({ prompt: "Enter a worktree and make changes", options });
+for await (const msg of q1) { /* ... */ }
+
+const q2 = query({ prompt: "Exit the worktree", options: { ...options, resume: sessionId } });
+for await (const msg of q2) { /* FAILS */ }
+
+// CORRECT — perform all worktree operations in one query()
+const q = query({ prompt: "Enter a worktree, make changes, then exit the worktree", options });
+for await (const msg of q) { /* ... */ }
+```
+**Cleanup**: If a worktree was left orphaned, manually remove it: `git worktree remove .claude/worktrees/<worktree-name>`
+
+### #45: `query()` always injects `--permission-mode default` — settings file `permissionMode` silently overridden
+**Symptom**: When `query()` is called without specifying `permissionMode` in options, the SDK still passes `--permission-mode default` to the Claude Code subprocess. Settings-file-driven `permissionMode` values (e.g., `"plan"` in `~/.claude/settings.json`) are silently ignored ([#230](https://github.com/anthropics/claude-agent-sdk-typescript/issues/230))
+**Cause**: The SDK unconditionally serializes the `permissionMode` option with a default value of `"default"` rather than omitting it when not specified. This means the CLI always receives an explicit `--permission-mode default` flag, overriding any value from loaded settings files.
+**Impact**: Applications that rely on settings files to configure permission mode will see unexpected `"default"` mode behavior instead of their configured mode.
+**Workaround**: Explicitly pass the desired `permissionMode` in `query()` options rather than relying on settings files:
+```typescript
+// Settings file may have permissionMode: "plan", but this is ignored:
+const q = query({ prompt: "...", options: {} }); // always uses "default"
+
+// Fix: explicitly specify the mode you want
+const q = query({ prompt: "...", options: { permissionMode: "plan" } });
+```
+
 ---
 
-## Changelog Highlights (v0.2.12 → v0.2.83)
+## Changelog Highlights (v0.2.12 → v0.2.84)
 
 | Version | Change |
 |---------|--------|
-| v0.2.83 | Added `SDKSessionStateChangedMessage` (`type: 'system', subtype: 'session_state_changed'`, `state: 'idle' \| 'running' \| 'requires_action'`) — authoritative turn-over signal; added `CwdChanged` and `FileChanged` hook events (25 total); added `initialPrompt` field to `AgentDefinition`; added `searchHint` to `tool()` extras; added `decisionClassification` to `PermissionResult`; added `failIfUnavailable` to `SandboxSettings`; added `workflow_name` to `SDKTaskStartedMessage` |
+| v0.2.84 | Added `SDKSessionStateChangedMessage` (`type: 'system', subtype: 'session_state_changed'`, `state: 'idle' \| 'running' \| 'requires_action'`) — authoritative turn-over signal; added `CwdChanged` and `FileChanged` hook events (25 total); added `initialPrompt` field to `AgentDefinition`; added `searchHint` to `tool()` extras; added `decisionClassification` to `PermissionResult`; added `failIfUnavailable` to `SandboxSettings`; added `workflow_name` to `SDKTaskStartedMessage` |
 | v0.2.71 | Fixed `Agent` tool returning `"Unknown tool: Agent"` in `query()` mode — subagent invocation via `tools: ['Agent']` + `agents` map now works ([#210](https://github.com/anthropics/claude-agent-sdk-typescript/issues/210)) |
 | v0.2.63 | Fixed `SDKRateLimitEvent` and `SDKPromptSuggestionMessage` missing from `sdk.d.ts` — `SDKMessage` now has full type safety ([#196](https://github.com/anthropics/claude-agent-sdk-typescript/issues/196), [#206](https://github.com/anthropics/claude-agent-sdk-typescript/issues/206)) |
 | v0.2.58 | Version bump |
@@ -1576,4 +1637,4 @@ sandbox: {
 
 ---
 
-**Last verified**: 2026-03-25 | **SDK version**: 0.2.83 (audited from v0.2.83)
+**Last verified**: 2026-03-26 | **SDK version**: 0.2.84 (audited from v0.2.84)

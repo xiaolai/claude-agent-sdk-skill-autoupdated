@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-03-26
+
+- SDK v0.2.83 → v0.2.84 (TypeScript); Python v0.1.50 unchanged
+- TS: Added 3 new Known Issues (#42 sandbox silent degradation, #43 Zod v4 `.describe()` drop, #44 ExitWorktree state lost across queries)
+- PY: Added 3 new Known Issues (#30–#32); updated KI #10, #11, #29 with pending fix status (5 PRs merged 2026-03-25/26, not yet released)
+- [Full report](reports/2026-03-26.md)
+
 ## 2026-03-25
 
 - SDK v0.2.81 → v0.2.83 (TypeScript); Python v0.1.50 unchanged

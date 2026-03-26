@@ -1,13 +1,13 @@
 ---
 paths: "**/*agent*.ts"
-description: Auto-corrections for Claude Agent SDK v0.2.83
+description: Auto-corrections for Claude Agent SDK v0.2.84
 ---
 
 # Claude Agent SDK Rules
 
 ## Package
 - Package: `@anthropic-ai/claude-agent-sdk` (NOT `@anthropic-ai/claude-code`)
-- Latest: v0.2.83
+- Latest: v0.2.84
 
 ## Common Mistakes
 
@@ -176,6 +176,19 @@ mcpServers: {
 }
 
 // Valid MCP server types: (none/'stdio'), 'http', 'sse', 'sdk', 'claudeai-proxy'
+```
+
+### createSdkMcpServer: Zod v4 field .describe() is silently dropped
+```typescript
+// BUG (Zod v4) — field descriptions are lost due to SDK converter reading _def.description only
+const myTool = tool("create_item", "Create an item", {
+  userId: z.string().describe("the user id"),    // description silently dropped
+  name: z.string().describe("item name"),         // description silently dropped
+}, handler);
+
+// WORKAROUND — downgrade to Zod v3 until SDK converter is updated
+// npm install zod@3
+// With Zod v3, field .describe() metadata is preserved in MCP tools/list
 ```
 
 ### tool() requires ZodRawShape, not ZodObject

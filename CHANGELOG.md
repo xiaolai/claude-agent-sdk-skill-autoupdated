@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-03-27
+
+- SDK v0.2.84 → v0.2.85 (TypeScript); Python v0.1.50 unchanged
+- New: `taskBudget` option (@alpha), `reloadPlugins()`/`seedReadState()` query methods, `TaskCreated` hook event (26 total hooks)
+- Typecheck false-positive (recurring stale-comma artifact); verify passed 18/18 after 2 mending runs
+- [Full report](reports/2026-03-27.md)
+
 ## 2026-03-26
 
 - SDK v0.2.83 → v0.2.84 (TypeScript); Python v0.1.50 unchanged

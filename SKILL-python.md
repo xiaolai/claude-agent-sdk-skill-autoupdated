@@ -2034,4 +2034,4 @@ options = ClaudeAgentOptions(
 
 ---
 
-**Last verified**: 2026-03-26 | **SDK version**: 0.1.50
+**Last verified**: 2026-03-27 | **SDK version**: 0.1.50

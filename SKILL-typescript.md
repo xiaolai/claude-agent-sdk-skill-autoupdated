@@ -1,7 +1,7 @@
-# Claude Agent SDK — TypeScript Reference (v0.2.84)
+# Claude Agent SDK — TypeScript Reference (v0.2.85)
 
 
-**Package**: `@anthropic-ai/claude-agent-sdk@0.2.84`
+**Package**: `@anthropic-ai/claude-agent-sdk@0.2.85`
 **Docs**: https://platform.claude.com/docs/en/agent-sdk/overview
 **Repo**: https://github.com/anthropics/claude-agent-sdk-typescript
 **Migration**: Renamed from `@anthropic-ai/claude-code`. See [migration guide](https://platform.claude.com/docs/en/agent-sdk/migration-guide).
@@ -15,7 +15,7 @@
 - [Options](#options) — Core, Tools & Permissions, Models & Output, Sessions, MCP & Agents, Advanced
 - [Query Object Methods](#query-object-methods)
 - [Message Types](#message-types) — All 24 SDKMessage types
-- [Hooks](#hooks) — 25 hook events, matchers, return values, async hooks
+- [Hooks](#hooks) — 26 hook events, matchers, return values, async hooks
 - [Permissions](#permissions) — 5 modes, `canUseTool` callback
 - [MCP Servers](#mcp-servers) — stdio, HTTP, SSE, SDK, claudeai-proxy
 - [Subagents](#subagents) — AgentDefinition, tool enforcement workaround
@@ -300,6 +300,7 @@ await tagSession(sessionId, null);
 | `includePartialMessages` | `boolean` | `false` | Include streaming partial messages |
 | `promptSuggestions` | `boolean` | `false` | Emit `SDKPromptSuggestionMessage` after each turn with a predicted next user prompt (arrives after result; suppressed on first turn, after errors, in plan mode) |
 | `agentProgressSummaries` | `boolean` | `false` | Enable periodic AI-generated progress summaries for running subagents. Every ~30s, forks the subagent's conversation to produce a short present-tense description emitted on `task_progress` events via the `summary` field. Applies to foreground and background subagents. |
+| `taskBudget` | `{ total: number }` | — | **@alpha** API-side task token budget. The model is made aware of its remaining token budget so it can pace tool use and wrap up before the limit. Sent as `output_config.task_budget` with the `task-budgets-2026-03-13` beta header. |
 
 ### Sessions
 
@@ -376,8 +377,12 @@ await q.reconnectMcpServer("server-name");  // Reconnect MCP server (v0.2.21)
 await q.toggleMcpServer("server-name", enabled); // Toggle MCP server (v0.2.21)
 await q.setMcpServers(newServersConfig);    // Replace MCP servers mid-session
 
+// Plugin management
+await q.reloadPlugins();                    // Reload plugins from disk; returns { commands, agents, plugins, mcpServers, error_count }
+
 // File checkpointing (requires enableFileCheckpointing: true)
 await q.rewindFiles(userMessageUuid, { dryRun?: boolean }); // Rewind to checkpoint
+await q.seedReadState(path, mtime);         // Seed read-file state cache — use when a prior Read was removed from context (e.g. by snip) so Edit won't fail "file not read yet"
 ```
 
 ### Initialization Result Type
@@ -441,7 +446,7 @@ type SDKMessage =
   // Status & progress
   | SDKStatusMessage              // type: 'system', subtype: 'status' — status updates (e.g., 'compacting')
   | SDKSessionStateChangedMessage // type: 'system', subtype: 'session_state_changed' — idle/running/requires_action
-  | SDKAPIRetryMessage            // type: 'system', subtype: 'api_retry' — transient API error being retried (v0.2.84)
+  | SDKAPIRetryMessage            // type: 'system', subtype: 'api_retry' — transient API error being retried (v0.2.85)
   | SDKToolProgressMessage        // type: 'tool_progress' — tool execution progress with elapsed time
   | SDKToolUseSummaryMessage      // type: 'tool_use_summary' — summary of tool usage
   | SDKAuthStatusMessage          // type: 'auth_status' — authentication status
@@ -462,7 +467,7 @@ type SDKMessage =
   | SDKPromptSuggestionMessage    // type: 'prompt_suggestion' — predicted next user prompt (requires promptSuggestions: true)
 ```
 
-### SDKAPIRetryMessage (v0.2.84)
+### SDKAPIRetryMessage (v0.2.85)
 
 ```typescript
 { type: 'system', subtype: 'api_retry', uuid, session_id,
@@ -595,6 +600,7 @@ Hooks use **callback matchers**: an optional regex `matcher` for tool names and 
 | `SessionEnd` | Session ends | Yes | No |
 | `Notification` | Agent status message | Yes | No |
 | `TeammateIdle` | Teammate agent is idle (v0.2.33) | Yes | No |
+| `TaskCreated` | Background task created (teammate workflow) (v0.2.33) | Yes | No |
 | `TaskCompleted` | Background task completed (v0.2.33) | Yes | No |
 | `ConfigChange` | Settings file changed (user/project/local/policy/skills) | Yes | No |
 | `WorktreeCreate` | Git worktree created | Yes | No |
@@ -746,7 +752,7 @@ Common fields on all hooks: `session_id`, `transcript_path`, `cwd`, `permission_
 | `message`, `title`, `notification_type` | Notification |
 | `permission_suggestions` | PermissionRequest |
 | `teammate_name`, `team_name` | TeammateIdle |
-| `task_id`, `task_subject`, `task_description`, `teammate_name`, `team_name` | TaskCompleted |
+| `task_id`, `task_subject`, `task_description?`, `teammate_name?`, `team_name?` | TaskCreated, TaskCompleted |
 | `source` (`'user_settings' \| 'project_settings' \| 'local_settings' \| 'policy_settings' \| 'skills'`), `file_path?` | ConfigChange |
 | `name` | WorktreeCreate (worktree name) |
 | `worktree_path` | WorktreeRemove (path of removed worktree) |
@@ -1476,7 +1482,7 @@ Or set the environment variable before spawning: `CLAUDE_CODE_EFFORT_LEVEL=high`
 ### #35: `sdk-tools.d.ts` subpath unresolvable since v0.2.69 — missing from package exports map ✅ Fixed
 **Error**: TypeScript cannot resolve `"@anthropic-ai/claude-agent-sdk/sdk-tools"` in projects using `moduleResolution: bundler`, `node16`, or `nodenext` ([#218](https://github.com/anthropics/claude-agent-sdk-typescript/issues/218))
 **Cause**: SDK v0.2.69 added a package.json `exports` field but omitted `"./sdk-tools"`. In strict ESM environments the exports map is authoritative, so the physical `sdk-tools.d.ts` file (which contains input schemas for all built-in tools: `BashInput`, `GlobInput`, `GrepInput`, etc.) is inaccessible via the subpath import.
-**Status**: Fixed — the `./sdk-tools` entry has been added to `package.json`'s exports map ([#222](https://github.com/anthropics/claude-agent-sdk-typescript/issues/222)). Upgrade to v0.2.84+ to resolve.
+**Status**: Fixed — the `./sdk-tools` entry has been added to `package.json`'s exports map ([#222](https://github.com/anthropics/claude-agent-sdk-typescript/issues/222)). Upgrade to v0.2.85+ to resolve.
 **Workaround** (for older versions): Switch to `moduleResolution: node10` (legacy), which ignores the exports map and resolves directly from the file system. Alternatively, reference the types via a relative import from `node_modules` (non-portable):
 ```typescript
 // Instead of (broken in bundler/node16/nodenext moduleResolution):
@@ -1616,11 +1622,11 @@ const q = query({ prompt: "...", options: { permissionMode: "plan" } });
 
 ---
 
-## Changelog Highlights (v0.2.12 → v0.2.84)
+## Changelog Highlights (v0.2.12 → v0.2.85)
 
 | Version | Change |
 |---------|--------|
-| v0.2.84 | Added `SDKSessionStateChangedMessage` (`type: 'system', subtype: 'session_state_changed'`, `state: 'idle' \| 'running' \| 'requires_action'`) — authoritative turn-over signal; added `CwdChanged` and `FileChanged` hook events (25 total); added `initialPrompt` field to `AgentDefinition`; added `searchHint` to `tool()` extras; added `decisionClassification` to `PermissionResult`; added `failIfUnavailable` to `SandboxSettings`; added `workflow_name` to `SDKTaskStartedMessage` |
+| v0.2.85 | Added `TaskCreated` hook event (26 total); added `taskBudget: { total: number }` option (@alpha); added `Query.reloadPlugins()` and `Query.seedReadState()` methods |
 | v0.2.71 | Fixed `Agent` tool returning `"Unknown tool: Agent"` in `query()` mode — subagent invocation via `tools: ['Agent']` + `agents` map now works ([#210](https://github.com/anthropics/claude-agent-sdk-typescript/issues/210)) |
 | v0.2.63 | Fixed `SDKRateLimitEvent` and `SDKPromptSuggestionMessage` missing from `sdk.d.ts` — `SDKMessage` now has full type safety ([#196](https://github.com/anthropics/claude-agent-sdk-typescript/issues/196), [#206](https://github.com/anthropics/claude-agent-sdk-typescript/issues/206)) |
 | v0.2.58 | Version bump |
@@ -1637,4 +1643,4 @@ const q = query({ prompt: "...", options: { permissionMode: "plan" } });
 
 ---
 
-**Last verified**: 2026-03-26 | **SDK version**: 0.2.84 (audited from v0.2.84)
+**Last verified**: 2026-03-27 | **SDK version**: 0.2.85

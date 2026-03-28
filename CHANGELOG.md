@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-03-28
+
+- SDK v0.2.85 → v0.2.86 (TypeScript); Python v0.1.50 → v0.1.51
+- No new Known Issues added (no new bug issues detected in change report)
+- Verify failed (false positives: stale-version regex matches historical changelog/workaround references); typecheck soft-failed (script-generated malformed import string)
+- [Full report](reports/2026-03-28.md)
+
 ## 2026-03-27
 
 - SDK v0.2.84 → v0.2.85 (TypeScript); Python v0.1.50 unchanged

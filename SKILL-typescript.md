@@ -1,7 +1,7 @@
-# Claude Agent SDK — TypeScript Reference (v0.2.85)
+# Claude Agent SDK — TypeScript Reference (v0.2.86)
 
 
-**Package**: `@anthropic-ai/claude-agent-sdk@0.2.85`
+**Package**: `@anthropic-ai/claude-agent-sdk@0.2.86`
 **Docs**: https://platform.claude.com/docs/en/agent-sdk/overview
 **Repo**: https://github.com/anthropics/claude-agent-sdk-typescript
 **Migration**: Renamed from `@anthropic-ai/claude-code`. See [migration guide](https://platform.claude.com/docs/en/agent-sdk/migration-guide).
@@ -379,6 +379,7 @@ await q.setMcpServers(newServersConfig);    // Replace MCP servers mid-session
 
 // Plugin management
 await q.reloadPlugins();                    // Reload plugins from disk; returns { commands, agents, plugins, mcpServers, error_count }
+await q.getContextUsage();                  // Get context window usage breakdown by category (tokens per category, total, max, percentage) (v0.2.86)
 
 // File checkpointing (requires enableFileCheckpointing: true)
 await q.rewindFiles(userMessageUuid, { dryRun?: boolean }); // Rewind to checkpoint
@@ -446,7 +447,7 @@ type SDKMessage =
   // Status & progress
   | SDKStatusMessage              // type: 'system', subtype: 'status' — status updates (e.g., 'compacting')
   | SDKSessionStateChangedMessage // type: 'system', subtype: 'session_state_changed' — idle/running/requires_action
-  | SDKAPIRetryMessage            // type: 'system', subtype: 'api_retry' — transient API error being retried (v0.2.85)
+  | SDKAPIRetryMessage            // type: 'system', subtype: 'api_retry' — transient API error being retried (v0.2.86)
   | SDKToolProgressMessage        // type: 'tool_progress' — tool execution progress with elapsed time
   | SDKToolUseSummaryMessage      // type: 'tool_use_summary' — summary of tool usage
   | SDKAuthStatusMessage          // type: 'auth_status' — authentication status
@@ -467,7 +468,7 @@ type SDKMessage =
   | SDKPromptSuggestionMessage    // type: 'prompt_suggestion' — predicted next user prompt (requires promptSuggestions: true)
 ```
 
-### SDKAPIRetryMessage (v0.2.85)
+### SDKAPIRetryMessage (v0.2.86)
 
 ```typescript
 { type: 'system', subtype: 'api_retry', uuid, session_id,
@@ -1620,12 +1621,23 @@ const q = query({ prompt: "...", options: {} }); // always uses "default"
 const q = query({ prompt: "...", options: { permissionMode: "plan" } });
 ```
 
+### #46: Empty `settingSources` array emits `--setting-sources ""`, consuming the next CLI flag
+**Error**: `"Invalid setting source: --permission-mode. Valid options are: user, project, local"` when calling `query()` without specifying `settingSources` ([#252](https://github.com/anthropics/claude-agent-sdk-typescript/issues/252))
+**Cause**: The SDK checks `if (h)` before emitting `--setting-sources`, but an empty array `[]` is truthy in JavaScript, so `--setting-sources ""` is passed to the CLI. The CLI argument parser then interprets the next flag (e.g., `--permission-mode`) as the setting source value, causing a parse error. The `client()` constructor has the same issue with a hardcoded empty array.
+**Impact**: Breaks all default SDK usage where `settingSources` is not explicitly configured, in some CLI version combinations.
+**Workaround**: Explicitly pass a non-empty `settingSources` array:
+```typescript
+for await (const msg of query({ prompt: 'hello', options: { settingSources: ['user'] } })) { ... }
+```
+**Note**: To load no settings sources (empty = SDK defaults only), the SDK should omit the flag entirely, matching how `--betas`, `--allowedTools`, and `--disallowedTools` handle empty arrays.
+
 ---
 
-## Changelog Highlights (v0.2.12 → v0.2.85)
+## Changelog Highlights (v0.2.12 → v0.2.86)
 
 | Version | Change |
 |---------|--------|
+| v0.2.86 | Added `Query.getContextUsage()` method (context window breakdown by category); made `SDKUserMessage.session_id` optional; added `@anthropic-ai/sdk` and `@modelcontextprotocol/sdk` as explicit dependencies (fixes type-any regression) |
 | v0.2.85 | Added `TaskCreated` hook event (26 total); added `taskBudget: { total: number }` option (@alpha); added `Query.reloadPlugins()` and `Query.seedReadState()` methods |
 | v0.2.71 | Fixed `Agent` tool returning `"Unknown tool: Agent"` in `query()` mode — subagent invocation via `tools: ['Agent']` + `agents` map now works ([#210](https://github.com/anthropics/claude-agent-sdk-typescript/issues/210)) |
 | v0.2.63 | Fixed `SDKRateLimitEvent` and `SDKPromptSuggestionMessage` missing from `sdk.d.ts` — `SDKMessage` now has full type safety ([#196](https://github.com/anthropics/claude-agent-sdk-typescript/issues/196), [#206](https://github.com/anthropics/claude-agent-sdk-typescript/issues/206)) |
@@ -1643,4 +1655,4 @@ const q = query({ prompt: "...", options: { permissionMode: "plan" } });
 
 ---
 
-**Last verified**: 2026-03-27 | **SDK version**: 0.2.85
+**Last verified**: 2026-03-28 | **SDK version**: 0.2.86

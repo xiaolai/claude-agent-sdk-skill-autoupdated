@@ -1,7 +1,7 @@
-# Claude Agent SDK — TypeScript Reference (v0.2.86)
+# Claude Agent SDK — TypeScript Reference (v0.2.87)
 
 
-**Package**: `@anthropic-ai/claude-agent-sdk@0.2.86`
+**Package**: `@anthropic-ai/claude-agent-sdk@0.2.87`
 **Docs**: https://platform.claude.com/docs/en/agent-sdk/overview
 **Repo**: https://github.com/anthropics/claude-agent-sdk-typescript
 **Migration**: Renamed from `@anthropic-ai/claude-code`. See [migration guide](https://platform.claude.com/docs/en/agent-sdk/migration-guide).
@@ -74,7 +74,7 @@ function tool<Schema extends ZodRawShape>(
   description: string,
   inputSchema: Schema,
   handler: (args: z.infer<ZodObject<Schema>>, extra: unknown) => Promise<CallToolResult>,
-  _extras?: { annotations?: ToolAnnotations; searchHint?: string }
+  _extras?: { annotations?: ToolAnnotations; searchHint?: string; alwaysLoad?: boolean }
 ): SdkMcpToolDefinition<Schema>
 ```
 
@@ -379,7 +379,7 @@ await q.setMcpServers(newServersConfig);    // Replace MCP servers mid-session
 
 // Plugin management
 await q.reloadPlugins();                    // Reload plugins from disk; returns { commands, agents, plugins, mcpServers, error_count }
-await q.getContextUsage();                  // Get context window usage breakdown by category (tokens per category, total, max, percentage) (v0.2.86)
+await q.getContextUsage();                  // Get context window usage breakdown by category (tokens per category, total, max, percentage) (v0.2.87)
 
 // File checkpointing (requires enableFileCheckpointing: true)
 await q.rewindFiles(userMessageUuid, { dryRun?: boolean }); // Rewind to checkpoint
@@ -447,7 +447,7 @@ type SDKMessage =
   // Status & progress
   | SDKStatusMessage              // type: 'system', subtype: 'status' — status updates (e.g., 'compacting')
   | SDKSessionStateChangedMessage // type: 'system', subtype: 'session_state_changed' — idle/running/requires_action
-  | SDKAPIRetryMessage            // type: 'system', subtype: 'api_retry' — transient API error being retried (v0.2.86)
+  | SDKAPIRetryMessage            // type: 'system', subtype: 'api_retry' — transient API error being retried (v0.2.87)
   | SDKToolProgressMessage        // type: 'tool_progress' — tool execution progress with elapsed time
   | SDKToolUseSummaryMessage      // type: 'tool_use_summary' — summary of tool usage
   | SDKAuthStatusMessage          // type: 'auth_status' — authentication status
@@ -468,7 +468,7 @@ type SDKMessage =
   | SDKPromptSuggestionMessage    // type: 'prompt_suggestion' — predicted next user prompt (requires promptSuggestions: true)
 ```
 
-### SDKAPIRetryMessage (v0.2.86)
+### SDKAPIRetryMessage (v0.2.87)
 
 ```typescript
 { type: 'system', subtype: 'api_retry', uuid, session_id,
@@ -692,11 +692,13 @@ return {
 
 // SessionStart only: inject an initial user message at session start
 // (hookSpecificOutput.initialUserMessage overrides what the SDK sends as the first turn)
+// watchPaths registers file paths to watch for FileChanged events
 return {
   hookSpecificOutput: {
     hookEventName: 'SessionStart',
     initialUserMessage: 'Start by running the test suite.',
-    additionalContext: 'Environment is pre-configured.'
+    additionalContext: 'Environment is pre-configured.',
+    watchPaths: ['/path/to/watch']  // optional: register file watches at session start
   }
 };
 
@@ -705,6 +707,15 @@ return {
   hookSpecificOutput: {
     hookEventName: 'CwdChanged',  // or 'FileChanged'
     watchPaths: ['/new/path/to/watch']
+  }
+};
+
+// WorktreeCreate: provide the absolute path to the created worktree directory
+// (command hooks print the path on stdout instead)
+return {
+  hookSpecificOutput: {
+    hookEventName: 'WorktreeCreate',
+    worktreePath: '/absolute/path/to/worktree'
   }
 };
 
@@ -895,7 +906,7 @@ type AgentDefinition = {
   prompt: string;             // System prompt
   tools?: string[];           // Allowed tools (inherits if omitted) — NOT enforced, see warning
   disallowedTools?: string[]; // Tools to block — NOT enforced, see warning
-  model?: 'sonnet' | 'opus' | 'haiku' | 'inherit';
+  model?: string;              // Model alias (e.g. 'sonnet', 'opus', 'haiku', 'inherit') or full model ID (e.g. 'claude-sonnet-4-6')
   mcpServers?: AgentMcpServerSpec[];  // Per-agent MCP servers
   skills?: string[];          // Skill names to preload
   maxTurns?: number;          // Max turns for this subagent
@@ -1633,11 +1644,11 @@ for await (const msg of query({ prompt: 'hello', options: { settingSources: ['us
 
 ---
 
-## Changelog Highlights (v0.2.12 → v0.2.86)
+## Changelog Highlights (v0.2.12 → v0.2.87)
 
 | Version | Change |
 |---------|--------|
-| v0.2.86 | Added `Query.getContextUsage()` method (context window breakdown by category); made `SDKUserMessage.session_id` optional; added `@anthropic-ai/sdk` and `@modelcontextprotocol/sdk` as explicit dependencies (fixes type-any regression) |
+| v0.2.87 | Added `Query.getContextUsage()` method (context window breakdown by category); made `SDKUserMessage.session_id` optional; added `@anthropic-ai/sdk` and `@modelcontextprotocol/sdk` as explicit dependencies (fixes type-any regression) |
 | v0.2.85 | Added `TaskCreated` hook event (26 total); added `taskBudget: { total: number }` option (@alpha); added `Query.reloadPlugins()` and `Query.seedReadState()` methods |
 | v0.2.71 | Fixed `Agent` tool returning `"Unknown tool: Agent"` in `query()` mode — subagent invocation via `tools: ['Agent']` + `agents` map now works ([#210](https://github.com/anthropics/claude-agent-sdk-typescript/issues/210)) |
 | v0.2.63 | Fixed `SDKRateLimitEvent` and `SDKPromptSuggestionMessage` missing from `sdk.d.ts` — `SDKMessage` now has full type safety ([#196](https://github.com/anthropics/claude-agent-sdk-typescript/issues/196), [#206](https://github.com/anthropics/claude-agent-sdk-typescript/issues/206)) |
@@ -1655,4 +1666,4 @@ for await (const msg of query({ prompt: 'hello', options: { settingSources: ['us
 
 ---
 
-**Last verified**: 2026-03-28 | **SDK version**: 0.2.86
+**Last verified**: 2026-03-29 | **SDK version**: 0.2.87

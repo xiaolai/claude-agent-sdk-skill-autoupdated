@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-03-30
+
+- No version changes (TS v0.2.87, PY v0.1.52 unchanged); research-only run
+- Python research added KI #35 (connect() prompt silent drop, fixed v0.1.52) and KI #36 (ExitPlanMode terminates SDK turn); updated @tool Annotated docs for v0.1.52
+- Typecheck false-positive (recurring script-generated malformed import string)
+- [Full report](reports/2026-03-30.md)
+
 ## 2026-03-29
 
 - SDK v0.2.86 → v0.2.87 (TypeScript); Python v0.1.51 → v0.1.52

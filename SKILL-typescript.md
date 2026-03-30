@@ -25,7 +25,7 @@
 - [V2 Session API (Preview)](#v2-session-api-preview) — `unstable_v2_createSession`, `unstable_v2_resumeSession`, `unstable_v2_prompt`
 - [Debugging & Error Handling](#debugging--error-handling)
 - [Known Issues](#known-issues)
-- [Changelog Highlights](#changelog-highlights-v0212--v0283)
+- [Changelog Highlights](#changelog-highlights-v0212--v0287)
 
 ---
 
@@ -379,7 +379,7 @@ await q.setMcpServers(newServersConfig);    // Replace MCP servers mid-session
 
 // Plugin management
 await q.reloadPlugins();                    // Reload plugins from disk; returns { commands, agents, plugins, mcpServers, error_count }
-await q.getContextUsage();                  // Get context window usage breakdown by category (tokens per category, total, max, percentage) (v0.2.87)
+await q.getContextUsage();                  // Get context window usage breakdown by category — returns SDKControlGetContextUsageResponse (v0.2.87)
 
 // File checkpointing (requires enableFileCheckpointing: true)
 await q.rewindFiles(userMessageUuid, { dryRun?: boolean }); // Rewind to checkpoint
@@ -425,6 +425,39 @@ type AccountInfo = {
   tokenSource?: string;
   apiKeySource?: string;
   apiProvider?: 'firstParty' | 'bedrock' | 'vertex' | 'foundry';  // Active API backend
+};
+```
+
+### Context Usage Response Type
+
+`getContextUsage()` returns `SDKControlGetContextUsageResponse`:
+
+```typescript
+type SDKControlGetContextUsageResponse = {
+  categories: { name: string; tokens: number; color: string; isDeferred?: boolean; }[];
+  totalTokens: number;
+  maxTokens: number;
+  rawMaxTokens: number;
+  percentage: number;
+  model: string;
+  isAutoCompactEnabled: boolean;
+  autoCompactThreshold?: number;
+  memoryFiles: { path: string; type: string; tokens: number; }[];
+  mcpTools: { name: string; serverName: string; tokens: number; isLoaded?: boolean; }[];
+  deferredBuiltinTools?: { name: string; tokens: number; isLoaded: boolean; }[];
+  systemTools?: { name: string; tokens: number; }[];
+  systemPromptSections?: { name: string; tokens: number; }[];
+  agents: { agentType: string; source: string; tokens: number; }[];
+  slashCommands?: { totalCommands: number; includedCommands: number; tokens: number; };
+  skills?: { totalSkills: number; includedSkills: number; tokens: number; skillFrontmatter: { name: string; source: string; tokens: number; }[]; };
+  messageBreakdown?: {
+    toolCallTokens: number; toolResultTokens: number; attachmentTokens: number;
+    assistantMessageTokens: number; userMessageTokens: number;
+    toolCallsByType: { name: string; callTokens: number; resultTokens: number; }[];
+    attachmentsByType: { name: string; tokens: number; }[];
+  };
+  apiUsage: { input_tokens: number; output_tokens: number; cache_creation_input_tokens: number; cache_read_input_tokens: number; } | null;
+  gridRows: { color: string; isFilled: boolean; categoryName: string; tokens: number; percentage: number; squareFullness: number; }[][];
 };
 ```
 
@@ -760,7 +793,7 @@ Common fields on all hooks: `session_id`, `transcript_path`, `cwd`, `permission_
 | `trigger` (`'manual' \| 'auto'`), `compact_summary` (the conversation summary produced by compaction) | PostCompact |
 | `source` | SessionStart (`'startup' \| 'resume' \| 'clear' \| 'compact'`) |
 | `agent_type`, `model` | SessionStart |
-| `reason` | SessionEnd |
+| `reason` (`ExitReason`) | SessionEnd (`'clear' \| 'resume' \| 'logout' \| 'prompt_input_exit' \| 'other' \| 'bypass_permissions_disabled'`) |
 | `message`, `title`, `notification_type` | Notification |
 | `permission_suggestions` | PermissionRequest |
 | `teammate_name`, `team_name` | TeammateIdle |
@@ -1216,6 +1249,25 @@ switch (message.subtype) {
   case 'error_max_budget_usd':  // Hit maxBudgetUsd limit
   case 'error_during_execution': // Runtime error
   case 'error_max_structured_output_retries': // Schema validation failed
+}
+```
+
+### AbortError
+
+`AbortError` is thrown when an `AbortController` signal fires. Import it to catch cancellations cleanly:
+
+```typescript
+import { AbortError } from "@anthropic-ai/claude-agent-sdk";
+
+const controller = new AbortController();
+const q = query({ prompt: "...", options: { abortController: controller } });
+
+try {
+  for await (const msg of q) { ... }
+} catch (err) {
+  if (err instanceof AbortError) {
+    console.log("Query was aborted");
+  } else throw err;
 }
 ```
 

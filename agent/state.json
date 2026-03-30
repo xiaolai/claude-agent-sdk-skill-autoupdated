@@ -203,7 +203,7 @@
         "state": "open",
         "researchedAt": "2026-02-22",
         "verdict": "skipped",
-        "reason": "Fixed in v0.2.40 — thinking and effort options now supported; already covered by Known Issue #13 note"
+        "reason": "Fixed in v0.2.40 \u2014 thinking and effort options now supported; already covered by Known Issue #13 note"
       },
       "181": {
         "repo": "anthropics/claude-agent-sdk-typescript",
@@ -216,7 +216,7 @@
       },
       "182": {
         "repo": "anthropics/claude-agent-sdk-typescript",
-        "title": "Opus 4.6 via query() has no effort control — 'opus' shorthand silently upgrades from 4.5",
+        "title": "Opus 4.6 via query() has no effort control \u2014 'opus' shorthand silently upgrades from 4.5",
         "state": "open",
         "knownIssueNumber": 28,
         "researchedAt": "2026-02-22",
@@ -427,7 +427,7 @@
       },
       "210": {
         "repo": "anthropics/claude-agent-sdk-typescript",
-        "title": "Agent tool returns 'Unknown tool: Agent' in query() mode — subagent invocation broken",
+        "title": "Agent tool returns 'Unknown tool: Agent' in query() mode \u2014 subagent invocation broken",
         "state": "closed",
         "researchedAt": "2026-03-11",
         "verdict": "skipped",
@@ -476,7 +476,7 @@
       },
       "216": {
         "repo": "anthropics/claude-agent-sdk-typescript",
-        "title": "Fast Mode Unavailable via SDK — Requires Native Bun Binary",
+        "title": "Fast Mode Unavailable via SDK \u2014 Requires Native Bun Binary",
         "state": "open",
         "researchedAt": "2026-03-11",
         "verdict": "skipped",
@@ -597,7 +597,7 @@
         "knownIssueNumber": null,
         "researchedAt": "2026-03-22",
         "verdict": "skipped",
-        "reason": "GitHub API unavailable for research; may relate to Known Issue #36 (settings.json env precedence) — needs follow-up when API access is available"
+        "reason": "GitHub API unavailable for research; may relate to Known Issue #36 (settings.json env precedence) \u2014 needs follow-up when API access is available"
       },
       "231": {
         "repo": "anthropics/claude-agent-sdk-typescript",
@@ -992,7 +992,7 @@
         "state": "open",
         "researchedAt": "2026-03-11",
         "verdict": "skipped",
-        "reason": "0 reactions, 0 comments; workaround requires manual session file reconstruction — too risky to recommend"
+        "reason": "0 reactions, 0 comments; workaround requires manual session file reconstruction \u2014 too risky to recommend"
       },
       "632": {
         "repo": "anthropics/claude-agent-sdk-python",
@@ -1068,7 +1068,7 @@
         "knownIssueNumber": 21,
         "researchedAt": "2026-03-11",
         "verdict": "added_known_issue",
-        "reason": "PR merged then reverted — reveals that include_partial_messages=True breaks on Bedrock/Vertex due to eager_input_streaming field rejection; documented as KI #21"
+        "reason": "PR merged then reverted \u2014 reveals that include_partial_messages=True breaks on Bedrock/Vertex due to eager_input_streaming field rejection; documented as KI #21"
       },
       "646": {
         "repo": "anthropics/claude-agent-sdk-python",
@@ -1232,7 +1232,7 @@
         "knownIssueNumber": 27,
         "researchedAt": "2026-03-18",
         "verdict": "added_known_issue",
-        "reason": "Critical: can_use_tool callback silently never fires across all SDK/CLI versions tested (0.1.19-0.1.48+). Security-critical — any permission enforcement via can_use_tool is a no-op. Added KI #27 + auto-correction rule."
+        "reason": "Critical: can_use_tool callback silently never fires across all SDK/CLI versions tested (0.1.19-0.1.48+). Security-critical \u2014 any permission enforcement via can_use_tool is a no-op. Added KI #27 + auto-correction rule."
       },
       "676": {
         "repo": "anthropics/claude-agent-sdk-python",
@@ -1241,7 +1241,7 @@
         "knownIssueNumber": 24,
         "researchedAt": "2026-03-18",
         "verdict": "added_known_issue",
-        "reason": "2 reactions; CLI does not reset lastActivityTime on MCP responses — calls fail after ~70s. Periodic heartbeat workaround documented."
+        "reason": "2 reactions; CLI does not reset lastActivityTime on MCP responses \u2014 calls fail after ~70s. Periodic heartbeat workaround documented."
       },
       "682": {
         "repo": "anthropics/claude-agent-sdk-python",
@@ -1250,7 +1250,7 @@
         "knownIssueNumber": 25,
         "researchedAt": "2026-03-18",
         "verdict": "added_known_issue",
-        "reason": "output_format schema constraint silently not enforced when resuming sessions — model responds in plain text instead of JSON."
+        "reason": "output_format schema constraint silently not enforced when resuming sessions \u2014 model responds in plain text instead of JSON."
       },
       "687": {
         "repo": "anthropics/claude-agent-sdk-python",
@@ -1259,7 +1259,7 @@
         "knownIssueNumber": 26,
         "researchedAt": "2026-03-18",
         "verdict": "added_known_issue",
-        "reason": "12 reactions; high impact — Linux/Windows users cannot install 0.1.49. Workaround: pin to >=0.1.48,<0.1.49."
+        "reason": "12 reactions; high impact \u2014 Linux/Windows users cannot install 0.1.49. Workaround: pin to >=0.1.48,<0.1.49."
       },
       "689": {
         "repo": "anthropics/claude-agent-sdk-python",
@@ -1352,11 +1352,112 @@
         "researchedAt": "2026-03-23",
         "verdict": "skipped",
         "reason": "0 reactions; niche edge case affecting Python -O flag; no user-level workaround documented."
+      },
+      "775": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "StructuredOutput gets in a loop producing XML tags instead of tool calls",
+        "state": "open",
+        "researchedAt": "2026-03-30",
+        "verdict": "skipped",
+        "reason": "4 reactions; model behavior issue (XML tag vs tool call confusion); no SDK-level fix or workaround; overlaps with KI #4"
+      },
+      "774": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "ExitPlanMode terminates the current SDK turn \u2014 no tool execution after plan exit",
+        "state": "open",
+        "knownIssueNumber": 36,
+        "researchedAt": "2026-03-30",
+        "verdict": "added_known_issue",
+        "reason": "2 reactions; affects plan-then-execute workflows; workaround: follow-up query after ResultMessage"
+      },
+      "772": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "Feature: session lifecycle hooks for context compaction and window management",
+        "state": "open",
+        "researchedAt": "2026-03-30",
+        "verdict": "skipped",
+        "reason": "Feature request; no SDK API change to document yet"
+      },
+      "776": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "RuntimeError: Attempted to exit cancel scope in a different task",
+        "state": "closed",
+        "researchedAt": "2026-03-30",
+        "verdict": "skipped",
+        "reason": "Duplicate of KI #22 (same root cause: early generator exit). No new information."
+      },
+      "765": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "query() does not resolve user-installed skills (slash commands)",
+        "state": "closed",
+        "researchedAt": "2026-03-30",
+        "verdict": "skipped",
+        "reason": "Closed as duplicate; no definitive fix or workaround; affects edge case with user-installed skills"
+      },
+      "748": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "agent-sdk use skills fail but CLI works directly",
+        "state": "closed",
+        "researchedAt": "2026-03-30",
+        "verdict": "skipped",
+        "reason": "Similar to #765 (slash commands); closed; no actionable workaround distinct from #765"
+      },
+      "766": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "connect(prompt=...) followed by receive_messages() hangs indefinitely",
+        "state": "closed",
+        "knownIssueNumber": 35,
+        "researchedAt": "2026-03-30",
+        "verdict": "added_known_issue",
+        "reason": "Common API usage pattern; prompt was silently dropped before v0.1.52; fixed in v0.1.52 PR #769"
+      },
+      "769": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "fix: send string prompt in connect() instead of silently dropping it",
+        "state": "closed",
+        "researchedAt": "2026-03-30",
+        "verdict": "skipped",
+        "reason": "PR that fixes KI #35; merged into v0.1.52. No separate KI needed."
+      },
+      "739": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "control_cancel_request messages are silently ignored \u2014 hook callbacks orphaned",
+        "state": "closed",
+        "researchedAt": "2026-03-30",
+        "verdict": "skipped",
+        "reason": "Fixed in v0.1.52 via PR #751; no user-level workaround needed; updated v0.1.52 changelog entry"
+      },
+      "751": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "fix: implement control_cancel_request handling",
+        "state": "closed",
+        "researchedAt": "2026-03-30",
+        "verdict": "skipped",
+        "reason": "PR fixing #739; merged into v0.1.52; changelog updated"
+      },
+      "762": {
+        "repo": "anthropics/claude-agent-sdk-python",
+        "title": "feat: Annotated parameter descriptions in @tool input_schema",
+        "state": "closed",
+        "researchedAt": "2026-03-30",
+        "verdict": "updated_existing",
+        "reason": "New feature in v0.1.52; added Annotated option #2 to @tool input_schema section and updated changelog"
       }
     },
     "trackedIssuesExternal": {},
-    "lastScannedIssueNumber": 713,
-    "lastAuditedVersion": "0.1.50"
+    "lastScannedIssueNumber": 776,
+    "lastAuditedVersion": "0.1.52",
+    "lastAuditSummary": {
+      "date": "2026-03-30",
+      "sdkVersion": "0.1.52",
+      "newOptionsAdded": 0,
+      "newMethodsAdded": 0,
+      "newMessageTypesAdded": 0,
+      "newHookEventsAdded": 0,
+      "updatedEntries": 3,
+      "noChanges": false,
+      "notes": "Added Annotated input_schema support to @tool section; updated v0.1.52 changelog with PR #769, #751, #762"
+    }
   },
-  "lastUpdated": "2026-03-29T08:07:33Z"
+  "lastUpdated": "2026-03-30T00:00:00Z"
 }

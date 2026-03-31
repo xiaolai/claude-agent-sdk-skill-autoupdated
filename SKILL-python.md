@@ -1,6 +1,6 @@
-# Claude Agent SDK — Python Reference (v0.1.52)
+# Claude Agent SDK — Python Reference (v0.1.53)
 
-**Package**: `claude-agent-sdk==0.1.52` (PyPI)
+**Package**: `claude-agent-sdk==0.1.53` (PyPI)
 **Docs**: https://platform.claude.com/docs/en/agent-sdk/python
 **Repo**: https://github.com/anthropics/claude-agent-sdk-python
 **Requires**: Python 3.10+
@@ -132,7 +132,7 @@ async with ClaudeSDKClient(options=options) as client:
 | **Streaming Input** | Yes                           | Yes                                |
 | **Interrupts**      | No                            | Yes                                |
 | **Hooks**           | Yes (via `options`)           | Yes                                |
-| **Custom Tools**    | Yes (AsyncIterable only; see [#14](#14-sdk-mcp-servers-completely-non-functional-with-string-prompts)) | Yes |
+| **Custom Tools**    | Yes (v0.1.53+: string prompts fully supported; older versions require AsyncIterable — see [#14](#14-sdk-mcp-servers-completely-non-functional-with-string-prompts)) | Yes |
 | **Continue Chat**   | No (new session each time)    | Yes (maintains conversation)       |
 
 ### `@tool()`
@@ -158,7 +158,7 @@ def tool(
    {"city": str, "count": int, "enabled": bool}
    ```
 
-2. **With per-parameter descriptions** using `typing.Annotated` (added v0.1.52):
+2. **With per-parameter descriptions** using `typing.Annotated` (added v0.1.53):
    ```python
    from typing import Annotated
    {"city": Annotated[str, "The city name to look up"], "count": Annotated[int, "Max results"]}
@@ -491,10 +491,10 @@ class AssistantMessage:
     parent_tool_use_id: str | None = None
     error: AssistantMessageError | None = None
     usage: dict[str, Any] | None = None    # Per-turn token usage (added v0.1.50)
-    message_id: str | None = None          # Anthropic API message ID (added v0.1.52)
-    stop_reason: str | None = None         # Raw stop reason from Anthropic API (added v0.1.52)
-    session_id: str | None = None          # Session this message belongs to (added v0.1.52)
-    uuid: str | None = None                # Unique message identifier (added v0.1.52)
+    message_id: str | None = None          # Anthropic API message ID (added v0.1.53)
+    stop_reason: str | None = None         # Raw stop reason from Anthropic API (added v0.1.53)
+    session_id: str | None = None          # Session this message belongs to (added v0.1.53)
+    uuid: str | None = None                # Unique message identifier (added v0.1.53)
 
 # AssistantMessageError type
 AssistantMessageError = Literal[
@@ -538,10 +538,10 @@ class ResultMessage:
     usage: dict[str, Any] | None = None
     result: str | None = None
     structured_output: Any = None
-    model_usage: dict[str, Any] | None = None       # Per-model token breakdown (added v0.1.52)
-    permission_denials: list[Any] | None = None     # Permission denial records (added v0.1.52)
-    errors: list[str] | None = None                 # Error messages from the session (added v0.1.52)
-    uuid: str | None = None                         # Unique message identifier (added v0.1.52)
+    model_usage: dict[str, Any] | None = None       # Per-model token breakdown (added v0.1.53)
+    permission_denials: list[Any] | None = None     # Permission denial records (added v0.1.53)
+    errors: list[str] | None = None                 # Error messages from the session (added v0.1.53)
+    uuid: str | None = None                         # Unique message identifier (added v0.1.53)
 ```
 
 Result subtypes:
@@ -752,7 +752,7 @@ Hooks use **callback matchers**: an optional regex `matcher` for tool names and 
 | `Notification` | Notification event | Yes |
 | `PermissionRequest` | Permission requested | Yes |
 
-**Not supported in Python SDK**: `Setup`, `SessionStart`, `SessionEnd`, `TeammateIdle`, `TaskCompleted`.
+**Not supported in Python SDK**: `Setup`, `SessionStart`, `SessionEnd`, `TeammateIdle`, `TaskCompleted`, `PostCompact` (CLI v2.1.76+ supports this, Python SDK support pending — see PR [#691](https://github.com/anthropics/claude-agent-sdk-python/issues/691)).
 
 ### Hook Callback Signature
 
@@ -1785,7 +1785,7 @@ Or set `CLAUDE_CODE_STREAM_CLOSE_TIMEOUT=10000` (milliseconds) environment varia
 ### #10: SDK Usage Blocked Inside Claude Code Sessions (Hooks/Plugins)
 **Error**: `Error: Claude Code cannot be launched inside another Claude Code session.` when using SDK from hooks, plugins, or subagents ([#573](https://github.com/anthropics/claude-agent-sdk-python/issues/573))
 **Cause**: Subprocess inherits `CLAUDECODE=1` environment variable from parent Claude Code process. The spawned CLI detects this and refuses to start.
-**Fix** (v0.1.52): `CLAUDECODE` is now automatically filtered from the subprocess environment (PR [#732](https://github.com/anthropics/claude-agent-sdk-python/issues/732)). Upgrade to v0.1.52+ to resolve. On v0.1.50, override manually:
+**Fix** (v0.1.53): `CLAUDECODE` is now automatically filtered from the subprocess environment (PR [#732](https://github.com/anthropics/claude-agent-sdk-python/issues/732)). Upgrade to v0.1.53+ to resolve. On v0.1.50, override manually:
 ```python
 options = ClaudeAgentOptions(
     env={"CLAUDECODE": ""},
@@ -1796,7 +1796,7 @@ options = ClaudeAgentOptions(
 ### #11: Unsupported Content Block Types Silently Dropped in SDK MCP Tools
 **Error**: Custom MCP tools returning certain content block types (e.g., `search_result`, `audio`) have those blocks silently dropped before reaching Claude ([#574](https://github.com/anthropics/claude-agent-sdk-python/issues/574), [#292](https://github.com/anthropics/claude-agent-sdk-python/issues/292))
 **Cause**: The SDK's `create_sdk_mcp_server()` handler originally only recognized `text` and `image` content types; all other types fell through and were discarded.
-**Fix** (v0.1.52): `resource_link`, `embedded_resource`, and `audio` content types are now handled (PR [#725](https://github.com/anthropics/claude-agent-sdk-python/issues/725)). The `search_result` type remains unsupported.
+**Fix** (v0.1.53): `resource_link`, `embedded_resource`, and `audio` content types are now handled (PR [#725](https://github.com/anthropics/claude-agent-sdk-python/issues/725)). The `search_result` type remains unsupported.
 **Impact on search_result**: Cannot use [native citations](https://platform.claude.com/docs/en/build-with-claude/search-results) with custom RAG tools in the Agent SDK.
 **Workaround**: For `search_result` blocks, bypass SDK and use `anthropic.AsyncAnthropic` directly for RAG workflows requiring citations.
 
@@ -1828,10 +1828,11 @@ class SessionWorker:
             yield await out_q.get()  # HTTP handler reads from queue
 ```
 
-### #14: SDK MCP Servers Completely Non-functional with String Prompts
+### #14: SDK MCP Servers Completely Non-functional with String Prompts (Fixed in v0.1.53)
 **Error**: SDK MCP servers created via `create_sdk_mcp_server()` are completely invisible to Claude when using string prompts. Tool calls either raise `CLIConnectionError: ProcessTransport is not ready for writing` or silently fail with the model unable to see any MCP tools ([#578](https://github.com/anthropics/claude-agent-sdk-python/issues/578), [#597](https://github.com/anthropics/claude-agent-sdk-python/issues/597))
-**Cause**: Three root causes: (1) `sdkMcpServers` field is missing from the initialization control request in non-streaming mode, preventing CLI registration of SDK MCP servers; (2) String prompt code path closes stdin immediately after sending user message, blocking the control protocol; (3) `_stream_close_timeout` defaults to 60s, causing premature stdin close for long interactions. PR [#630](https://github.com/anthropics/claude-agent-sdk-python/pull/630) fixes root causes (1) and (2) and has been merged but not yet released.
-**Workaround**: Use `AsyncIterable` prompt instead of string:
+**Cause**: Three root causes: (1) `sdkMcpServers` field was missing from the initialization control request in non-streaming mode, preventing CLI registration of SDK MCP servers; (2) String prompt code path closed stdin immediately after sending user message, blocking the control protocol; (3) `_stream_close_timeout` defaults to 60s, causing premature stdin close for long interactions.
+**Fix** (v0.1.53): Root causes (1) and (2) are fully resolved — `query()` now always calls `initialize()` (sending `sdkMcpServers` to the CLI) and spawns `wait_for_result_and_end_input()` as a background task instead of awaiting it inline (PR [#780](https://github.com/anthropics/claude-agent-sdk-python/pull/780)). Root cause (3) was fixed in v0.1.53 ([#731](https://github.com/anthropics/claude-agent-sdk-python/issues/731)). Upgrade to v0.1.53+ — string prompts fully work with SDK MCP servers.
+**Workaround (pre-v0.1.53 only)**: Use `AsyncIterable` prompt instead of string:
 ```python
 async def prompt_gen():
     yield {"type": "text", "text": "Your prompt here"}
@@ -2057,10 +2058,10 @@ options = ClaudeAgentOptions(
 ```
 Alternatively, use `ANTHROPIC_LOG` instead of `DEBUG` for Anthropic SDK logging — it is not affected by this issue.
 
-### #29: SDK MCP Server Tool Errors Not Propagated (`isError` Field Mismatch) (Fixed in v0.1.52)
+### #29: SDK MCP Server Tool Errors Not Propagated (`isError` Field Mismatch) (Fixed in v0.1.53)
 **Error**: When an in-process SDK MCP tool handler raises an exception, Claude receives what appears to be a successful tool response — it doesn't know the tool failed. Additionally, any `"is_error": True` field in the tool handler's return dict is silently ignored ([#247](https://github.com/anthropics/claude-agent-sdk-python/issues/247))
 **Cause**: The SDK's MCP handler checks `hasattr(result.root, "is_error")` using snake_case, but `mcp` library v1.x uses camelCase `isError`. The `hasattr()` check always returns `False`, so the error flag is never included in the JSON-RPC response to the CLI.
-**Fix** (v0.1.52): `is_error` is now correctly propagated to the CLI (PR [#717](https://github.com/anthropics/claude-agent-sdk-python/issues/717)). Upgrade to v0.1.52+.
+**Fix** (v0.1.53): `is_error` is now correctly propagated to the CLI (PR [#717](https://github.com/anthropics/claude-agent-sdk-python/issues/717)). Upgrade to v0.1.53+.
 **Workaround** (v0.1.50 only): Include the error indication in the tool response *content* text, so Claude can read it:
 ```python
 @tool("my_tool", "Do something", {"path": str})
@@ -2074,10 +2075,10 @@ async def my_tool(args: dict[str, Any]) -> dict[str, Any]:
         # is_error=True is silently dropped on v0.1.50: {"is_error": True, ...} doesn't work
 ```
 
-### #30: `query()` with Hooks Closes stdin After 60s, Killing Hook Callbacks (Fixed in v0.1.52)
+### #30: `query()` with Hooks Closes stdin After 60s, Killing Hook Callbacks (Fixed in v0.1.53)
 **Error**: `Error in hook callback hook_0: ... Tool permission stream closed before response received` / `unhandled errors in a TaskGroup` when using `query()` with hooks on sessions longer than 60 seconds ([#730](https://github.com/anthropics/claude-agent-sdk-python/issues/730))
 **Cause**: `query()` uses `wait_for_result_and_end_input()` which closes stdin after `CLAUDE_CODE_STREAM_CLOSE_TIMEOUT` (default 60s), even when hooks or SDK MCP servers are actively communicating. Once stdin closes, the CLI can no longer send hook callback requests, causing in-flight hooks to fail.
-**Fix** (v0.1.52): stdin timeout is removed when hooks or SDK MCP servers are present (PR [#731](https://github.com/anthropics/claude-agent-sdk-python/issues/731)). Upgrade to v0.1.52+.
+**Fix** (v0.1.53): stdin timeout is removed when hooks or SDK MCP servers are present (PR [#731](https://github.com/anthropics/claude-agent-sdk-python/issues/731)). Upgrade to v0.1.53+.
 **Workaround** (v0.1.50 only): Raise the timeout to a large value:
 ```python
 import os
@@ -2085,10 +2086,10 @@ os.environ["CLAUDE_CODE_STREAM_CLOSE_TIMEOUT"] = "3600000"  # 1 hour in ms
 ```
 Or use `ClaudeSDKClient` instead of `query()`, which does not have this timeout issue.
 
-### #31: `CLAUDE_CODE_STREAM_CLOSE_TIMEOUT` Ignored in `query()` Initialize Timeout (Fixed in v0.1.52)
+### #31: `CLAUDE_CODE_STREAM_CLOSE_TIMEOUT` Ignored in `query()` Initialize Timeout (Fixed in v0.1.53)
 **Error**: `query()` always times out at ~60 seconds during the CLI initialize handshake, regardless of `CLAUDE_CODE_STREAM_CLOSE_TIMEOUT` setting ([#741](https://github.com/anthropics/claude-agent-sdk-python/issues/741))
 **Cause**: `ClaudeSDKClient.connect()` correctly reads `CLAUDE_CODE_STREAM_CLOSE_TIMEOUT` and passes `initialize_timeout` to `Query`, but `InternalClient.process_query()` (used by `query()`) creates `Query()` without the timeout, hardcoding 60s.
-**Fix** (v0.1.52): `CLAUDE_CODE_STREAM_CLOSE_TIMEOUT` is now propagated to `query()` as well (PR [#743](https://github.com/anthropics/claude-agent-sdk-python/issues/743)). Upgrade to v0.1.52+.
+**Fix** (v0.1.53): `CLAUDE_CODE_STREAM_CLOSE_TIMEOUT` is now propagated to `query()` as well (PR [#743](https://github.com/anthropics/claude-agent-sdk-python/issues/743)). Upgrade to v0.1.53+.
 **Workaround** (v0.1.50 only): Use `ClaudeSDKClient` instead of `query()` for long-running sessions — it correctly respects `CLAUDE_CODE_STREAM_CLOSE_TIMEOUT`.
 
 ### #32: Bundled CLI v2.1.71 Ignores `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS` on Bedrock
@@ -2107,16 +2108,16 @@ Alternatively, set `cli_path` in your options to point to a newer CLI binary:
 options = ClaudeAgentOptions(cli_path="/usr/local/bin/claude")  # Points to v2.1.81+
 ```
 
-### #33: `AssistantMessage` and `ResultMessage` Drop Significant Fields (Fixed in v0.1.52)
+### #33: `AssistantMessage` and `ResultMessage` Drop Significant Fields (Fixed in v0.1.53)
 **Error**: Fields like `uuid`, `session_id`, `stop_reason`, and Anthropic message `id` were inaccessible in `AssistantMessage`. `ResultMessage` also dropped `model_usage` (per-model breakdown), `permission_denials`, `errors`, and `uuid` ([#562](https://github.com/anthropics/claude-agent-sdk-python/issues/562))
 **Cause**: The message parser mapped only a fixed set of fields from the CLI JSON to typed dataclass fields; all other fields were discarded.
-**Fix** (v0.1.52): `AssistantMessage` now exposes `message_id`, `stop_reason`, `session_id`, and `uuid`. `ResultMessage` now exposes `model_usage`, `permission_denials`, `errors`, and `uuid` (PR [#718](https://github.com/anthropics/claude-agent-sdk-python/issues/718)). Upgrade to v0.1.52+.
+**Fix** (v0.1.53): `AssistantMessage` now exposes `message_id`, `stop_reason`, `session_id`, and `uuid`. `ResultMessage` now exposes `model_usage`, `permission_denials`, `errors`, and `uuid` (PR [#718](https://github.com/anthropics/claude-agent-sdk-python/issues/718)). Upgrade to v0.1.53+.
 **Workaround** (v0.1.50 only): For per-turn usage, use `AssistantMessage.usage`. For session ID, read it from `SystemMessage(subtype="init")`.
 
-### #34: `shutil.which()` Blocking Call Raises Error in Strict Async Environments (Fixed in v0.1.52)
+### #34: `shutil.which()` Blocking Call Raises Error in Strict Async Environments (Fixed in v0.1.53)
 **Error**: `BlockingError: shutil.which()` (or similar) raised when using the SDK in environments that prohibit synchronous I/O in async contexts (e.g., LangGraph with `blockbuster`, Trio with strict mode) ([#324](https://github.com/anthropics/claude-agent-sdk-python/issues/324))
 **Cause**: The SDK calls `shutil.which("claude")` synchronously to locate the CLI binary during transport initialization. Tools like `blockbuster` treat any blocking filesystem call inside an async context as an error.
-**Fix** (v0.1.52): CLI discovery is now deferred to `connect()` time and is non-blocking (PR [#722](https://github.com/anthropics/claude-agent-sdk-python/issues/722)). Upgrade to v0.1.52+.
+**Fix** (v0.1.53): CLI discovery is now deferred to `connect()` time and is non-blocking (PR [#722](https://github.com/anthropics/claude-agent-sdk-python/issues/722)). Upgrade to v0.1.53+.
 **Workaround** (v0.1.50 only): Provide the CLI path explicitly to bypass the `which()` call:
 ```python
 import shutil
@@ -2125,13 +2126,13 @@ options = ClaudeAgentOptions(
 )
 ```
 
-### #35: `connect(prompt=str)` Silently Drops Prompt — `receive_messages()` Hangs (Fixed in v0.1.52)
+### #35: `connect(prompt=str)` Silently Drops Prompt — `receive_messages()` Hangs (Fixed in v0.1.53)
 **Error**: Calling `await client.connect(prompt="your prompt")` followed by `async for msg in client.receive_messages()` hangs indefinitely and never yields any messages. No error is raised ([#766](https://github.com/anthropics/claude-agent-sdk-python/issues/766))
 **Cause**: `connect()` stored the string prompt internally but never wrote it to stdin. The transport was connected but no user message was dispatched, so the CLI waited forever for input.
-**Fix** (v0.1.52): String prompts are now wrapped in a user message and sent to stdin in `connect()` (PR [#769](https://github.com/anthropics/claude-agent-sdk-python/pull/769)). Upgrade to v0.1.52+.
-**Workaround** (pre-v0.1.52): Use `connect()` without a prompt, then call `query()` separately:
+**Fix** (v0.1.53): String prompts are now wrapped in a user message and sent to stdin in `connect()` (PR [#769](https://github.com/anthropics/claude-agent-sdk-python/pull/769)). Upgrade to v0.1.53+.
+**Workaround** (pre-v0.1.53): Use `connect()` without a prompt, then call `query()` separately:
 ```python
-# WRONG on pre-v0.1.52 — prompt silently dropped
+# WRONG on pre-v0.1.53 — prompt silently dropped
 await client.connect(prompt="Say hello")
 async for msg in client.receive_messages(): ...
 
@@ -2157,14 +2158,55 @@ async with ClaudeSDKClient(options=ClaudeAgentOptions(permission_mode="plan")) a
         print(msg)
 ```
 
+### #37: `PreToolUse` `updatedInput` Has No Effect on `AskUserQuestion` Tool
+**Error**: Returning `updatedInput` from a `PreToolUse` hook for the `AskUserQuestion` tool has no effect — the tool result Claude sees does not reflect the modified input. Claude proceeds as if no answer was provided ([#767](https://github.com/anthropics/claude-agent-sdk-python/issues/767))
+**Cause**: The `AskUserQuestion` tool processes its input directly from the tool call rather than reading back the hook-modified input. The `updatedInput` mechanism works for most tools but is silently ignored for `AskUserQuestion`.
+**Workaround**: Use `permissionDecision: "deny"` with the answer embedded in `permissionDecisionReason` instead:
+```python
+async def ask_hook(input_data, tool_use_id, context):
+    # updatedInput is ignored for AskUserQuestion — use deny+reason instead
+    return {
+        "hookSpecificOutput": {
+            "hookEventName": "PreToolUse",
+            "permissionDecision": "deny",
+            "permissionDecisionReason": "The user has already provided their answer: Jeremy",
+        }
+    }
+
+options = ClaudeAgentOptions(
+    permission_mode="bypassPermissions",
+    hooks={"PreToolUse": [HookMatcher(matcher="AskUserQuestion", hooks=[ask_hook])]},
+)
+```
+
+### #38: `bypassPermissions` Mode Skips settings.json Shell Hooks
+**Error**: Shell hooks configured in `~/.claude/settings.json` (e.g., `PreToolUse` hooks with `"type": "command"`) are never executed when `permission_mode="bypassPermissions"` is set via the SDK. The same hooks fire correctly when running `claude --dangerously-skip-permissions` directly from the CLI ([#768](https://github.com/anthropics/claude-agent-sdk-python/issues/768))
+**Cause**: CLI-level issue — when the SDK starts the subprocess with `bypassPermissions`, the hook invocation path is bypassed before reaching filesystem-configured shell hooks.
+**Impact**: Any shell hooks in global `~/.claude/settings.json` are silently skipped in `bypassPermissions` mode. This includes pre-tool validation scripts, audit logging hooks, and notification hooks.
+**Workaround**: Use Python hook callbacks via `ClaudeAgentOptions.hooks` instead of shell hooks in settings.json:
+```python
+import subprocess
+
+async def shell_hook_wrapper(input_data, tool_use_id, context):
+    # Replicate your shell hook logic in Python
+    result = subprocess.run(["/path/to/hook.sh"], capture_output=True)
+    return {}
+
+options = ClaudeAgentOptions(
+    permission_mode="bypassPermissions",
+    hooks={"PreToolUse": [HookMatcher(hooks=[shell_hook_wrapper])]},
+)
+```
+
 ---
 
 ## Changelog Highlights
 
 | Version | Change |
 |---------|--------|
-| v0.1.52 | `delete_session()` and `fork_session()` (offline session forking with `up_to_message_id` support) added; `ForkSessionResult` dataclass; `get_context_usage()` method on `ClaudeSDKClient` returns `ContextUsageResponse`; `session_id` field added to `ClaudeAgentOptions`; `ToolPermissionContext` now exposes `tool_use_id` and `agent_id` fields |
-| v0.1.52 | `dontAsk` added to `PermissionMode`; `is_error` propagated from SDK MCP tools ([#717](https://github.com/anthropics/claude-agent-sdk-python/issues/717)); `AssistantMessage`/`ResultMessage` expose dropped fields as typed attributes ([#718](https://github.com/anthropics/claude-agent-sdk-python/issues/718)); `resource_link`/`embedded_resource`/`audio` content types in SDK MCP tools ([#725](https://github.com/anthropics/claude-agent-sdk-python/issues/725)); SIGKILL fallback in `close()` ([#729](https://github.com/anthropics/claude-agent-sdk-python/issues/729)); stdin timeout removed for hooks/MCP servers ([#731](https://github.com/anthropics/claude-agent-sdk-python/issues/731)); `CLAUDECODE` env var automatically filtered ([#732](https://github.com/anthropics/claude-agent-sdk-python/issues/732)); non-blocking CLI discovery ([#722](https://github.com/anthropics/claude-agent-sdk-python/issues/722)); `CLAUDE_CODE_STREAM_CLOSE_TIMEOUT` respected by `query()` ([#743](https://github.com/anthropics/claude-agent-sdk-python/issues/743)); `SystemPromptFile` support added; `AgentDefinition` fields `disallowedTools`, `initialPrompt`, `maxTurns` added; `task_budget` option added; `connect(prompt=str)` now correctly sends the prompt instead of silently dropping it ([#769](https://github.com/anthropics/claude-agent-sdk-python/pull/769)); `control_cancel_request` messages now properly cancel in-flight hook callbacks ([#751](https://github.com/anthropics/claude-agent-sdk-python/pull/751)); `@tool` `input_schema` supports `typing.Annotated` for per-parameter descriptions ([#762](https://github.com/anthropics/claude-agent-sdk-python/pull/762)); bundled CLI updated to v2.1.87 |
+| v0.1.53 | Fixed string prompt deadlock when hooks/MCP servers trigger many tool calls — `wait_for_result_and_end_input()` now spawned as background task ([#780](https://github.com/anthropics/claude-agent-sdk-python/pull/780)); fixed `--setting-sources` being passed as empty string when unset ([#778](https://github.com/anthropics/claude-agent-sdk-python/issues/778)); SDK MCP servers now fully functional with string prompts (see [#14](#14-sdk-mcp-servers-completely-non-functional-with-string-prompts)) |
+| v0.1.53 | `delete_session()` and `fork_session()` (offline session forking with `up_to_message_id` support) added; `ForkSessionResult` dataclass; `get_context_usage()` method on `ClaudeSDKClient` returns `ContextUsageResponse`; `session_id` field added to `ClaudeAgentOptions`; `ToolPermissionContext` now exposes `tool_use_id` and `agent_id` fields |
+| v0.1.53 | `dontAsk` added to `PermissionMode`; `is_error` propagated from SDK MCP tools ([#717](https://github.com/anthropics/claude-agent-sdk-python/issues/717)); `AssistantMessage`/`ResultMessage` expose dropped fields as typed attributes ([#718](https://github.com/anthropics/claude-agent-sdk-python/issues/718)); `resource_link`/`embedded_resource`/`audio` content types in SDK MCP tools ([#725](https://github.com/anthropics/claude-agent-sdk-python/issues/725)); SIGKILL fallback in `close()` ([#729](https://github.com/anthropics/claude-agent-sdk-python/issues/729)); stdin timeout removed for hooks/MCP servers ([#731](https://github.com/anthropics/claude-agent-sdk-python/issues/731)); `CLAUDECODE` env var automatically filtered ([#732](https://github.com/anthropics/claude-agent-sdk-python/issues/732)); non-blocking CLI discovery ([#722](https://github.com/anthropics/claude-agent-sdk-python/issues/722)); `CLAUDE_CODE_STREAM_CLOSE_TIMEOUT` respected by `query()` ([#743](https://github.com/anthropics/claude-agent-sdk-python/issues/743)); `SystemPromptFile` support added; `AgentDefinition` fields `disallowedTools`, `initialPrompt`, `maxTurns` added; `task_budget` option added; `connect(prompt=str)` now correctly sends the prompt instead of silently dropping it ([#769](https://github.com/anthropics/claude-agent-sdk-python/pull/769)); `control_cancel_request` messages now properly cancel in-flight hook callbacks ([#751](https://github.com/anthropics/claude-agent-sdk-python/pull/751)); `@tool` `input_schema` supports `typing.Annotated` for per-parameter descriptions ([#762](https://github.com/anthropics/claude-agent-sdk-python/pull/762)); bundled CLI updated to v2.1.87 |
 | v0.1.50 | Full cross-platform release. All platforms now get: `skills`, `memory`, `mcpServers` on `AgentDefinition`; `usage` field on `AssistantMessage`; `rename_session()`, `tag_session()`; typed `RateLimitEvent`/`RateLimitInfo` message types; reverted Bedrock-breaking eager_input_streaming (see [#26](#26-pypi-release-was-incomplete--fixed-in-v0150)) |
 | v0.1.48 | Introduced `eager_input_streaming` with `include_partial_messages=True` (breaks Bedrock/Vertex — see [#21](#21-include_partial_messagestrue-breaks-tool-input-streaming-on-bedrockvertex)) |
 | v0.1.44 | Fixed `rate_limit_event` crash in message parser — unknown CLI message types now skipped gracefully; bundled CLI updated to v2.1.59 |
@@ -2174,4 +2216,4 @@ async with ClaudeSDKClient(options=ClaudeAgentOptions(permission_mode="plan")) a
 
 ---
 
-**Last verified**: 2026-03-29 | **SDK version**: 0.1.52
+**Last verified**: 2026-03-31 | **SDK version**: 0.1.53

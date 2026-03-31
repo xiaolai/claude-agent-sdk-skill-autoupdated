@@ -1,7 +1,7 @@
-# Claude Agent SDK — TypeScript Reference (v0.2.87)
+# Claude Agent SDK — TypeScript Reference (v0.2.88)
 
 
-**Package**: `@anthropic-ai/claude-agent-sdk@0.2.87`
+**Package**: `@anthropic-ai/claude-agent-sdk@0.2.88`
 **Docs**: https://platform.claude.com/docs/en/agent-sdk/overview
 **Repo**: https://github.com/anthropics/claude-agent-sdk-typescript
 **Migration**: Renamed from `@anthropic-ai/claude-code`. See [migration guide](https://platform.claude.com/docs/en/agent-sdk/migration-guide).
@@ -15,7 +15,7 @@
 - [Options](#options) — Core, Tools & Permissions, Models & Output, Sessions, MCP & Agents, Advanced
 - [Query Object Methods](#query-object-methods)
 - [Message Types](#message-types) — All 24 SDKMessage types
-- [Hooks](#hooks) — 26 hook events, matchers, return values, async hooks
+- [Hooks](#hooks) — 27 hook events, matchers, return values, async hooks
 - [Permissions](#permissions) — 5 modes, `canUseTool` callback
 - [MCP Servers](#mcp-servers) — stdio, HTTP, SSE, SDK, claudeai-proxy
 - [Subagents](#subagents) — AgentDefinition, tool enforcement workaround
@@ -379,7 +379,7 @@ await q.setMcpServers(newServersConfig);    // Replace MCP servers mid-session
 
 // Plugin management
 await q.reloadPlugins();                    // Reload plugins from disk; returns { commands, agents, plugins, mcpServers, error_count }
-await q.getContextUsage();                  // Get context window usage breakdown by category — returns SDKControlGetContextUsageResponse (v0.2.87)
+await q.getContextUsage();                  // Get context window usage breakdown by category — returns SDKControlGetContextUsageResponse (v0.2.88)
 
 // File checkpointing (requires enableFileCheckpointing: true)
 await q.rewindFiles(userMessageUuid, { dryRun?: boolean }); // Rewind to checkpoint
@@ -480,7 +480,7 @@ type SDKMessage =
   // Status & progress
   | SDKStatusMessage              // type: 'system', subtype: 'status' — status updates (e.g., 'compacting')
   | SDKSessionStateChangedMessage // type: 'system', subtype: 'session_state_changed' — idle/running/requires_action
-  | SDKAPIRetryMessage            // type: 'system', subtype: 'api_retry' — transient API error being retried (v0.2.87)
+  | SDKAPIRetryMessage            // type: 'system', subtype: 'api_retry' — transient API error being retried (v0.2.88)
   | SDKToolProgressMessage        // type: 'tool_progress' — tool execution progress with elapsed time
   | SDKToolUseSummaryMessage      // type: 'tool_use_summary' — summary of tool usage
   | SDKAuthStatusMessage          // type: 'auth_status' — authentication status
@@ -501,7 +501,7 @@ type SDKMessage =
   | SDKPromptSuggestionMessage    // type: 'prompt_suggestion' — predicted next user prompt (requires promptSuggestions: true)
 ```
 
-### SDKAPIRetryMessage (v0.2.87)
+### SDKAPIRetryMessage (v0.2.88)
 
 ```typescript
 { type: 'system', subtype: 'api_retry', uuid, session_id,
@@ -630,6 +630,7 @@ Hooks use **callback matchers**: an optional regex `matcher` for tool names and 
 | `PreCompact` | Before context compaction | Yes | Yes |
 | `PostCompact` | After context compaction completes | Yes | No |
 | `PermissionRequest` | Permission dialog would show | Yes | No |
+| `PermissionDenied` | Tool use was denied permission (output: `{ retry?: boolean }`) | Yes | No |
 | `SessionStart` | Session begins | Yes | No |
 | `SessionEnd` | Session ends | Yes | No |
 | `Notification` | Agent status message | Yes | No |
@@ -1694,14 +1695,32 @@ for await (const msg of query({ prompt: 'hello', options: { settingSources: ['us
 ```
 **Note**: To load no settings sources (empty = SDK defaults only), the SDK should omit the flag entirely, matching how `--betas`, `--allowedTools`, and `--disallowedTools` handle empty arrays.
 
+### #47: Session JSONL transcripts contain illegal entries — empty text blocks and orphaned `tool_result`s cause 400 errors on resume
+**Error**: `"text content blocks must be non-empty"` or `"unexpected tool_use_id"` when resuming a session after compaction ([#244](https://github.com/anthropics/claude-agent-sdk-typescript/issues/244))
+**Cause**: Two related transcript corruption patterns:
+1. **Empty text blocks** — During streaming, the model can produce empty text blocks (e.g., between tool calls or thinking blocks). The SDK writes `{type: "text", text: ""}` blocks to the JSONL transcript as-is. The API accepts these during the initial session but rejects them on subsequent `resume` or compaction requests.
+2. **Orphaned `tool_result` blocks** — After context compaction removes older messages, user messages containing `tool_result` blocks can reference `tool_use_id`s from assistant messages that were truncated. The API rejects the transcript because every `tool_result` must reference an existing `tool_use`.
+**Impact**: Long-running agent sessions that use compaction and session resumption will hit 400 API errors. These errors interrupt ongoing sessions, waste API calls, and can cascade into consecutive error loops.
+**Workaround**: Sanitize transcripts before resuming a session. Read the session's JSONL file (via `getSessionMessages()` or directly), then:
+1. Remove assistant message lines containing only empty text blocks (`{type: "text", text: ""}`)
+2. Collect all `tool_use_id`s from remaining assistant messages; drop user message lines whose `tool_result` blocks reference IDs not in that set
+```typescript
+// Detect and skip empty text blocks in streaming output
+for await (const msg of query({ prompt, options: { resume: sessionId } })) {
+  // If you get a 400 error, sanitize the JSONL transcript at
+  // ~/.claude/projects/<hash>/<session-id>.jsonl before retrying
+}
+```
+
 ---
 
-## Changelog Highlights (v0.2.12 → v0.2.87)
+## Changelog Highlights (v0.2.12 → v0.2.88)
 
 | Version | Change |
 |---------|--------|
-| v0.2.87 | Added `Query.getContextUsage()` method (context window breakdown by category); made `SDKUserMessage.session_id` optional; added `@anthropic-ai/sdk` and `@modelcontextprotocol/sdk` as explicit dependencies (fixes type-any regression) |
-| v0.2.85 | Added `TaskCreated` hook event (26 total); added `taskBudget: { total: number }` option (@alpha); added `Query.reloadPlugins()` and `Query.seedReadState()` methods |
+| v0.2.88 | Added `PermissionDenied` hook event (27 total) |
+| v0.2.88 | Added `Query.getContextUsage()` method (context window breakdown by category); made `SDKUserMessage.session_id` optional; added `@anthropic-ai/sdk` and `@modelcontextprotocol/sdk` as explicit dependencies (fixes type-any regression) |
+| v0.2.85 | Added `TaskCreated` hook event; added `taskBudget: { total: number }` option (@alpha); added `Query.reloadPlugins()` and `Query.seedReadState()` methods |
 | v0.2.71 | Fixed `Agent` tool returning `"Unknown tool: Agent"` in `query()` mode — subagent invocation via `tools: ['Agent']` + `agents` map now works ([#210](https://github.com/anthropics/claude-agent-sdk-typescript/issues/210)) |
 | v0.2.63 | Fixed `SDKRateLimitEvent` and `SDKPromptSuggestionMessage` missing from `sdk.d.ts` — `SDKMessage` now has full type safety ([#196](https://github.com/anthropics/claude-agent-sdk-typescript/issues/196), [#206](https://github.com/anthropics/claude-agent-sdk-typescript/issues/206)) |
 | v0.2.58 | Version bump |
@@ -1718,4 +1737,4 @@ for await (const msg of query({ prompt: 'hello', options: { settingSources: ['us
 
 ---
 
-**Last verified**: 2026-03-29 | **SDK version**: 0.2.87
+**Last verified**: 2026-03-31 | **SDK version**: 0.2.88

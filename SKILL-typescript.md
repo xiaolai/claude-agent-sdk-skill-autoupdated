@@ -1,7 +1,7 @@
-# Claude Agent SDK — TypeScript Reference (v0.2.89)
+# Claude Agent SDK — TypeScript Reference (v0.2.90)
 
 
-**Package**: `@anthropic-ai/claude-agent-sdk@0.2.89`
+**Package**: `@anthropic-ai/claude-agent-sdk@0.2.90`
 **Docs**: https://platform.claude.com/docs/en/agent-sdk/overview
 **Repo**: https://github.com/anthropics/claude-agent-sdk-typescript
 **Migration**: Renamed from `@anthropic-ai/claude-code`. See [migration guide](https://platform.claude.com/docs/en/agent-sdk/migration-guide).
@@ -11,7 +11,7 @@
 ## Table of Contents
 
 - [Breaking Changes](#breaking-changes-v010)
-- [Core API](#core-api) — `query()`, `tool()`, `createSdkMcpServer()`, `listSessions()`, `getSessionMessages()`, `getSessionInfo()`, `renameSession()`, `forkSession()`, `tagSession()`
+- [Core API](#core-api) — `query()`, `tool()`, `createSdkMcpServer()`, `listSessions()`, `getSessionMessages()`, `getSessionInfo()`, `renameSession()`, `forkSession()`, `tagSession()`, `listSubagents()`, `getSubagentMessages()`
 - [Options](#options) — Core, Tools & Permissions, Models & Output, Sessions, MCP & Agents, Advanced
 - [Query Object Methods](#query-object-methods)
 - [Message Types](#message-types) — All 24 SDKMessage types
@@ -148,7 +148,7 @@ function getSessionMessages(
 ): Promise<SessionMessage[]>
 
 type SessionMessage = {
-  type: 'user' | 'assistant';
+  type: 'user' | 'assistant' | 'system';
   uuid: string;
   session_id: string;
   message: unknown;           // Raw message content (MessageParam or BetaMessage shape)
@@ -258,6 +258,59 @@ console.log(sessions[0].tag); // "needs-review"
 
 // Clear the tag
 await tagSession(sessionId, null);
+```
+
+### `listSubagents()`
+
+Lists subagent IDs for a given session by scanning the subagents directory. Subagent transcripts are stored at `~/.claude/projects/<dir>/<sessionId>/subagents/agent-<agentId>.jsonl`.
+
+```typescript
+import { listSubagents } from "@anthropic-ai/claude-agent-sdk";
+
+function listSubagents(
+  sessionId: string,
+  options?: { dir?: string }  // Project directory; searches all projects if omitted
+): Promise<string[]>  // Array of subagent ID strings
+```
+
+Example:
+
+```typescript
+const agentIds = await listSubagents(sessionId);
+for (const agentId of agentIds) {
+  const messages = await getSubagentMessages(sessionId, agentId);
+  console.log(`Subagent ${agentId}: ${messages.length} messages`);
+}
+```
+
+### `getSubagentMessages()`
+
+Reads a subagent's conversation messages from its JSONL transcript file. Returns user and assistant messages in chronological order.
+
+```typescript
+import { getSubagentMessages } from "@anthropic-ai/claude-agent-sdk";
+
+function getSubagentMessages(
+  sessionId: string,
+  agentId: string,
+  options?: {
+    dir?: string;    // Project directory to find the session in; searches all projects if omitted
+    limit?: number;  // Maximum number of messages to return
+    offset?: number; // Number of messages to skip from the start
+  }
+): Promise<SessionMessage[]>
+```
+
+Example:
+
+```typescript
+const agentIds = await listSubagents(sessionId);
+if (agentIds.length > 0) {
+  const messages = await getSubagentMessages(sessionId, agentIds[0], { limit: 20 });
+  for (const msg of messages) {
+    console.log(`[${msg.type}]`, msg.uuid);
+  }
+}
 ```
 
 ---
@@ -379,7 +432,7 @@ await q.setMcpServers(newServersConfig);    // Replace MCP servers mid-session
 
 // Plugin management
 await q.reloadPlugins();                    // Reload plugins from disk; returns { commands, agents, plugins, mcpServers, error_count }
-await q.getContextUsage();                  // Get context window usage breakdown by category — returns SDKControlGetContextUsageResponse (v0.2.89)
+await q.getContextUsage();                  // Get context window usage breakdown by category — returns SDKControlGetContextUsageResponse (v0.2.90)
 
 // File checkpointing (requires enableFileCheckpointing: true)
 await q.rewindFiles(userMessageUuid, { dryRun?: boolean }); // Rewind to checkpoint
@@ -424,7 +477,7 @@ type AccountInfo = {
   subscriptionType?: string;
   tokenSource?: string;
   apiKeySource?: string;
-  apiProvider?: 'firstParty' | 'bedrock' | 'vertex' | 'foundry';  // Active API backend
+  apiProvider?: 'firstParty' | 'bedrock' | 'vertex' | 'foundry' | 'anthropicAws';  // Active API backend
 };
 ```
 
@@ -480,7 +533,7 @@ type SDKMessage =
   // Status & progress
   | SDKStatusMessage              // type: 'system', subtype: 'status' — status updates (e.g., 'compacting')
   | SDKSessionStateChangedMessage // type: 'system', subtype: 'session_state_changed' — idle/running/requires_action
-  | SDKAPIRetryMessage            // type: 'system', subtype: 'api_retry' — transient API error being retried (v0.2.89)
+  | SDKAPIRetryMessage            // type: 'system', subtype: 'api_retry' — transient API error being retried (v0.2.90)
   | SDKToolProgressMessage        // type: 'tool_progress' — tool execution progress with elapsed time
   | SDKToolUseSummaryMessage      // type: 'tool_use_summary' — summary of tool usage
   | SDKAuthStatusMessage          // type: 'auth_status' — authentication status
@@ -501,7 +554,7 @@ type SDKMessage =
   | SDKPromptSuggestionMessage    // type: 'prompt_suggestion' — predicted next user prompt (requires promptSuggestions: true)
 ```
 
-### SDKAPIRetryMessage (v0.2.89)
+### SDKAPIRetryMessage (v0.2.90)
 
 ```typescript
 { type: 'system', subtype: 'api_retry', uuid, session_id,
@@ -946,6 +999,10 @@ type AgentDefinition = {
   maxTurns?: number;          // Max turns for this subagent
   initialPrompt?: string;     // Auto-submitted as first user turn (slash commands processed; prepended to user prompt)
   criticalSystemReminder_EXPERIMENTAL?: string;  // Critical reminder added to system prompt
+  background?: boolean;       // Run as a background task (non-blocking, fire-and-forget) when invoked
+  memory?: 'user' | 'project' | 'local';  // Scope for auto-loading agent memory files (~/.claude/agent-memory/, .claude/agent-memory/, or .claude/agent-memory-local/)
+  effort?: ('low' | 'medium' | 'high' | 'max') | number;  // Reasoning effort level for this agent
+  permissionMode?: PermissionMode;  // Permission mode controlling how tool executions are handled
 }
 ```
 
@@ -1714,12 +1771,12 @@ for await (const msg of query({ prompt, options: { resume: sessionId } })) {
 
 ---
 
-## Changelog Highlights (v0.2.12 → v0.2.89)
+## Changelog Highlights (v0.2.12 → v0.2.90)
 
 | Version | Change |
 |---------|--------|
-| v0.2.89 | Added `PermissionDenied` hook event (27 total) |
-| v0.2.89 | Added `Query.getContextUsage()` method (context window breakdown by category); made `SDKUserMessage.session_id` optional; added `@anthropic-ai/sdk` and `@modelcontextprotocol/sdk` as explicit dependencies (fixes type-any regression) |
+| v0.2.90 | Added `PermissionDenied` hook event (27 total) |
+| v0.2.90 | Added `Query.getContextUsage()` method (context window breakdown by category); made `SDKUserMessage.session_id` optional; added `@anthropic-ai/sdk` and `@modelcontextprotocol/sdk` as explicit dependencies (fixes type-any regression) |
 | v0.2.85 | Added `TaskCreated` hook event; added `taskBudget: { total: number }` option (@alpha); added `Query.reloadPlugins()` and `Query.seedReadState()` methods |
 | v0.2.71 | Fixed `Agent` tool returning `"Unknown tool: Agent"` in `query()` mode — subagent invocation via `tools: ['Agent']` + `agents` map now works ([#210](https://github.com/anthropics/claude-agent-sdk-typescript/issues/210)) |
 | v0.2.63 | Fixed `SDKRateLimitEvent` and `SDKPromptSuggestionMessage` missing from `sdk.d.ts` — `SDKMessage` now has full type safety ([#196](https://github.com/anthropics/claude-agent-sdk-typescript/issues/196), [#206](https://github.com/anthropics/claude-agent-sdk-typescript/issues/206)) |
@@ -1737,4 +1794,4 @@ for await (const msg of query({ prompt, options: { resume: sessionId } })) {
 
 ---
 
-**Last verified**: 2026-04-01 | **SDK version**: 0.2.89
+**Last verified**: 2026-04-02 | **SDK version**: 0.2.90

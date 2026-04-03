@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-04-03
+
+- SDK v0.2.90 → v0.2.91 (TypeScript); Python v0.1.54 → v0.1.55
+- No new Known Issues added; research found no new actionable issues (TS above #236, PY above #776)
+- Typecheck false-positive (recurring stale-comma import artifact); verify passed 28/28 after 1 mending run
+- [Full report](reports/2026-04-03.md)
+
 ## 2026-04-02
 
 - SDK v0.2.89 → v0.2.90 (TypeScript); Python v0.1.53 → v0.1.54

@@ -1,7 +1,7 @@
-# Claude Agent SDK — TypeScript Reference (v0.2.90)
+# Claude Agent SDK — TypeScript Reference (v0.2.91)
 
 
-**Package**: `@anthropic-ai/claude-agent-sdk@0.2.90`
+**Package**: `@anthropic-ai/claude-agent-sdk@0.2.91`
 **Docs**: https://platform.claude.com/docs/en/agent-sdk/overview
 **Repo**: https://github.com/anthropics/claude-agent-sdk-typescript
 **Migration**: Renamed from `@anthropic-ai/claude-code`. See [migration guide](https://platform.claude.com/docs/en/agent-sdk/migration-guide).
@@ -335,7 +335,7 @@ if (agentIds.length > 0) {
 | `tools` | `string[] \| { type: 'preset', preset: 'claude_code' }` | — | Tool configuration |
 | `allowedTools` | `string[]` | All tools | Allowed tool names |
 | `disallowedTools` | `string[]` | `[]` | Blocked tool names |
-| `permissionMode` | `PermissionMode` | `'default'` | `'default' \| 'acceptEdits' \| 'bypassPermissions' \| 'plan' \| 'dontAsk'` — see [Permissions](#permissions) |
+| `permissionMode` | `PermissionMode` | `'default'` | `'default' \| 'acceptEdits' \| 'bypassPermissions' \| 'plan' \| 'dontAsk' \| 'auto'` — see [Permissions](#permissions) |
 | `canUseTool` | `CanUseTool` | — | Custom permission callback |
 | `allowDangerouslySkipPermissions` | `boolean` | `false` | Required with `bypassPermissions` |
 | `permissionPromptToolName` | `string` | — | Route permission prompts through a named MCP tool |
@@ -386,6 +386,7 @@ if (agentIds.length > 0) {
 | `onElicitation` | `OnElicitation` | — | Callback for MCP elicitation requests (form fields, URL auth); auto-declines if not provided |
 | `sandbox` | `SandboxSettings` | — | Sandbox configuration |
 | `hooks` | `Partial<Record<HookEvent, HookCallbackMatcher[]>>` | `{}` | Hook callbacks |
+| `includeHookEvents` | `boolean` | `false` | Include hook lifecycle events (`hook_started`, `hook_progress`, `hook_response`) in the output stream. SessionStart and Setup hook events are always emitted regardless of this setting. |
 | `settings` | `string \| Settings` | — | Additional settings to apply (path to JSON file or inline object). Loaded into the highest-priority "flag settings" layer. Equivalent to `--settings` CLI flag. |
 | `toolConfig` | `ToolConfig` | — | Per-tool configuration for built-in tools (e.g., `{ askUserQuestion: { previewFormat: 'html' } }`) |
 | `additionalDirectories` | `string[]` | `[]` | Extra directories for Claude to access |
@@ -432,7 +433,7 @@ await q.setMcpServers(newServersConfig);    // Replace MCP servers mid-session
 
 // Plugin management
 await q.reloadPlugins();                    // Reload plugins from disk; returns { commands, agents, plugins, mcpServers, error_count }
-await q.getContextUsage();                  // Get context window usage breakdown by category — returns SDKControlGetContextUsageResponse (v0.2.90)
+await q.getContextUsage();                  // Get context window usage breakdown by category — returns SDKControlGetContextUsageResponse (v0.2.91)
 
 // File checkpointing (requires enableFileCheckpointing: true)
 await q.rewindFiles(userMessageUuid, { dryRun?: boolean }); // Rewind to checkpoint
@@ -533,7 +534,7 @@ type SDKMessage =
   // Status & progress
   | SDKStatusMessage              // type: 'system', subtype: 'status' — status updates (e.g., 'compacting')
   | SDKSessionStateChangedMessage // type: 'system', subtype: 'session_state_changed' — idle/running/requires_action
-  | SDKAPIRetryMessage            // type: 'system', subtype: 'api_retry' — transient API error being retried (v0.2.90)
+  | SDKAPIRetryMessage            // type: 'system', subtype: 'api_retry' — transient API error being retried (v0.2.91)
   | SDKToolProgressMessage        // type: 'tool_progress' — tool execution progress with elapsed time
   | SDKToolUseSummaryMessage      // type: 'tool_use_summary' — summary of tool usage
   | SDKAuthStatusMessage          // type: 'auth_status' — authentication status
@@ -554,7 +555,7 @@ type SDKMessage =
   | SDKPromptSuggestionMessage    // type: 'prompt_suggestion' — predicted next user prompt (requires promptSuggestions: true)
 ```
 
-### SDKAPIRetryMessage (v0.2.90)
+### SDKAPIRetryMessage (v0.2.91)
 
 ```typescript
 { type: 'system', subtype: 'api_retry', uuid, session_id,
@@ -873,7 +874,8 @@ type PermissionMode =
   | 'acceptEdits'        // Auto-allow file edits, prompt for others
   | 'bypassPermissions'  // Skip all prompts (requires allowDangerouslySkipPermissions)
   | 'plan'               // Read-only planning mode — no writes/execution
-  | 'dontAsk';           // Don't prompt — deny if not pre-approved
+  | 'dontAsk'            // Don't prompt — deny if not pre-approved
+  | 'auto';              // Use a model classifier to auto-approve/deny permission prompts
 ```
 
 **Note**: `allowedTools` is ignored when `permissionMode: 'bypassPermissions'` — Claude can use any tool.
@@ -1771,12 +1773,12 @@ for await (const msg of query({ prompt, options: { resume: sessionId } })) {
 
 ---
 
-## Changelog Highlights (v0.2.12 → v0.2.90)
+## Changelog Highlights (v0.2.12 → v0.2.91)
 
 | Version | Change |
 |---------|--------|
-| v0.2.90 | Added `PermissionDenied` hook event (27 total) |
-| v0.2.90 | Added `Query.getContextUsage()` method (context window breakdown by category); made `SDKUserMessage.session_id` optional; added `@anthropic-ai/sdk` and `@modelcontextprotocol/sdk` as explicit dependencies (fixes type-any regression) |
+| v0.2.91 | Added `PermissionDenied` hook event (27 total) |
+| v0.2.91 | Added `Query.getContextUsage()` method (context window breakdown by category); made `SDKUserMessage.session_id` optional; added `@anthropic-ai/sdk` and `@modelcontextprotocol/sdk` as explicit dependencies (fixes type-any regression) |
 | v0.2.85 | Added `TaskCreated` hook event; added `taskBudget: { total: number }` option (@alpha); added `Query.reloadPlugins()` and `Query.seedReadState()` methods |
 | v0.2.71 | Fixed `Agent` tool returning `"Unknown tool: Agent"` in `query()` mode — subagent invocation via `tools: ['Agent']` + `agents` map now works ([#210](https://github.com/anthropics/claude-agent-sdk-typescript/issues/210)) |
 | v0.2.63 | Fixed `SDKRateLimitEvent` and `SDKPromptSuggestionMessage` missing from `sdk.d.ts` — `SDKMessage` now has full type safety ([#196](https://github.com/anthropics/claude-agent-sdk-typescript/issues/196), [#206](https://github.com/anthropics/claude-agent-sdk-typescript/issues/206)) |
@@ -1794,4 +1796,4 @@ for await (const msg of query({ prompt, options: { resume: sessionId } })) {
 
 ---
 
-**Last verified**: 2026-04-02 | **SDK version**: 0.2.90
+**Last verified**: 2026-04-03 | **SDK version**: 0.2.91

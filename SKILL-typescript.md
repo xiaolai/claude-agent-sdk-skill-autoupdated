@@ -141,9 +141,10 @@ import { getSessionMessages } from "@anthropic-ai/claude-agent-sdk";
 function getSessionMessages(
   sessionId: string,
   options?: {
-    dir?: string;    // Project directory to find the session in; searches all projects if omitted
-    limit?: number;  // Maximum number of messages to return
-    offset?: number; // Number of messages to skip from the start
+    dir?: string;                    // Project directory to find the session in; searches all projects if omitted
+    limit?: number;                  // Maximum number of messages to return
+    offset?: number;                 // Number of messages to skip from the start
+    includeSystemMessages?: boolean; // When true, include system messages (compact boundaries, notices) alongside user/assistant messages. Defaults to false.
   }
 ): Promise<SessionMessage[]>
 
@@ -1825,4 +1826,4 @@ Or with pnpm: `"pnpm": { "overrides": { "@anthropic-ai/sdk": "^0.81.0" } }`. Mon
 
 ---
 
-**Last verified**: 2026-04-04 | **SDK version**: 0.2.92
+**Last verified**: 2026-04-05 | **SDK version**: 0.2.92

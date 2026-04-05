@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-04-05
+
+- Research only, no version change (TS v0.2.92, PY v0.1.56 unchanged); GitHub API unavailable
+- Doc fix: added missing `includeSystemMessages` field to `getSessionMessages()` in SKILL-typescript.md
+- PY audit: corrected stale `lastAuditedVersion` 0.1.52 → 0.1.56; all templates verified clean
+- [Full report](reports/2026-04-05.md)
+
 ## 2026-04-04
 
 - SDK v0.2.91 → v0.2.92 (TypeScript); Python v0.1.55 → v0.1.56

@@ -203,7 +203,7 @@
         "state": "open",
         "researchedAt": "2026-02-22",
         "verdict": "skipped",
-        "reason": "Fixed in v0.2.40 — thinking and effort options now supported; already covered by Known Issue #13 note"
+        "reason": "Fixed in v0.2.40 \u2014 thinking and effort options now supported; already covered by Known Issue #13 note"
       },
       "181": {
         "repo": "anthropics/claude-agent-sdk-typescript",
@@ -216,7 +216,7 @@
       },
       "182": {
         "repo": "anthropics/claude-agent-sdk-typescript",
-        "title": "Opus 4.6 via query() has no effort control — 'opus' shorthand silently upgrades from 4.5",
+        "title": "Opus 4.6 via query() has no effort control \u2014 'opus' shorthand silently upgrades from 4.5",
         "state": "open",
         "knownIssueNumber": 28,
         "researchedAt": "2026-02-22",
@@ -427,7 +427,7 @@
       },
       "210": {
         "repo": "anthropics/claude-agent-sdk-typescript",
-        "title": "Agent tool returns 'Unknown tool: Agent' in query() mode — subagent invocation broken",
+        "title": "Agent tool returns 'Unknown tool: Agent' in query() mode \u2014 subagent invocation broken",
         "state": "closed",
         "researchedAt": "2026-03-11",
         "verdict": "skipped",
@@ -476,7 +476,7 @@
       },
       "216": {
         "repo": "anthropics/claude-agent-sdk-typescript",
-        "title": "Fast Mode Unavailable via SDK — Requires Native Bun Binary",
+        "title": "Fast Mode Unavailable via SDK \u2014 Requires Native Bun Binary",
         "state": "open",
         "researchedAt": "2026-03-11",
         "verdict": "skipped",
@@ -597,7 +597,7 @@
         "knownIssueNumber": null,
         "researchedAt": "2026-03-22",
         "verdict": "skipped",
-        "reason": "GitHub API unavailable for research; may relate to Known Issue #36 (settings.json env precedence) — needs follow-up when API access is available"
+        "reason": "GitHub API unavailable for research; may relate to Known Issue #36 (settings.json env precedence) \u2014 needs follow-up when API access is available"
       },
       "231": {
         "repo": "anthropics/claude-agent-sdk-typescript",
@@ -637,7 +637,7 @@
     },
     "lastScannedIssueNumber": 236,
     "lastAuditedVersion": "0.2.92",
-    "lastAuditNotes": "2026-04-05: Quick verification pass (same version 0.2.92). GitHub API unavailable — no new issues scanned. SDK audit found: getSessionMessages() options missing includeSystemMessages field (added to SKILL-typescript.md). All other API surfaces verified: 27 HOOK_EVENTS, 24 SDKMessage types, all exported functions, Options fields, PermissionMode values match. No new Known Issues added."
+    "lastAuditNotes": "2026-04-06: Full API surface audit (same version 0.2.92). GitHub API unavailable \u2014 no new issues scanned. SDK audit found: SDKResultSuccess/SDKResultError missing terminal_reason?: TerminalReason and SDKResultSuccess missing deferred_tool_use?: SDKDeferredToolUse fields \u2014 added to SKILL-typescript.md SDKResultMessage section along with full TerminalReason union type documentation. All other API surfaces verified: 27 HOOK_EVENTS, 24 SDKMessage types, all 14 exported functions (query, tool, createSdkMcpServer, listSessions, getSessionMessages, getSessionInfo, renameSession, forkSession, tagSession, listSubagents, getSubagentMessages, unstable_v2_createSession, unstable_v2_prompt, unstable_v2_resumeSession), all Options fields, all PermissionMode values match."
   },
   "python": {
     "registry": {
@@ -993,7 +993,7 @@
         "state": "open",
         "researchedAt": "2026-03-11",
         "verdict": "skipped",
-        "reason": "0 reactions, 0 comments; workaround requires manual session file reconstruction — too risky to recommend"
+        "reason": "0 reactions, 0 comments; workaround requires manual session file reconstruction \u2014 too risky to recommend"
       },
       "632": {
         "repo": "anthropics/claude-agent-sdk-python",
@@ -1069,7 +1069,7 @@
         "knownIssueNumber": 21,
         "researchedAt": "2026-03-11",
         "verdict": "added_known_issue",
-        "reason": "PR merged then reverted — reveals that include_partial_messages=True breaks on Bedrock/Vertex due to eager_input_streaming field rejection; documented as KI #21"
+        "reason": "PR merged then reverted \u2014 reveals that include_partial_messages=True breaks on Bedrock/Vertex due to eager_input_streaming field rejection; documented as KI #21"
       },
       "646": {
         "repo": "anthropics/claude-agent-sdk-python",
@@ -1233,7 +1233,7 @@
         "knownIssueNumber": 27,
         "researchedAt": "2026-03-18",
         "verdict": "added_known_issue",
-        "reason": "Critical: can_use_tool callback silently never fires across all SDK/CLI versions tested (0.1.19-0.1.48+). Security-critical — any permission enforcement via can_use_tool is a no-op. Added KI #27 + auto-correction rule."
+        "reason": "Critical: can_use_tool callback silently never fires across all SDK/CLI versions tested (0.1.19-0.1.48+). Security-critical \u2014 any permission enforcement via can_use_tool is a no-op. Added KI #27 + auto-correction rule."
       },
       "676": {
         "repo": "anthropics/claude-agent-sdk-python",
@@ -1242,7 +1242,7 @@
         "knownIssueNumber": 24,
         "researchedAt": "2026-03-18",
         "verdict": "added_known_issue",
-        "reason": "2 reactions; CLI does not reset lastActivityTime on MCP responses — calls fail after ~70s. Periodic heartbeat workaround documented."
+        "reason": "2 reactions; CLI does not reset lastActivityTime on MCP responses \u2014 calls fail after ~70s. Periodic heartbeat workaround documented."
       },
       "682": {
         "repo": "anthropics/claude-agent-sdk-python",
@@ -1251,7 +1251,7 @@
         "knownIssueNumber": 25,
         "researchedAt": "2026-03-18",
         "verdict": "added_known_issue",
-        "reason": "output_format schema constraint silently not enforced when resuming sessions — model responds in plain text instead of JSON."
+        "reason": "output_format schema constraint silently not enforced when resuming sessions \u2014 model responds in plain text instead of JSON."
       },
       "687": {
         "repo": "anthropics/claude-agent-sdk-python",
@@ -1260,7 +1260,7 @@
         "knownIssueNumber": 26,
         "researchedAt": "2026-03-18",
         "verdict": "added_known_issue",
-        "reason": "12 reactions; high impact — Linux/Windows users cannot install 0.1.49. Workaround: pin to >=0.1.48,<0.1.49."
+        "reason": "12 reactions; high impact \u2014 Linux/Windows users cannot install 0.1.49. Workaround: pin to >=0.1.48,<0.1.49."
       },
       "689": {
         "repo": "anthropics/claude-agent-sdk-python",
@@ -1364,7 +1364,7 @@
       },
       "774": {
         "repo": "anthropics/claude-agent-sdk-python",
-        "title": "ExitPlanMode terminates the current SDK turn — no tool execution after plan exit",
+        "title": "ExitPlanMode terminates the current SDK turn \u2014 no tool execution after plan exit",
         "state": "open",
         "knownIssueNumber": 36,
         "researchedAt": "2026-03-30",
@@ -1422,7 +1422,7 @@
       },
       "739": {
         "repo": "anthropics/claude-agent-sdk-python",
-        "title": "control_cancel_request messages are silently ignored — hook callbacks orphaned",
+        "title": "control_cancel_request messages are silently ignored \u2014 hook callbacks orphaned",
         "state": "closed",
         "researchedAt": "2026-03-30",
         "verdict": "skipped",
@@ -1449,7 +1449,7 @@
     "lastScannedIssueNumber": 776,
     "lastAuditedVersion": "0.1.56",
     "lastAuditSummary": {
-      "date": "2026-04-05",
+      "date": "2026-04-06",
       "sdkVersion": "0.1.56",
       "newOptionsAdded": 0,
       "newMethodsAdded": 0,
@@ -1457,11 +1457,11 @@
       "newHookEventsAdded": 0,
       "updatedEntries": 1,
       "noChanges": false,
-      "notes": "API surface fully verified against installed v0.1.56 package. All options, methods, message types, hook events, AgentDefinition fields, MCP config types, and sandbox settings match SKILL-python.md. Updated 'Last verified' date to 2026-04-05. GitHub API unavailable — no new issues scanned. Template files all pass syntax check and import validation. 12 template files audited, 0 fixes applied.",
-      "templateFilesAudited": 12,
+      "notes": "API surface fully verified against installed v0.1.56 package. All options, methods, message types, hook events, AgentDefinition fields, MCP config types, and sandbox settings match SKILL-python.md. Updated Last verified date to 2026-04-06. GitHub API unavailable \u2014 no new issues scanned. Template audit skipped (version unchanged from prior run).",
+      "templateFilesAudited": 0,
       "templateFixesApplied": 0,
       "githubApiAvailable": false
     }
   },
-  "lastUpdated": "2026-04-05T00:00:00Z"
+  "lastUpdated": "2026-04-06T00:00:00Z"
 }

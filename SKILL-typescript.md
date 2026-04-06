@@ -584,18 +584,43 @@ Authoritative turn-over signal. `'idle'` fires after the result flushes and the 
 // Success
 { type: 'result', subtype: 'success', session_id, duration_ms, duration_api_ms,
   is_error: false, num_turns, result: string, total_cost_usd,
-  usage, modelUsage, permission_denials, structured_output?, stop_reason?,
+  usage, modelUsage, permission_denials, structured_output?, stop_reason?: string | null,
+  deferred_tool_use?: SDKDeferredToolUse,  // set when a tool use was deferred (plan mode etc.)
+  terminal_reason?: TerminalReason,        // why the query loop terminated
   fast_mode_state?: FastModeState }
 
 // Error variants
 { type: 'result', subtype: 'error_max_turns' | 'error_during_execution'
   | 'error_max_budget_usd' | 'error_max_structured_output_retries',
   session_id, is_error: true, errors: string[], ...,
+  terminal_reason?: TerminalReason,
   fast_mode_state?: FastModeState }
 
 // Error codes (SDKAssistantMessageError)
 'authentication_failed' | 'billing_error' | 'rate_limit' |
 'invalid_request' | 'server_error' | 'unknown' | 'max_output_tokens'
+
+// TerminalReason — why the query loop terminated (unset when bypassed or interrupted externally)
+type TerminalReason =
+  | 'completed'             // Normal completion
+  | 'max_turns'             // maxTurns limit reached
+  | 'tool_deferred'         // Tool use deferred (plan mode)
+  | 'hook_stopped'          // A hook returned continue: false
+  | 'stop_hook_prevented'   // Stop hook blocked termination
+  | 'aborted_tools'         // Tool execution aborted
+  | 'aborted_streaming'     // Streaming aborted
+  | 'model_error'           // Model-level error
+  | 'image_error'           // Image processing error
+  | 'prompt_too_long'       // Prompt exceeded context limit
+  | 'rapid_refill_breaker'  // Rate limit breaker
+  | 'blocking_limit';       // Blocking resource limit
+
+// SDKDeferredToolUse — tool call deferred when permissionMode is 'plan'
+type SDKDeferredToolUse = {
+  id: string;
+  name: string;
+  input: Record<string, unknown>;
+};
 ```
 
 ### SDKSystemMessage (init)
@@ -1826,4 +1851,4 @@ Or with pnpm: `"pnpm": { "overrides": { "@anthropic-ai/sdk": "^0.81.0" } }`. Mon
 
 ---
 
-**Last verified**: 2026-04-05 | **SDK version**: 0.2.92
+**Last verified**: 2026-04-06 | **SDK version**: 0.2.92

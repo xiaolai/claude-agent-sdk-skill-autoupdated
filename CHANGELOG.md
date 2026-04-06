@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-04-06
+
+- Research only, no version change (TS v0.2.92, PY v0.1.56 unchanged); GitHub API unavailable
+- TS audit: added `terminal_reason?: TerminalReason`, `deferred_tool_use?: SDKDeferredToolUse` to SDKResultMessage; documented full TerminalReason union (13 values)
+- Typecheck false-positive (recurring stale-comma import artifact); pipeline outcomes recorded as success
+- [Full report](reports/2026-04-06.md)
+
 ## 2026-04-05
 
 - Research only, no version change (TS v0.2.92, PY v0.1.56 unchanged); GitHub API unavailable

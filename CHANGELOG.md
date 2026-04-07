@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-04-07
+
+- Research only, no version change (TS v0.2.92, PY v0.1.56 unchanged); GitHub API unavailable
+- PY audit: verified all 39 ClaudeAgentOptions fields, 10 hook events, all message/client/MCP types match SKILL-python.md; updated "Last verified" date
+- TS audit: skipped (version unchanged); Part C consistency checks passed (27 HOOK_EVENTS, KI #1–#49 sequential)
+- Typecheck false-positive (recurring stale-comma import artifact)
+- [Full report](reports/2026-04-07.md)
+
 ## 2026-04-06
 
 - Research only, no version change (TS v0.2.92, PY v0.1.56 unchanged); GitHub API unavailable

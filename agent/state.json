@@ -637,7 +637,7 @@
     },
     "lastScannedIssueNumber": 236,
     "lastAuditedVersion": "0.2.92",
-    "lastAuditNotes": "2026-04-06: Full API surface audit (same version 0.2.92). GitHub API unavailable \u2014 no new issues scanned. SDK audit found: SDKResultSuccess/SDKResultError missing terminal_reason?: TerminalReason and SDKResultSuccess missing deferred_tool_use?: SDKDeferredToolUse fields \u2014 added to SKILL-typescript.md SDKResultMessage section along with full TerminalReason union type documentation. All other API surfaces verified: 27 HOOK_EVENTS, 24 SDKMessage types, all 14 exported functions (query, tool, createSdkMcpServer, listSessions, getSessionMessages, getSessionInfo, renameSession, forkSession, tagSession, listSubagents, getSubagentMessages, unstable_v2_createSession, unstable_v2_prompt, unstable_v2_resumeSession), all Options fields, all PermissionMode values match."
+    "lastAuditNotes": "2026-04-07: API surface audit skipped (version unchanged, 0.2.92 == 0.2.92). GitHub API unavailable \u2014 no new issues scanned. Part C final checks passed: 27 HOOK_EVENTS match sdk.d.ts; Known Issues #1\u2013#49 are sequential with no gaps or duplicates; all JSON files valid; version 0.2.92 consistent across SKILL-typescript.md, rules/claude-agent-sdk-ts.md, scripts/check-versions.sh, templates/typescript/package.json."
   },
   "python": {
     "registry": {
@@ -1449,7 +1449,7 @@
     "lastScannedIssueNumber": 776,
     "lastAuditedVersion": "0.1.56",
     "lastAuditSummary": {
-      "date": "2026-04-06",
+      "date": "2026-04-07",
       "sdkVersion": "0.1.56",
       "newOptionsAdded": 0,
       "newMethodsAdded": 0,
@@ -1457,11 +1457,11 @@
       "newHookEventsAdded": 0,
       "updatedEntries": 1,
       "noChanges": false,
-      "notes": "API surface fully verified against installed v0.1.56 package. All options, methods, message types, hook events, AgentDefinition fields, MCP config types, and sandbox settings match SKILL-python.md. Updated Last verified date to 2026-04-06. GitHub API unavailable \u2014 no new issues scanned. Template audit skipped (version unchanged from prior run).",
+      "notes": "API surface fully verified against installed v0.1.56 package. All 39 ClaudeAgentOptions fields, 10 hook events, all message types, client methods, AgentDefinition fields, MCP config types, and sandbox settings match SKILL-python.md. Updated Last verified date to 2026-04-07. GitHub API unavailable \u2014 no new issues scanned. Template audit skipped (version unchanged).",
       "templateFilesAudited": 0,
       "templateFixesApplied": 0,
       "githubApiAvailable": false
     }
   },
-  "lastUpdated": "2026-04-06T00:00:00Z"
+  "lastUpdated": "2026-04-07"
 }

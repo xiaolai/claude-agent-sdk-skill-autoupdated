@@ -2262,4 +2262,4 @@ Alternatively, use `setting_sources=["user", "project", "local"]` with the skill
 
 ---
 
-**Last verified**: 2026-04-06 | **SDK version**: 0.1.56
+**Last verified**: 2026-04-07 | **SDK version**: 0.1.56

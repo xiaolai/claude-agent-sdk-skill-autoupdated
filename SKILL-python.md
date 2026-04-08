@@ -2015,11 +2015,15 @@ result = subprocess.run([sys.executable, "-c", query_script], capture_output=Tru
 
 ### #23: `thinking={"type":"disabled"}` Converted to `--max-thinking-tokens 0`, Breaking Compatible Providers
 **Error**: Providers that distinguish between *omitted* thinking settings and *explicitly disabled* thinking fail or behave unexpectedly when using `thinking={"type": "disabled"}` ([#693](https://github.com/anthropics/claude-agent-sdk-python/issues/693))
-**Cause**: The SDK converts `thinking={"type": "disabled"}` to `--max-thinking-tokens 0` rather than transmitting the structured `thinking` configuration end-to-end. Anthropic-compatible providers (Bedrock, Vertex, third-party proxies) that parse the `thinking` field directly are affected. PR [#699](https://github.com/anthropics/claude-agent-sdk-python/pull/699) proposes fixing this by using a `--thinking-disabled` flag instead, but has not yet been released.
-**Workaround**: Omit the `thinking` option entirely if the provider accepts "thinking not configured" as equivalent to disabled. If explicit disablement is required, there is no workaround — the SDK cannot currently pass the structured form.
+**Cause**: The SDK converts `thinking={"type": "disabled"}` to `--max-thinking-tokens 0` rather than transmitting the structured `thinking` configuration end-to-end. Anthropic-compatible providers (Bedrock, Vertex, third-party proxies) that parse the `thinking` field directly are affected. Similarly, `thinking={"type": "adaptive"}` was incorrectly mapped to `--max-thinking-tokens 32000` instead of a proper adaptive mode flag.
+**Fix (pending next release after v0.1.56)**: PR [#796](https://github.com/anthropics/claude-agent-sdk-python/pull/796) was merged on 2026-04-07 and adds correct flag mappings: `adaptive` → `--thinking adaptive`, `disabled` → `--thinking disabled`, `enabled` → `--max-thinking-tokens <budget_tokens>`. Upgrade once v0.1.57+ is released.
+**Workaround (v0.1.56 and earlier)**: Omit the `thinking` option entirely if the provider accepts "thinking not configured" as equivalent to disabled. If explicit disablement is required, there is no workaround — the SDK cannot currently pass the structured form.
 ```python
 # WRONG — converts to --max-thinking-tokens 0 (breaks some providers)
 options = ClaudeAgentOptions(thinking={"type": "disabled"})
+
+# ALSO WRONG on v0.1.56 — adaptive maps to --max-thinking-tokens 32000, not --thinking adaptive
+options = ClaudeAgentOptions(thinking={"type": "adaptive"})
 
 # BETTER — omit entirely (provider interprets as no thinking)
 options = ClaudeAgentOptions()  # No thinking configured
@@ -2240,6 +2244,43 @@ async for msg in query(prompt="/my-skill", options=options):
 ```
 Alternatively, use `setting_sources=["user", "project", "local"]` with the skill referenced in CLAUDE.md — this may help the CLI discover plugin-installed skills in some configurations.
 
+### #40: `setting_sources=[]` Silently Ignored — No Way to Fully Isolate from Filesystem Settings
+**Error**: Passing `setting_sources=[]` to disable all setting sources has no effect; the CLI still loads its default settings ([#794](https://github.com/anthropics/claude-agent-sdk-python/issues/794))
+**Cause**: Two compounding bugs: (1) SDK uses a truthiness check (`if self._options.setting_sources:`) rather than a `None` check, so an empty list evaluates to `False` and the `--setting-sources` flag is never passed to the CLI. (2) Even if the flag were passed with an empty value, the CLI silently ignores it and falls back to defaults.
+**Impact**: There is currently **no way to fully isolate an SDK application from all filesystem settings** (e.g., `~/.claude/settings.json`). This is relevant when running multi-tenant servers where per-user settings should not bleed into SDK queries.
+**Partial workaround**: `setting_sources=["project"]` excludes user-level settings (`~/.claude/`) but still loads `.claude/settings.json` if present in the `cwd`. See also [Known Issue #18](#18-global-claudesettingsjson-overrides-sdk-configuration) for the broader settings override problem.
+```python
+# WRONG — empty list is falsy, flag is silently omitted, all settings still load
+options = ClaudeAgentOptions(setting_sources=[])
+
+# WRONG — [""] passes the flag but CLI ignores empty strings, still loads all settings
+options = ClaudeAgentOptions(setting_sources=[""])
+
+# PARTIAL WORKAROUND — excludes ~/.claude/ but still loads .claude/settings.json in cwd
+options = ClaudeAgentOptions(setting_sources=["project"])
+
+# Use None (default) to load all sources explicitly
+options = ClaudeAgentOptions(setting_sources=None)
+```
+
+### #41: `ThinkingBlock` Missing `signature` Field Crashes Message Parser
+**Error**: `KeyError: 'signature'` (or a `CLIJSONDecodeError`) when iterating messages if the API returns a thinking content block without a `signature` field ([#786](https://github.com/anthropics/claude-agent-sdk-python/pull/786))
+**Cause**: The message parser does a direct dictionary key access for `signature` when constructing `ThinkingBlock`. Redacted thinking blocks (when extended thinking is active but the model elides the signature for safety reasons) and certain streaming edge cases can produce a thinking block without this field. The fix (using `.get("signature", "")`) is in open PR [#786](https://github.com/anthropics/claude-agent-sdk-python/pull/786), not yet released.
+**Workaround**: Wrap message iteration in a try/except to skip malformed thinking blocks:
+```python
+from claude_agent_sdk import CLIJSONDecodeError
+
+try:
+    async for msg in query(prompt="...", options=options):
+        process(msg)
+except (KeyError, CLIJSONDecodeError) as e:
+    if "signature" in str(e):
+        pass  # Skip redacted/malformed thinking blocks
+    else:
+        raise
+```
+Alternatively, avoid using `thinking={"type": "enabled", ...}` in contexts where redacted thinking is likely (e.g., safety-filtered responses).
+
 ---
 
 ## Changelog Highlights
@@ -2262,4 +2303,4 @@ Alternatively, use `setting_sources=["user", "project", "local"]` with the skill
 
 ---
 
-**Last verified**: 2026-04-07 | **SDK version**: 0.1.56
+**Last verified**: 2026-04-08 | **SDK version**: 0.1.56

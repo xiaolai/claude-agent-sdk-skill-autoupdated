@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-04-08
+
+- SDK TS v0.2.92 → v0.2.96; PY v0.1.56 unchanged
+- TS: thinking `display` option added, `apiProvider: 'mantle'` documented; SKILL-typescript.md updated to v0.2.96
+- PY: Added KI #40 (`setting_sources=[]` silently ignored), KI #41 (`ThinkingBlock` missing `signature` crash); updated KI #23 for merged thinking-flags PR #796
+- Typecheck false-positive (recurring stale-comma artifact); mended + verify passed 18/18 on attempt 2
+- [Full report](reports/2026-04-08.md)
+
 ## 2026-04-07
 
 - Research only, no version change (TS v0.2.92, PY v0.1.56 unchanged); GitHub API unavailable

@@ -1,7 +1,7 @@
-# Claude Agent SDK — TypeScript Reference (v0.2.96)
+# Claude Agent SDK — TypeScript Reference (v0.2.97)
 
 
-**Package**: `@anthropic-ai/claude-agent-sdk@0.2.96`
+**Package**: `@anthropic-ai/claude-agent-sdk@0.2.97`
 **Docs**: https://platform.claude.com/docs/en/agent-sdk/overview
 **Repo**: https://github.com/anthropics/claude-agent-sdk-typescript
 **Migration**: Renamed from `@anthropic-ai/claude-code`. See [migration guide](https://platform.claude.com/docs/en/agent-sdk/migration-guide).
@@ -324,7 +324,7 @@ if (agentIds.length > 0) {
 |--------|------|---------|-------------|
 | `model` | `string` | CLI default | Claude model to use |
 | `cwd` | `string` | `process.cwd()` | Working directory |
-| `systemPrompt` | `string \| { type: 'preset', preset: 'claude_code', append?: string }` | minimal | System prompt |
+| `systemPrompt` | `string \| { type: 'preset', preset: 'claude_code', append?: string, excludeDynamicSections?: boolean }` | minimal | System prompt (`excludeDynamicSections: true` strips per-user dynamic sections like cwd/git-status from the system prompt and re-injects them as the first user message, enabling cross-user prompt caching) |
 | `settingSources` | `SettingSource[]` | `[]` | `'user' \| 'project' \| 'local'` |
 | `env` | `Dict<string>` | `process.env` | Environment variables (set `CLAUDE_AGENT_SDK_CLIENT_APP` to identify your app in User-Agent, e.g. `'my-app/1.0.0'`) |
 | `abortController` | `AbortController` | — | Cancellation controller |
@@ -434,7 +434,7 @@ await q.setMcpServers(newServersConfig);    // Replace MCP servers mid-session
 
 // Plugin management
 await q.reloadPlugins();                    // Reload plugins from disk; returns { commands, agents, plugins, mcpServers, error_count }
-await q.getContextUsage();                  // Get context window usage breakdown by category — returns SDKControlGetContextUsageResponse (v0.2.96)
+await q.getContextUsage();                  // Get context window usage breakdown by category — returns SDKControlGetContextUsageResponse (v0.2.97)
 
 // File checkpointing (requires enableFileCheckpointing: true)
 await q.rewindFiles(userMessageUuid, { dryRun?: boolean }); // Rewind to checkpoint
@@ -508,6 +508,7 @@ type SDKControlGetContextUsageResponse = {
   messageBreakdown?: {
     toolCallTokens: number; toolResultTokens: number; attachmentTokens: number;
     assistantMessageTokens: number; userMessageTokens: number;
+    redirectedContextTokens: number;  // tokens from context redirected to user messages (e.g. excludeDynamicSections)
     toolCallsByType: { name: string; callTokens: number; resultTokens: number; }[];
     attachmentsByType: { name: string; tokens: number; }[];
   };
@@ -535,7 +536,7 @@ type SDKMessage =
   // Status & progress
   | SDKStatusMessage              // type: 'system', subtype: 'status' — status updates (e.g., 'compacting')
   | SDKSessionStateChangedMessage // type: 'system', subtype: 'session_state_changed' — idle/running/requires_action
-  | SDKAPIRetryMessage            // type: 'system', subtype: 'api_retry' — transient API error being retried (v0.2.96)
+  | SDKAPIRetryMessage            // type: 'system', subtype: 'api_retry' — transient API error being retried (v0.2.97)
   | SDKToolProgressMessage        // type: 'tool_progress' — tool execution progress with elapsed time
   | SDKToolUseSummaryMessage      // type: 'tool_use_summary' — summary of tool usage
   | SDKAuthStatusMessage          // type: 'auth_status' — authentication status
@@ -556,7 +557,7 @@ type SDKMessage =
   | SDKPromptSuggestionMessage    // type: 'prompt_suggestion' — predicted next user prompt (requires promptSuggestions: true)
 ```
 
-### SDKAPIRetryMessage (v0.2.96)
+### SDKAPIRetryMessage (v0.2.97)
 
 ```typescript
 { type: 'system', subtype: 'api_retry', uuid, session_id,
@@ -804,6 +805,15 @@ return {
   }
 };
 
+// UserPromptSubmit only: set a custom session title
+return {
+  hookSpecificOutput: {
+    hookEventName: 'UserPromptSubmit',
+    sessionTitle: 'Auth module refactor',  // sets/overrides the session title
+    additionalContext: 'Extra context for this prompt.'
+  }
+};
+
 // SessionStart only: inject an initial user message at session start
 // (hookSpecificOutput.initialUserMessage overrides what the SDK sends as the first turn)
 // watchPaths registers file paths to watch for FileChanged events
@@ -863,7 +873,7 @@ Common fields on all hooks: `session_id`, `transcript_path`, `cwd`, `permission_
 | `tool_name`, `tool_input`, `tool_use_id` | PreToolUse, PostToolUse, PostToolUseFailure, PermissionRequest |
 | `tool_response` | PostToolUse |
 | `error`, `is_interrupt` | PostToolUseFailure |
-| `prompt` | UserPromptSubmit |
+| `prompt`, `session_title?` | UserPromptSubmit |
 | `stop_hook_active` | Stop, SubagentStop |
 | `last_assistant_message` | Stop, StopFailure, SubagentStop (text of last assistant message, avoids parsing transcript) |
 | `error` (`SDKAssistantMessageError`), `error_details?`, `last_assistant_message?` | StopFailure |
@@ -1828,12 +1838,12 @@ Or with pnpm: `"pnpm": { "overrides": { "@anthropic-ai/sdk": "^0.81.0" } }`. Mon
 
 ---
 
-## Changelog Highlights (v0.2.12 → v0.2.96)
+## Changelog Highlights (v0.2.12 → v0.2.97)
 
 | Version | Change |
 |---------|--------|
-| v0.2.96 | Added `PermissionDenied` hook event (27 total) |
-| v0.2.96 | Added `Query.getContextUsage()` method (context window breakdown by category); made `SDKUserMessage.session_id` optional; added `@anthropic-ai/sdk` and `@modelcontextprotocol/sdk` as explicit dependencies (fixes type-any regression) |
+| v0.2.97 | Added `PermissionDenied` hook event (27 total) |
+| v0.2.97 | Added `Query.getContextUsage()` method (context window breakdown by category); made `SDKUserMessage.session_id` optional; added `@anthropic-ai/sdk` and `@modelcontextprotocol/sdk` as explicit dependencies (fixes type-any regression) |
 | v0.2.85 | Added `TaskCreated` hook event; added `taskBudget: { total: number }` option (@alpha); added `Query.reloadPlugins()` and `Query.seedReadState()` methods |
 | v0.2.71 | Fixed `Agent` tool returning `"Unknown tool: Agent"` in `query()` mode — subagent invocation via `tools: ['Agent']` + `agents` map now works ([#210](https://github.com/anthropics/claude-agent-sdk-typescript/issues/210)) |
 | v0.2.63 | Fixed `SDKRateLimitEvent` and `SDKPromptSuggestionMessage` missing from `sdk.d.ts` — `SDKMessage` now has full type safety ([#196](https://github.com/anthropics/claude-agent-sdk-typescript/issues/196), [#206](https://github.com/anthropics/claude-agent-sdk-typescript/issues/206)) |
@@ -1851,4 +1861,4 @@ Or with pnpm: `"pnpm": { "overrides": { "@anthropic-ai/sdk": "^0.81.0" } }`. Mon
 
 ---
 
-**Last verified**: 2026-04-08 | **SDK version**: 0.2.96
+**Last verified**: 2026-04-09 | **SDK version**: 0.2.97

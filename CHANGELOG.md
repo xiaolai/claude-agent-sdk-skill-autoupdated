@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-04-09
+
+- SDK TS v0.2.96 → v0.2.97; PY v0.1.56 → v0.1.58
+- TS: added `excludeDynamicSections` prompt-caching option, `redirectedContextTokens` in context usage, `sessionTitle` in `UserPromptSubmit` hook
+- PY: version bumped but research agent failed (hit 60-turn limit) — 0.1.58 changes not yet documented; `lastAuditedVersion` remains 0.1.56
+- Typecheck false-positive (recurring stale-comma artifact); mended + verify passed 28/28 on attempt 2
+- [Full report](reports/2026-04-09.md)
+
 ## 2026-04-08
 
 - SDK TS v0.2.92 → v0.2.96; PY v0.1.56 unchanged

@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-04-10
+
+- SDK TS v0.2.97 → v0.2.98; PY v0.1.58 unchanged
+- TS: added `network.allowMachLookup` sandbox option (macOS only — Playwright, iOS Simulator, gcloud support); prior v0.2.97 changelog entries re-attributed to v0.2.98
+- Typecheck false-positive (recurring stale-comma import artifact); mended in 1 pass; verify passed 18/18 on attempt 2
+- [Full report](reports/2026-04-10.md)
+
 ## 2026-04-09
 
 - SDK TS v0.2.96 → v0.2.97; PY v0.1.56 → v0.1.58

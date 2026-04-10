@@ -2306,4 +2306,4 @@ Alternatively, avoid using `thinking={"type": "enabled", ...}` in contexts where
 
 ---
 
-**Last verified**: 2026-04-09 | **SDK version**: 0.1.58
+**Last verified**: 2026-04-10 | **SDK version**: 0.1.58

@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-04-11
+
+- SDK TS v0.2.98 → v0.2.101; PY v0.1.58 unchanged
+- TS: added `SDKTaskUpdatedMessage` (task_updated subtype), `unattributedTokens` in context usage; SDK now emits 25 message types
+- PY: corrected KI #23 version wording; added missing v0.1.57 changelog entry (thinking-flag fix, `auto` PermissionMode)
+- Typecheck false-positive (recurring stale-comma import artifact); mended in 1 pass; verify passed 18/18 on attempt 2
+- [Full report](reports/2026-04-11.md)
+
 ## 2026-04-10
 
 - SDK TS v0.2.97 → v0.2.98; PY v0.1.58 unchanged

@@ -2019,16 +2019,16 @@ result = subprocess.run([sys.executable, "-c", query_script], capture_output=Tru
 **Error**: Providers that distinguish between *omitted* thinking settings and *explicitly disabled* thinking fail or behave unexpectedly when using `thinking={"type": "disabled"}` ([#693](https://github.com/anthropics/claude-agent-sdk-python/issues/693))
 **Cause**: The SDK converts `thinking={"type": "disabled"}` to `--max-thinking-tokens 0` rather than transmitting the structured `thinking` configuration end-to-end. Anthropic-compatible providers (Bedrock, Vertex, third-party proxies) that parse the `thinking` field directly are affected. Similarly, `thinking={"type": "adaptive"}` was incorrectly mapped to `--max-thinking-tokens 32000` instead of a proper adaptive mode flag.
 **Fix**: Resolved in v0.1.57 (PR [#796](https://github.com/anthropics/claude-agent-sdk-python/pull/796)). Correct flag mappings: `adaptive` → `--thinking adaptive`, `disabled` → `--thinking disabled`, `enabled` → `--max-thinking-tokens <budget_tokens>`. Upgrade to v0.1.57+.
-**Workaround (v0.1.58 and earlier)**: Omit the `thinking` option entirely if the provider accepts "thinking not configured" as equivalent to disabled. If explicit disablement is required, there is no workaround — the SDK cannot currently pass the structured form.
+**Workaround (v0.1.56 and earlier, pre-v0.1.57)**: Omit the `thinking` option entirely if the provider accepts "thinking not configured" as equivalent to disabled. If explicit disablement is required, there is no workaround — the SDK cannot currently pass the structured form.
 ```python
-# WRONG on v0.1.58 and earlier — converts to --max-thinking-tokens 0 (breaks some providers)
+# WRONG on v0.1.56 and earlier — converts to --max-thinking-tokens 0 (breaks some providers)
 options = ClaudeAgentOptions(thinking={"type": "disabled"})
 
-# ALSO WRONG on v0.1.58 — adaptive maps to --max-thinking-tokens 32000, not --thinking adaptive
+# ALSO WRONG on v0.1.56 and earlier — adaptive maps to --max-thinking-tokens 32000, not --thinking adaptive
 options = ClaudeAgentOptions(thinking={"type": "adaptive"})
 
 # FIXED in v0.1.57+ — now correctly maps all thinking types
-# WORKAROUND on older versions: omit entirely (provider interprets as no thinking)
+# WORKAROUND on v0.1.56 and earlier: omit entirely (provider interprets as no thinking)
 options = ClaudeAgentOptions()  # No thinking configured
 ```
 
@@ -2297,6 +2297,7 @@ Alternatively, avoid using `thinking={"type": "enabled", ...}` in contexts where
 | v0.1.58 | Fixed string prompt deadlock when hooks/MCP servers trigger many tool calls — `wait_for_result_and_end_input()` now spawned as background task ([#780](https://github.com/anthropics/claude-agent-sdk-python/pull/780)); fixed `--setting-sources` being passed as empty string when unset ([#778](https://github.com/anthropics/claude-agent-sdk-python/issues/778)); SDK MCP servers now fully functional with string prompts (see [#14](#14-sdk-mcp-servers-completely-non-functional-with-string-prompts)) |
 | v0.1.58 | `delete_session()` and `fork_session()` (offline session forking with `up_to_message_id` support) added; `ForkSessionResult` dataclass; `get_context_usage()` method on `ClaudeSDKClient` returns `ContextUsageResponse`; `session_id` field added to `ClaudeAgentOptions`; `ToolPermissionContext` now exposes `tool_use_id` and `agent_id` fields |
 | v0.1.58 | `dontAsk` added to `PermissionMode`; `is_error` propagated from SDK MCP tools ([#717](https://github.com/anthropics/claude-agent-sdk-python/issues/717)); `AssistantMessage`/`ResultMessage` expose dropped fields as typed attributes ([#718](https://github.com/anthropics/claude-agent-sdk-python/issues/718)); `resource_link`/`embedded_resource`/`audio` content types in SDK MCP tools ([#725](https://github.com/anthropics/claude-agent-sdk-python/issues/725)); SIGKILL fallback in `close()` ([#729](https://github.com/anthropics/claude-agent-sdk-python/issues/729)); stdin timeout removed for hooks/MCP servers ([#731](https://github.com/anthropics/claude-agent-sdk-python/issues/731)); `CLAUDECODE` env var automatically filtered ([#732](https://github.com/anthropics/claude-agent-sdk-python/issues/732)); non-blocking CLI discovery ([#722](https://github.com/anthropics/claude-agent-sdk-python/issues/722)); `CLAUDE_CODE_STREAM_CLOSE_TIMEOUT` respected by `query()` ([#743](https://github.com/anthropics/claude-agent-sdk-python/issues/743)); `SystemPromptFile` support added; `AgentDefinition` fields `disallowedTools`, `initialPrompt`, `maxTurns` added; `task_budget` option added; `connect(prompt=str)` now correctly sends the prompt instead of silently dropping it ([#769](https://github.com/anthropics/claude-agent-sdk-python/pull/769)); `control_cancel_request` messages now properly cancel in-flight hook callbacks ([#751](https://github.com/anthropics/claude-agent-sdk-python/pull/751)); `@tool` `input_schema` supports `typing.Annotated` for per-parameter descriptions ([#762](https://github.com/anthropics/claude-agent-sdk-python/pull/762)); bundled CLI updated to v2.1.87 |
+| v0.1.57 | `auto` added to `PermissionMode`; `SystemPromptPreset.exclude_dynamic_sections` field added (strips per-user dynamic sections for cross-user cache hits); `thinking` flag mapping fixed — `adaptive` now sends `--thinking adaptive`, `disabled` sends `--thinking disabled` instead of `--max-thinking-tokens 0` (PR [#796](https://github.com/anthropics/claude-agent-sdk-python/pull/796)) |
 | v0.1.50 | Full cross-platform release. All platforms now get: `skills`, `memory`, `mcpServers` on `AgentDefinition`; `usage` field on `AssistantMessage`; `rename_session()`, `tag_session()`; typed `RateLimitEvent`/`RateLimitInfo` message types; reverted Bedrock-breaking eager_input_streaming (see [#26](#26-pypi-release-was-incomplete--fixed-in-v0150)) |
 | v0.1.48 | Introduced `eager_input_streaming` with `include_partial_messages=True` (breaks Bedrock/Vertex — see [#21](#21-include_partial_messagestrue-breaks-tool-input-streaming-on-bedrockvertex)) |
 | v0.1.44 | Fixed `rate_limit_event` crash in message parser — unknown CLI message types now skipped gracefully; bundled CLI updated to v2.1.59 |
@@ -2306,4 +2307,4 @@ Alternatively, avoid using `thinking={"type": "enabled", ...}` in contexts where
 
 ---
 
-**Last verified**: 2026-04-10 | **SDK version**: 0.1.58
+**Last verified**: 2026-04-11 | **SDK version**: 0.1.58

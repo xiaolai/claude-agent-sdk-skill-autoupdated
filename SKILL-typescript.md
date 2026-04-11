@@ -1,7 +1,7 @@
-# Claude Agent SDK — TypeScript Reference (v0.2.98)
+# Claude Agent SDK — TypeScript Reference (v0.2.101)
 
 
-**Package**: `@anthropic-ai/claude-agent-sdk@0.2.98`
+**Package**: `@anthropic-ai/claude-agent-sdk@0.2.101`
 **Docs**: https://platform.claude.com/docs/en/agent-sdk/overview
 **Repo**: https://github.com/anthropics/claude-agent-sdk-typescript
 **Migration**: Renamed from `@anthropic-ai/claude-code`. See [migration guide](https://platform.claude.com/docs/en/agent-sdk/migration-guide).
@@ -434,7 +434,7 @@ await q.setMcpServers(newServersConfig);    // Replace MCP servers mid-session
 
 // Plugin management
 await q.reloadPlugins();                    // Reload plugins from disk; returns { commands, agents, plugins, mcpServers, error_count }
-await q.getContextUsage();                  // Get context window usage breakdown by category — returns SDKControlGetContextUsageResponse (v0.2.98)
+await q.getContextUsage();                  // Get context window usage breakdown by category — returns SDKControlGetContextUsageResponse (v0.2.101)
 
 // File checkpointing (requires enableFileCheckpointing: true)
 await q.rewindFiles(userMessageUuid, { dryRun?: boolean }); // Rewind to checkpoint
@@ -509,6 +509,7 @@ type SDKControlGetContextUsageResponse = {
     toolCallTokens: number; toolResultTokens: number; attachmentTokens: number;
     assistantMessageTokens: number; userMessageTokens: number;
     redirectedContextTokens: number;  // tokens from context redirected to user messages (e.g. excludeDynamicSections)
+    unattributedTokens: number;       // tokens not attributable to any specific category
     toolCallsByType: { name: string; callTokens: number; resultTokens: number; }[];
     attachmentsByType: { name: string; tokens: number; }[];
   };
@@ -521,7 +522,7 @@ type SDKControlGetContextUsageResponse = {
 
 ## Message Types
 
-The SDK emits 24 message types through the async generator:
+The SDK emits 25 message types through the async generator:
 
 ```typescript
 type SDKMessage =
@@ -536,7 +537,7 @@ type SDKMessage =
   // Status & progress
   | SDKStatusMessage              // type: 'system', subtype: 'status' — status updates (e.g., 'compacting')
   | SDKSessionStateChangedMessage // type: 'system', subtype: 'session_state_changed' — idle/running/requires_action
-  | SDKAPIRetryMessage            // type: 'system', subtype: 'api_retry' — transient API error being retried (v0.2.98)
+  | SDKAPIRetryMessage            // type: 'system', subtype: 'api_retry' — transient API error being retried (v0.2.101)
   | SDKToolProgressMessage        // type: 'tool_progress' — tool execution progress with elapsed time
   | SDKToolUseSummaryMessage      // type: 'tool_use_summary' — summary of tool usage
   | SDKAuthStatusMessage          // type: 'auth_status' — authentication status
@@ -547,6 +548,7 @@ type SDKMessage =
   | SDKHookResponseMessage        // type: 'system', subtype: 'hook_response' — hook outcome
   // Task & persistence
   | SDKTaskStartedMessage         // type: 'system', subtype: 'task_started' — emitted when background task begins
+  | SDKTaskUpdatedMessage         // type: 'system', subtype: 'task_updated' — incremental task state patch (status, description, etc.)
   | SDKTaskProgressMessage        // type: 'system', subtype: 'task_progress' — periodic progress updates for running tasks
   | SDKTaskNotificationMessage    // type: 'system', subtype: 'task_notification' — background task events
   | SDKFilesPersistedEvent        // type: 'system', subtype: 'files_persisted'
@@ -557,7 +559,7 @@ type SDKMessage =
   | SDKPromptSuggestionMessage    // type: 'prompt_suggestion' — predicted next user prompt (requires promptSuggestions: true)
 ```
 
-### SDKAPIRetryMessage (v0.2.98)
+### SDKAPIRetryMessage (v0.2.101)
 
 ```typescript
 { type: 'system', subtype: 'api_retry', uuid, session_id,
@@ -668,6 +670,7 @@ for await (const message of query({ prompt: "...", options })) {
       if (message.subtype === 'local_command_output') console.log('Slash cmd output:', message.content);
       if (message.subtype === 'elicitation_complete') console.log('Elicitation done:', message.mcp_server_name, message.elicitation_id);
       if (message.subtype === 'task_started') console.log('Task started:', message.task_id, message.description, message.task_type, message.prompt);  // task_type?: string; workflow_name?: string (when task_type is 'local_workflow'); prompt?: string
+      if (message.subtype === 'task_updated') console.log('Task updated:', message.task_id, message.patch);  // patch: { status?, description?, end_time?, total_paused_ms?, error?, is_backgrounded? } — merge into local task map
       if (message.subtype === 'task_progress') console.log('Task progress:', message.task_id, message.description, message.last_tool_name, message.usage, message.summary);  // usage: {total_tokens, tool_uses, duration_ms}; last_tool_name?: string; tool_use_id?: string; summary?: string (from agentProgressSummaries)
       if (message.subtype === 'task_notification') console.log('Task done:', message.task_id, message.status, message.tool_use_id, message.output_file, message.summary);  // output_file: string, summary: string, usage?: {total_tokens, tool_uses, duration_ms}
       break;
@@ -1839,13 +1842,13 @@ Or with pnpm: `"pnpm": { "overrides": { "@anthropic-ai/sdk": "^0.81.0" } }`. Mon
 
 ---
 
-## Changelog Highlights (v0.2.12 → v0.2.98)
+## Changelog Highlights (v0.2.12 → v0.2.101)
 
 | Version | Change |
 |---------|--------|
-| v0.2.98 | Added `network.allowMachLookup` sandbox option (macOS only — allows XPC/Mach service lookups needed for Playwright, iOS Simulator, Go-based tools with MITM proxy) |
-| v0.2.98 | Added `PermissionDenied` hook event (27 total) |
-| v0.2.98 | Added `Query.getContextUsage()` method (context window breakdown by category); made `SDKUserMessage.session_id` optional; added `@anthropic-ai/sdk` and `@modelcontextprotocol/sdk` as explicit dependencies (fixes type-any regression) |
+| v0.2.101 | Added `network.allowMachLookup` sandbox option (macOS only — allows XPC/Mach service lookups needed for Playwright, iOS Simulator, Go-based tools with MITM proxy) |
+| v0.2.101 | Added `PermissionDenied` hook event (27 total) |
+| v0.2.101 | Added `Query.getContextUsage()` method (context window breakdown by category); made `SDKUserMessage.session_id` optional; added `@anthropic-ai/sdk` and `@modelcontextprotocol/sdk` as explicit dependencies (fixes type-any regression) |
 | v0.2.85 | Added `TaskCreated` hook event; added `taskBudget: { total: number }` option (@alpha); added `Query.reloadPlugins()` and `Query.seedReadState()` methods |
 | v0.2.71 | Fixed `Agent` tool returning `"Unknown tool: Agent"` in `query()` mode — subagent invocation via `tools: ['Agent']` + `agents` map now works ([#210](https://github.com/anthropics/claude-agent-sdk-typescript/issues/210)) |
 | v0.2.63 | Fixed `SDKRateLimitEvent` and `SDKPromptSuggestionMessage` missing from `sdk.d.ts` — `SDKMessage` now has full type safety ([#196](https://github.com/anthropics/claude-agent-sdk-typescript/issues/196), [#206](https://github.com/anthropics/claude-agent-sdk-typescript/issues/206)) |
@@ -1863,4 +1866,4 @@ Or with pnpm: `"pnpm": { "overrides": { "@anthropic-ai/sdk": "^0.81.0" } }`. Mon
 
 ---
 
-**Last verified**: 2026-04-10 | **SDK version**: 0.2.98
+**Last verified**: 2026-04-11 | **SDK version**: 0.2.101

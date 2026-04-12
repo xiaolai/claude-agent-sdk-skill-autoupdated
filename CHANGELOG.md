@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-04-12
+
+- SDK TS v0.2.101 → v0.2.104; PY v0.1.58 unchanged
+- PY: added KI #42 (`TaskNotificationMessage` leaks into next `receive_response()` turn from background tasks); added KI #43 (`context-management` beta header breaks OpenRouter/third-party providers in SDK ≥ v0.1.46)
+- Typecheck false-positive (recurring stale-comma import artifact); mended in 1 pass; verify passed 18/18 on attempt 2
+- [Full report](reports/2026-04-12.md)
+
 ## 2026-04-11
 
 - SDK TS v0.2.98 → v0.2.101; PY v0.1.58 unchanged

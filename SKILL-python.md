@@ -2284,6 +2284,50 @@ except (KeyError, CLIJSONDecodeError) as e:
 ```
 Alternatively, avoid using `thinking={"type": "enabled", ...}` in contexts where redacted thinking is likely (e.g., safety-filtered responses).
 
+### #42: Background `TaskNotificationMessage` Leaks Into Next `receive_response()` Turn
+**Error**: When a background task (spawned via the `Task` tool with `run_in_background=true`) completes between turns, its `TaskNotificationMessage` leaks into the next `receive_response()` call. Claude responds to the stale notification instead of the new user prompt, producing unexpected or empty responses ([#788](https://github.com/anthropics/claude-agent-sdk-python/issues/788))
+**Cause**: CLI sends the task completion notification asynchronously; the Python SDK does not suppress stale inter-turn task messages. A fix PR ([#791](https://github.com/anthropics/claude-agent-sdk-python/issues/791)) is open but not yet released.
+**Workaround**: Track pending task IDs and detect/discard contaminated turns, then re-send the prompt:
+```python
+from claude_agent_sdk import (
+    ClaudeSDKClient, ClaudeAgentOptions,
+    TaskStartedMessage, TaskNotificationMessage, ResultMessage
+)
+
+async def smart_turn(client, prompt, stale_ids, max_retries=5):
+    """Sends a query and retries if a stale TaskNotification leaks into the turn."""
+    for attempt in range(max_retries):
+        await client.query(prompt)
+        found_stale = False
+        async for msg in client.receive_response():
+            if isinstance(msg, TaskNotificationMessage) and msg.task_id in stale_ids:
+                found_stale = True  # Stale notification leaked — discard this turn
+            if isinstance(msg, ResultMessage):
+                break
+        if not found_stale:
+            return  # Clean turn — done
+        # Stale turn detected — retry
+```
+To use: pass a `stale_ids` set containing task IDs from `TaskStartedMessage` objects seen in the previous turn that had not yet emitted a `TaskNotificationMessage`.
+
+### #43: Newer CLI Versions Break OpenRouter and Third-Party Providers (`context-management` Beta Header)
+**Error**: `API Error: 400 No endpoints available that support Anthropic's context management features (context-management-2025-06-27). Context management requires a supported provider (Anthropic).` when using SDK v0.1.46+ with OpenRouter or other third-party Anthropic-compatible providers ([#789](https://github.com/anthropics/claude-agent-sdk-python/issues/789))
+**Cause**: CLI versions after 2.1.63 (SDK ≥ v0.1.46) include the `context-management-2025-06-27` beta header in API requests. Third-party providers (OpenRouter, local proxies, self-hosted endpoints) reject this unknown header with a 400 error. There is currently no SDK-level option to suppress it.
+**Workaround**: Either pin to an older SDK version (≤ v0.1.45, bundled with CLI ≤ 2.1.63) or point `cli_path` to a locally installed older CLI binary:
+```python
+import subprocess, shutil
+
+# Option 1: pin in requirements.txt
+# claude-agent-sdk==0.1.45
+
+# Option 2: use a globally installed older CLI to bypass the bundled one
+options = ClaudeAgentOptions(
+    cli_path=shutil.which("claude"),  # Must be CLI ≤ 2.1.63; verify with: claude --version
+    model="openai/gpt-4o",           # Or your provider's model alias
+)
+```
+**Note**: Pinning to v0.1.45 loses all SDK improvements since that version (no `task_budget`, no `get_context_usage()`, no `exclude_dynamic_sections`, no background task messages, etc.). Monitor [#789](https://github.com/anthropics/claude-agent-sdk-python/issues/789) for an official fix.
+
 ---
 
 ## Changelog Highlights
@@ -2307,4 +2351,4 @@ Alternatively, avoid using `thinking={"type": "enabled", ...}` in contexts where
 
 ---
 
-**Last verified**: 2026-04-11 | **SDK version**: 0.1.58
+**Last verified**: 2026-04-12 | **SDK version**: 0.1.58

@@ -1866,4 +1866,4 @@ Or with pnpm: `"pnpm": { "overrides": { "@anthropic-ai/sdk": "^0.81.0" } }`. Mon
 
 ---
 
-**Last verified**: 2026-04-12 | **SDK version**: 0.2.104
+**Last verified**: 2026-04-13 | **SDK version**: 0.2.104

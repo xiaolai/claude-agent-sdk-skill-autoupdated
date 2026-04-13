@@ -299,7 +299,7 @@ options = ClaudeAgentOptions(
 | `tools` | `list[str] \| ToolsPreset \| None` | `None` | Tool configuration |
 | `allowed_tools` | `list[str]` | `[]` | Allowed tool names |
 | `disallowed_tools` | `list[str]` | `[]` | Blocked tool names |
-| `permission_mode` | `PermissionMode \| None` | `None` | See [Permissions](#permissions) for all 5 modes |
+| `permission_mode` | `PermissionMode \| None` | `None` | See [Permissions](#permissions) for all 6 modes |
 | `can_use_tool` | `CanUseTool \| None` | `None` | Custom permission callback |
 | `permission_prompt_tool_name` | `str \| None` | `None` | Route permission prompts through a named MCP tool |
 
@@ -2351,4 +2351,4 @@ options = ClaudeAgentOptions(
 
 ---
 
-**Last verified**: 2026-04-12 | **SDK version**: 0.1.58
+**Last verified**: 2026-04-13 | **SDK version**: 0.1.58

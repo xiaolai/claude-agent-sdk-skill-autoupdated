@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-04-13
+
+- No version changes; TS v0.2.104 and PY v0.1.58 unchanged
+- Update agent applied minor doc correction (permission_mode count: 5 → 6) and refreshed last-verified dates
+- Research agents ran (91 + 76 turns); no new issues found beyond already-tracked state
+- Typecheck recurring false-positive (stale-comma artifact); verify passed 2/2; no mending needed
+- [Full report](reports/2026-04-13.md)
+
 ## 2026-04-12
 
 - SDK TS v0.2.101 → v0.2.104; PY v0.1.58 unchanged

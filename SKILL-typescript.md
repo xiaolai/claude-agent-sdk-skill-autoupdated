@@ -1,7 +1,7 @@
-# Claude Agent SDK — TypeScript Reference (v0.2.104)
+# Claude Agent SDK — TypeScript Reference (v0.2.107)
 
 
-**Package**: `@anthropic-ai/claude-agent-sdk@0.2.104`
+**Package**: `@anthropic-ai/claude-agent-sdk@0.2.107`
 **Docs**: https://platform.claude.com/docs/en/agent-sdk/overview
 **Repo**: https://github.com/anthropics/claude-agent-sdk-typescript
 **Migration**: Renamed from `@anthropic-ai/claude-code`. See [migration guide](https://platform.claude.com/docs/en/agent-sdk/migration-guide).
@@ -434,7 +434,7 @@ await q.setMcpServers(newServersConfig);    // Replace MCP servers mid-session
 
 // Plugin management
 await q.reloadPlugins();                    // Reload plugins from disk; returns { commands, agents, plugins, mcpServers, error_count }
-await q.getContextUsage();                  // Get context window usage breakdown by category — returns SDKControlGetContextUsageResponse (v0.2.104)
+await q.getContextUsage();                  // Get context window usage breakdown by category — returns SDKControlGetContextUsageResponse (v0.2.107)
 
 // File checkpointing (requires enableFileCheckpointing: true)
 await q.rewindFiles(userMessageUuid, { dryRun?: boolean }); // Rewind to checkpoint
@@ -537,7 +537,7 @@ type SDKMessage =
   // Status & progress
   | SDKStatusMessage              // type: 'system', subtype: 'status' — status updates (e.g., 'compacting')
   | SDKSessionStateChangedMessage // type: 'system', subtype: 'session_state_changed' — idle/running/requires_action
-  | SDKAPIRetryMessage            // type: 'system', subtype: 'api_retry' — transient API error being retried (v0.2.104)
+  | SDKAPIRetryMessage            // type: 'system', subtype: 'api_retry' — transient API error being retried (v0.2.107)
   | SDKToolProgressMessage        // type: 'tool_progress' — tool execution progress with elapsed time
   | SDKToolUseSummaryMessage      // type: 'tool_use_summary' — summary of tool usage
   | SDKAuthStatusMessage          // type: 'auth_status' — authentication status
@@ -559,7 +559,7 @@ type SDKMessage =
   | SDKPromptSuggestionMessage    // type: 'prompt_suggestion' — predicted next user prompt (requires promptSuggestions: true)
 ```
 
-### SDKAPIRetryMessage (v0.2.104)
+### SDKAPIRetryMessage (v0.2.107)
 
 ```typescript
 { type: 'system', subtype: 'api_retry', uuid, session_id,
@@ -1687,12 +1687,11 @@ const q = query({
 **Impact**: Affects claude.ai Pro subscribers who have fast mode available — `settings.fastMode` is silently ignored in Node.js environments despite TypeScript types suggesting it is available.
 **Workaround**: Run your application with the Bun runtime (`bun run app.ts`), which enables the native binary required for fast mode. There is no workaround for Node.js-only environments.
 
-### #38: MCP server processes remain as zombies after session ends
+### #38: MCP server processes remain as zombies after session ends ✅ Fixed in v0.2.94
 **Error**: `node.exe` / `python.exe` processes accumulate after multiple sessions ([#219](https://github.com/anthropics/claude-agent-sdk-typescript/issues/219))
-**Cause**: The SDK does not guarantee cleanup of spawned MCP server child processes when sessions end — including timeouts, errors, and `close()` calls. No session-scoped process grouping is applied.
-**Impact**: After 5–10 sessions, dozens of orphaned processes accumulate, consuming memory and causing port conflicts.
-**Partial workaround**: Use externally-managed MCP servers (e.g., `stdio` servers you start and stop yourself) rather than relying on the SDK to spawn them. For SDK-managed servers, you can snapshot PIDs before and after a session and kill the difference — but this approach fails for concurrent sessions since processes from different sessions cannot be distinguished.
-**Note**: Using `stdio` MCP servers launched and managed outside the SDK lifecycle avoids this issue entirely.
+**Cause**: The SDK did not guarantee cleanup of spawned MCP server child processes when sessions end — including timeouts, errors, and `close()` calls. No session-scoped process grouping was applied.
+**Fix**: Upgrade to `@anthropic-ai/claude-agent-sdk@0.2.94` or later — MCP server child processes are now cleaned up when a `query()` session ends.
+**Legacy workaround** (pre-v0.2.94): Use externally-managed MCP servers (e.g., `stdio` servers you start and stop yourself) rather than relying on the SDK to spawn them.
 
 ### #39: Sandbox cannot be locked down to the project directory — default allows full filesystem read access
 **Error**: No error thrown — sandbox with `filesystem.denyRead` cannot be used to restrict reads to just the working directory ([#231](https://github.com/anthropics/claude-agent-sdk-typescript/issues/231))
@@ -1840,15 +1839,43 @@ agents: {
 ```
 Or with pnpm: `"pnpm": { "overrides": { "@anthropic-ai/sdk": "^0.81.0" } }`. Monitor for an SDK release that updates its bundled type baseline.
 
+### #50: `outputFormat` with nested object schemas returns `subtype: 'success'` but `structured_output` is absent
+**Error**: `message.structured_output` is `undefined` even though `message.subtype === 'success'` when using `outputFormat` with schemas containing nested objects ([#277](https://github.com/anthropics/claude-agent-sdk-typescript/issues/277))
+**Cause**: When the model wraps its JSON output in markdown code fences (e.g., ` ```json ... ``` `) rather than returning raw JSON, the SDK's structured output extractor fails to parse the response. For simple flat schemas (2–3 top-level fields) the model tends to comply and return raw JSON; for nested schemas with objects-within-objects it wraps JSON in prose, leaving `structured_output` absent. The SDK should either retry or emit `error_max_structured_output_retries` but instead returns `subtype: 'success'` with no `structured_output`.
+**Impact**: Callers that assume `subtype === 'success'` implies `structured_output` is populated will get `undefined` silently. Affects complex schemas with nested objects; simple flat schemas are typically fine.
+**Workaround**: Always guard on `structured_output` presence, then fall back to parsing the raw `result` string if absent:
+```typescript
+if (msg.type === 'result' && msg.subtype === 'success') {
+  if (msg.structured_output) {
+    // Happy path
+    const data = schema.parse(msg.structured_output);
+  } else if (msg.result) {
+    // Extract JSON from markdown-wrapped result
+    const jsonMatch = msg.result.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (jsonMatch) {
+      const data = schema.parse(JSON.parse(jsonMatch[1]));
+    }
+  }
+}
+```
+**Note**: v0.2.105 fixed a related issue where `error_max_structured_output_retries` was incorrectly emitted when the final retry actually succeeded — the nested schema silent-success bug tracked by [#277](https://github.com/anthropics/claude-agent-sdk-typescript/issues/277) is a separate open issue.
+
 ---
 
-## Changelog Highlights (v0.2.12 → v0.2.104)
+## Changelog Highlights (v0.2.12 → v0.2.107)
 
 | Version | Change |
 |---------|--------|
-| v0.2.104 | Added `network.allowMachLookup` sandbox option (macOS only — allows XPC/Mach service lookups needed for Playwright, iOS Simulator, Go-based tools with MITM proxy) |
-| v0.2.104 | Added `PermissionDenied` hook event (27 total) |
-| v0.2.104 | Added `Query.getContextUsage()` method (context window breakdown by category); made `SDKUserMessage.session_id` optional; added `@anthropic-ai/sdk` and `@modelcontextprotocol/sdk` as explicit dependencies (fixes type-any regression) |
+| v0.2.105 | Fixed `error_max_structured_output_retries` being incorrectly emitted when the final retry attempt succeeded — valid `structured_output` is now preserved |
+| v0.2.105 | Added `system/memory_recall` event and `memory_paths` on `system/init` for SDK renderers to surface memory operations |
+| v0.2.107 | Added `network.allowMachLookup` sandbox option (macOS only — allows XPC/Mach service lookups needed for Playwright, iOS Simulator, Go-based tools with MITM proxy) |
+| v0.2.107 | Added `PermissionDenied` hook event (27 total) |
+| v0.2.107 | Added `Query.getContextUsage()` method (context window breakdown by category); made `SDKUserMessage.session_id` optional; added `@anthropic-ai/sdk` and `@modelcontextprotocol/sdk` as explicit dependencies (fixes type-any regression) |
+| v0.2.94 | Fixed MCP server child processes not being cleaned up when `query()` session ends — resolves zombie process accumulation ([Known Issue #38](#38-mcp-server-processes-remain-as-zombies-after-session-ends--fixed-in-v0294)) |
+| v0.2.94 | Fixed `getContextUsage()` to include agents passed via `options.agents` in the `agents` breakdown |
+| v0.2.92 | Fixed file-based agents from `.claude/agents/` not being discovered as invocable subagent types (regression since v0.2.87) |
+| v0.2.91 | Added `'auto'` to public `PermissionMode` type; `sandbox.failIfUnavailable` now defaults to `true` when `sandbox.enabled: true` — SDK exits with error if sandbox deps missing; added `terminal_reason` field to result messages |
+| v0.2.89 | Added `listSubagents()` and `getSubagentMessages()` — retrieve subagent conversation history; added `includeSystemMessages` option to `getSessionMessages()` |
 | v0.2.85 | Added `TaskCreated` hook event; added `taskBudget: { total: number }` option (@alpha); added `Query.reloadPlugins()` and `Query.seedReadState()` methods |
 | v0.2.71 | Fixed `Agent` tool returning `"Unknown tool: Agent"` in `query()` mode — subagent invocation via `tools: ['Agent']` + `agents` map now works ([#210](https://github.com/anthropics/claude-agent-sdk-typescript/issues/210)) |
 | v0.2.63 | Fixed `SDKRateLimitEvent` and `SDKPromptSuggestionMessage` missing from `sdk.d.ts` — `SDKMessage` now has full type safety ([#196](https://github.com/anthropics/claude-agent-sdk-typescript/issues/196), [#206](https://github.com/anthropics/claude-agent-sdk-typescript/issues/206)) |
@@ -1866,4 +1893,4 @@ Or with pnpm: `"pnpm": { "overrides": { "@anthropic-ai/sdk": "^0.81.0" } }`. Mon
 
 ---
 
-**Last verified**: 2026-04-13 | **SDK version**: 0.2.104
+**Last verified**: 2026-04-14 | **SDK version**: 0.2.107

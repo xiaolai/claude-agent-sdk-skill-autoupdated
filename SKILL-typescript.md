@@ -1,7 +1,7 @@
-# Claude Agent SDK — TypeScript Reference (v0.2.107)
+# Claude Agent SDK — TypeScript Reference (v0.2.109)
 
 
-**Package**: `@anthropic-ai/claude-agent-sdk@0.2.107`
+**Package**: `@anthropic-ai/claude-agent-sdk@0.2.109`
 **Docs**: https://platform.claude.com/docs/en/agent-sdk/overview
 **Repo**: https://github.com/anthropics/claude-agent-sdk-typescript
 **Migration**: Renamed from `@anthropic-ai/claude-code`. See [migration guide](https://platform.claude.com/docs/en/agent-sdk/migration-guide).
@@ -434,7 +434,7 @@ await q.setMcpServers(newServersConfig);    // Replace MCP servers mid-session
 
 // Plugin management
 await q.reloadPlugins();                    // Reload plugins from disk; returns { commands, agents, plugins, mcpServers, error_count }
-await q.getContextUsage();                  // Get context window usage breakdown by category — returns SDKControlGetContextUsageResponse (v0.2.107)
+await q.getContextUsage();                  // Get context window usage breakdown by category — returns SDKControlGetContextUsageResponse (v0.2.109)
 
 // File checkpointing (requires enableFileCheckpointing: true)
 await q.rewindFiles(userMessageUuid, { dryRun?: boolean }); // Rewind to checkpoint
@@ -537,7 +537,7 @@ type SDKMessage =
   // Status & progress
   | SDKStatusMessage              // type: 'system', subtype: 'status' — status updates (e.g., 'compacting')
   | SDKSessionStateChangedMessage // type: 'system', subtype: 'session_state_changed' — idle/running/requires_action
-  | SDKAPIRetryMessage            // type: 'system', subtype: 'api_retry' — transient API error being retried (v0.2.107)
+  | SDKAPIRetryMessage            // type: 'system', subtype: 'api_retry' — transient API error being retried (v0.2.109)
   | SDKToolProgressMessage        // type: 'tool_progress' — tool execution progress with elapsed time
   | SDKToolUseSummaryMessage      // type: 'tool_use_summary' — summary of tool usage
   | SDKAuthStatusMessage          // type: 'auth_status' — authentication status
@@ -559,7 +559,7 @@ type SDKMessage =
   | SDKPromptSuggestionMessage    // type: 'prompt_suggestion' — predicted next user prompt (requires promptSuggestions: true)
 ```
 
-### SDKAPIRetryMessage (v0.2.107)
+### SDKAPIRetryMessage (v0.2.109)
 
 ```typescript
 { type: 'system', subtype: 'api_retry', uuid, session_id,
@@ -1860,17 +1860,57 @@ if (msg.type === 'result' && msg.subtype === 'success') {
 ```
 **Note**: v0.2.105 fixed a related issue where `error_max_structured_output_retries` was incorrectly emitted when the final retry actually succeeded — the nested schema silent-success bug tracked by [#277](https://github.com/anthropics/claude-agent-sdk-typescript/issues/277) is a separate open issue.
 
+### #51: `listSessions()` spawns a full CLI subprocess — 900MB+ memory per call, unbounded growth when polling
+**Error**: RSS memory grows from ~77MB to ~950MB after two calls; 337MB of ArrayBuffers from stdio pipe buffers are never freed ([#268](https://github.com/anthropics/claude-agent-sdk-typescript/issues/268))
+**Cause**: `listSessions()` spawns a full Claude Code CLI subprocess via stdio pipes to enumerate `~/.claude/projects/` session files. The spawned process's entire runtime (Node.js + bundled code) loads into memory, and stdio pipe buffers accumulate without being reclaimed by the GC even after the call completes.
+**Impact**: Calling `listSessions()` in any polling loop (e.g., every 30s to update a session picker) causes unbounded memory growth. In testing, 30 polling calls consumed 1,340MB with no memory recovery. This makes periodic session listing impractical with the SDK function.
+**Workaround**: Scan `~/.claude/projects/` directly on the filesystem instead of calling `listSessions()`. Each subdirectory contains `<sessionId>.jsonl` files; read their `mtime` for `lastModified`:
+```typescript
+import { readdir, stat } from "fs/promises";
+import { join, basename } from "path";
+import os from "os";
+
+async function listSessionsDirect(projectDir?: string) {
+  const projectsDir = join(os.homedir(), ".claude", "projects");
+  const entries: { sessionId: string; lastModified: number }[] = [];
+  for (const proj of await readdir(projectsDir, { withFileTypes: true })) {
+    if (!proj.isDirectory()) continue;
+    const projPath = join(projectsDir, proj.name);
+    for (const file of await readdir(projPath)) {
+      if (!file.endsWith(".jsonl")) continue;
+      const filePath = join(projPath, file);
+      const { mtimeMs } = await stat(filePath);
+      entries.push({ sessionId: basename(file, ".jsonl"), lastModified: mtimeMs });
+    }
+  }
+  return entries.sort((a, b) => b.lastModified - a.lastModified);
+}
+```
+This approach stays under 80MB RSS regardless of polling frequency.
+
+### #52: `PostToolUse` callback-only hooks: return value (`updatedMCPToolOutput`) silently discarded
+**Error**: MCP tool output in the transcript and live API calls remains unchanged even when a `PostToolUse` callback returns `{ updatedMCPToolOutput: "..." }` ([#280](https://github.com/anthropics/claude-agent-sdk-typescript/issues/280))
+**Cause**: The SDK hook executor has two paths: (1) a mixed-hooks path (≥1 non-callback hook) that extracts and persists `hookSpecificOutput` fields, and (2) a callback-only fast path used when all hooks are JavaScript callbacks (the normal SDK pattern). The fast path runs `await c.callback(...); return;` and discards the return value entirely, leaving the original tool response unchanged.
+**Impact**: Any application using `PostToolUse` callbacks to rewrite, redact, or replace MCP tool responses (e.g., sanitize PII, truncate large outputs, replace errors with custom messages) will find that modifications are silently ignored — neither persisted to the JSONL transcript nor visible to the model in subsequent API calls.
+**Workaround**: Post-process MCP tool results at transcript persist time — after the `query()` completes, read the session JSONL file via `getSessionMessages()`, apply your transformations, and write to your own storage backend. There is currently no hook-based workaround that applies the modification in-flight.
+
+### #53: Runtime `<system-reminder>` injections bust prompt cache prefix every turn — `cache_create` instead of `cache_read` on every call
+**Symptom**: Prompt cache hit rate near 0% for user messages despite identical content; `cache_create` used every turn instead of `cache_read`; ~11K message tokens recalculated per turn (~$0.08/turn in extra input costs) ([#263](https://github.com/anthropics/claude-agent-sdk-typescript/issues/263), [#269](https://github.com/anthropics/claude-agent-sdk-typescript/issues/269))
+**Cause**: The SDK injects `<system-reminder>` blocks into the outgoing user message as a multi-block array (e.g., `[{ type: "text", text: "user message" }, { type: "text", text: "<system-reminder>...</system-reminder>" }]`). When replaying conversation history for the next turn, the same message is serialized as a plain string. The format mismatch (array → string) combined with reminder content changing per turn prevents the API from finding a cache-hit prefix, forcing the entire messages-array cache to be invalidated and re-created on every turn.
+**Workaround**: Use an HTTP proxy via `ANTHROPIC_BASE_URL` that intercepts outgoing requests and moves `cache_control: { type: "ephemeral" }` from the latest user message to the second-to-latest user message. This approximates what a correctly-replayed history would look like and restores prefix caching. Note: this workaround is fragile and requires ongoing maintenance as the SDK evolves. An official fix (preserve reminders in replay, or always use array format) has been proposed but not yet merged.
+**Note**: Issue [#269](https://github.com/anthropics/claude-agent-sdk-typescript/issues/269) (closed as duplicate) documents detailed reproduction steps and three proposed fixes for this root cause.
+
 ---
 
-## Changelog Highlights (v0.2.12 → v0.2.107)
+## Changelog Highlights (v0.2.12 → v0.2.109)
 
 | Version | Change |
 |---------|--------|
 | v0.2.105 | Fixed `error_max_structured_output_retries` being incorrectly emitted when the final retry attempt succeeded — valid `structured_output` is now preserved |
 | v0.2.105 | Added `system/memory_recall` event and `memory_paths` on `system/init` for SDK renderers to surface memory operations |
-| v0.2.107 | Added `network.allowMachLookup` sandbox option (macOS only — allows XPC/Mach service lookups needed for Playwright, iOS Simulator, Go-based tools with MITM proxy) |
-| v0.2.107 | Added `PermissionDenied` hook event (27 total) |
-| v0.2.107 | Added `Query.getContextUsage()` method (context window breakdown by category); made `SDKUserMessage.session_id` optional; added `@anthropic-ai/sdk` and `@modelcontextprotocol/sdk` as explicit dependencies (fixes type-any regression) |
+| v0.2.109 | Added `network.allowMachLookup` sandbox option (macOS only — allows XPC/Mach service lookups needed for Playwright, iOS Simulator, Go-based tools with MITM proxy) |
+| v0.2.109 | Added `PermissionDenied` hook event (27 total) |
+| v0.2.109 | Added `Query.getContextUsage()` method (context window breakdown by category); made `SDKUserMessage.session_id` optional; added `@anthropic-ai/sdk` and `@modelcontextprotocol/sdk` as explicit dependencies (fixes type-any regression) |
 | v0.2.94 | Fixed MCP server child processes not being cleaned up when `query()` session ends — resolves zombie process accumulation ([Known Issue #38](#38-mcp-server-processes-remain-as-zombies-after-session-ends--fixed-in-v0294)) |
 | v0.2.94 | Fixed `getContextUsage()` to include agents passed via `options.agents` in the `agents` breakdown |
 | v0.2.92 | Fixed file-based agents from `.claude/agents/` not being discovered as invocable subagent types (regression since v0.2.87) |
@@ -1893,4 +1933,4 @@ if (msg.type === 'result' && msg.subtype === 'success') {
 
 ---
 
-**Last verified**: 2026-04-14 | **SDK version**: 0.2.107
+**Last verified**: 2026-04-15 | **SDK version**: 0.2.109

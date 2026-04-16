@@ -1,7 +1,7 @@
-# Claude Agent SDK — TypeScript Reference (v0.2.109)
+# Claude Agent SDK — TypeScript Reference (v0.2.110)
 
 
-**Package**: `@anthropic-ai/claude-agent-sdk@0.2.109`
+**Package**: `@anthropic-ai/claude-agent-sdk@0.2.110`
 **Docs**: https://platform.claude.com/docs/en/agent-sdk/overview
 **Repo**: https://github.com/anthropics/claude-agent-sdk-typescript
 **Migration**: Renamed from `@anthropic-ai/claude-code`. See [migration guide](https://platform.claude.com/docs/en/agent-sdk/migration-guide).
@@ -14,7 +14,7 @@
 - [Core API](#core-api) — `query()`, `tool()`, `createSdkMcpServer()`, `listSessions()`, `getSessionMessages()`, `getSessionInfo()`, `renameSession()`, `forkSession()`, `tagSession()`, `listSubagents()`, `getSubagentMessages()`
 - [Options](#options) — Core, Tools & Permissions, Models & Output, Sessions, MCP & Agents, Advanced
 - [Query Object Methods](#query-object-methods)
-- [Message Types](#message-types) — All 25 SDKMessage types
+- [Message Types](#message-types) — All 28 SDKMessage types
 - [Hooks](#hooks) — 27 hook events, matchers, return values, async hooks
 - [Permissions](#permissions) — 5 modes, `canUseTool` callback
 - [MCP Servers](#mcp-servers) — stdio, HTTP, SSE, SDK, claudeai-proxy
@@ -38,6 +38,14 @@
 ---
 
 ## Core API
+
+### Exported Constants
+
+```typescript
+import { SYSTEM_PROMPT_DYNAMIC_BOUNDARY } from "@anthropic-ai/claude-agent-sdk";
+// Value: "__SYSTEM_PROMPT_DYNAMIC_BOUNDARY__"
+// Used in string[] systemPrompt to separate cacheable prefix from session-specific suffix
+```
 
 ### `query()`
 
@@ -324,7 +332,7 @@ if (agentIds.length > 0) {
 |--------|------|---------|-------------|
 | `model` | `string` | CLI default | Claude model to use |
 | `cwd` | `string` | `process.cwd()` | Working directory |
-| `systemPrompt` | `string \| { type: 'preset', preset: 'claude_code', append?: string, excludeDynamicSections?: boolean }` | minimal | System prompt (`excludeDynamicSections: true` strips per-user dynamic sections like cwd/git-status from the system prompt and re-injects them as the first user message, enabling cross-user prompt caching) |
+| `systemPrompt` | `string \| string[] \| { type: 'preset', preset: 'claude_code', append?: string, excludeDynamicSections?: boolean }` | minimal | System prompt. `string[]` array variant: use `SYSTEM_PROMPT_DYNAMIC_BOUNDARY` as a standalone element to split static (globally-cacheable) prefix from dynamic (session-specific) suffix — blocks before the marker are eligible for cross-session prompt caching. `excludeDynamicSections: true` strips per-user dynamic sections like cwd/git-status from the system prompt and re-injects them as the first user message. See [Prompt Caching section](#cost-monitoring) for examples. |
 | `settingSources` | `SettingSource[]` | `[]` | `'user' \| 'project' \| 'local'` |
 | `env` | `Dict<string>` | `process.env` | Environment variables (set `CLAUDE_AGENT_SDK_CLIENT_APP` to identify your app in User-Agent, e.g. `'my-app/1.0.0'`) |
 | `abortController` | `AbortController` | — | Cancellation controller |
@@ -434,7 +442,7 @@ await q.setMcpServers(newServersConfig);    // Replace MCP servers mid-session
 
 // Plugin management
 await q.reloadPlugins();                    // Reload plugins from disk; returns { commands, agents, plugins, mcpServers, error_count }
-await q.getContextUsage();                  // Get context window usage breakdown by category — returns SDKControlGetContextUsageResponse (v0.2.109)
+await q.getContextUsage();                  // Get context window usage breakdown by category — returns SDKControlGetContextUsageResponse (v0.2.110)
 
 // File checkpointing (requires enableFileCheckpointing: true)
 await q.rewindFiles(userMessageUuid, { dryRun?: boolean }); // Rewind to checkpoint
@@ -522,7 +530,7 @@ type SDKControlGetContextUsageResponse = {
 
 ## Message Types
 
-The SDK emits 25 message types through the async generator:
+The SDK emits 28 message types through the async generator:
 
 ```typescript
 type SDKMessage =
@@ -537,11 +545,12 @@ type SDKMessage =
   // Status & progress
   | SDKStatusMessage              // type: 'system', subtype: 'status' — status updates (e.g., 'compacting')
   | SDKSessionStateChangedMessage // type: 'system', subtype: 'session_state_changed' — idle/running/requires_action
-  | SDKAPIRetryMessage            // type: 'system', subtype: 'api_retry' — transient API error being retried (v0.2.109)
+  | SDKAPIRetryMessage            // type: 'system', subtype: 'api_retry' — transient API error being retried (v0.2.110)
   | SDKToolProgressMessage        // type: 'tool_progress' — tool execution progress with elapsed time
   | SDKToolUseSummaryMessage      // type: 'tool_use_summary' — summary of tool usage
   | SDKAuthStatusMessage          // type: 'auth_status' — authentication status
   | SDKLocalCommandOutputMessage  // type: 'system', subtype: 'local_command_output' — output from slash commands like /cost, /voice
+  | SDKNotificationMessage        // type: 'system', subtype: 'notification' — loop-side text notification (key/priority/timeout)
   // Hook messages
   | SDKHookStartedMessage         // type: 'system', subtype: 'hook_started'
   | SDKHookProgressMessage        // type: 'system', subtype: 'hook_progress' — hook stdout/stderr
@@ -552,6 +561,8 @@ type SDKMessage =
   | SDKTaskProgressMessage        // type: 'system', subtype: 'task_progress' — periodic progress updates for running tasks
   | SDKTaskNotificationMessage    // type: 'system', subtype: 'task_notification' — background task events
   | SDKFilesPersistedEvent        // type: 'system', subtype: 'files_persisted'
+  | SDKPluginInstallMessage       // type: 'system', subtype: 'plugin_install' — headless plugin install progress (CLAUDE_CODE_SYNC_PLUGIN_INSTALL)
+  | SDKMemoryRecallMessage        // type: 'system', subtype: 'memory_recall' — memory recall events (relevant memories surfaced into turn)
   // MCP Elicitation
   | SDKElicitationCompleteMessage // type: 'system', subtype: 'elicitation_complete' — MCP elicitation finished
   // Rate limiting & suggestions
@@ -559,7 +570,7 @@ type SDKMessage =
   | SDKPromptSuggestionMessage    // type: 'prompt_suggestion' — predicted next user prompt (requires promptSuggestions: true)
 ```
 
-### SDKAPIRetryMessage (v0.2.109)
+### SDKAPIRetryMessage (v0.2.110)
 
 ```typescript
 { type: 'system', subtype: 'api_retry', uuid, session_id,
@@ -673,6 +684,9 @@ for await (const message of query({ prompt: "...", options })) {
       if (message.subtype === 'task_updated') console.log('Task updated:', message.task_id, message.patch);  // patch: { status?, description?, end_time?, total_paused_ms?, error?, is_backgrounded? } — merge into local task map
       if (message.subtype === 'task_progress') console.log('Task progress:', message.task_id, message.description, message.last_tool_name, message.usage, message.summary);  // usage: {total_tokens, tool_uses, duration_ms}; last_tool_name?: string; tool_use_id?: string; summary?: string (from agentProgressSummaries)
       if (message.subtype === 'task_notification') console.log('Task done:', message.task_id, message.status, message.tool_use_id, message.output_file, message.summary);  // output_file: string, summary: string, usage?: {total_tokens, tool_uses, duration_ms}
+      if (message.subtype === 'notification') console.log('Notification:', message.key, message.text, message.priority);  // priority: 'low'|'medium'|'high'|'immediate'; color?: string; timeout_ms?: number
+      if (message.subtype === 'plugin_install') console.log('Plugin install:', message.status, message.name);  // status: 'started'|'installed'|'failed'|'completed'; name?: string
+      if (message.subtype === 'memory_recall') console.log('Memory recalled:', message.mode, message.memories);  // mode: 'select'|'synthesize'; memories: {path, scope, content?}[]
       break;
     case 'assistant':
       console.log(message.message);
@@ -1294,12 +1308,9 @@ interface SDKSession {
 
 ### V2 Limitations
 
-`SDKSessionOptions` is a subset of `Options`. The V2 API **supports**: `permissionMode` (all modes except `bypassPermissions`), `allowedTools`, `disallowedTools`, `canUseTool`, `hooks`, `executable`, `env`.
+`SDKSessionOptions` is a subset of `Options`. The V2 API **supports**: `permissionMode` (all modes), `allowedTools`, `disallowedTools`, `canUseTool`, `hooks`, `executable`, `executableArgs`, `env`, `cwd`, `settingSources`, `allowDangerouslySkipPermissions`, `pathToClaudeCodeExecutable`.
 
 The V2 API does **NOT** support:
-- `bypassPermissions` mode — `allowDangerouslySkipPermissions` not in `SDKSessionOptions`
-- `cwd` ([#176](https://github.com/anthropics/claude-agent-sdk-typescript/issues/176))
-- `settingSources` ([#176](https://github.com/anthropics/claude-agent-sdk-typescript/issues/176))
 - `plugins` ([#171](https://github.com/anthropics/claude-agent-sdk-typescript/issues/171))
 - `systemPrompt` ([#160](https://github.com/anthropics/claude-agent-sdk-typescript/issues/160))
 - `mcpServers` ([#154](https://github.com/anthropics/claude-agent-sdk-typescript/issues/154))
@@ -1513,11 +1524,11 @@ const schema = z.toJSONSchema(MySchema);
 delete schema.$schema;
 ```
 
-### #21: unstable_v2_createSession() has limited option support
-**Error**: V2 session API silently ignores `cwd` and `settingSources`; `bypassPermissions` mode not supported ([#176](https://github.com/anthropics/claude-agent-sdk-typescript/issues/176))
-**Status**: Partially resolved — `SDKSessionOptions` now includes `permissionMode`, `allowedTools`, `disallowedTools`, `canUseTool`, and `hooks`, so these options work. However `cwd`, `settingSources`, and `allowDangerouslySkipPermissions` remain absent from `SDKSessionOptions`.
-**Impact**: V2 sessions cannot use `bypassPermissions` mode (requires `allowDangerouslySkipPermissions` which isn't exposed), custom working directories, or CLAUDE.md loading.
-**Workaround**: Use `query()` API if you need `bypassPermissions`, `cwd`, or `settingSources`. For other permission control, the V2 API's built-in `permissionMode`, `allowedTools`, `canUseTool`, and `hooks` options now work.
+### #21: unstable_v2_createSession() has limited option support ✅ Largely resolved
+**Original error**: V2 session API silently ignored `cwd`, `settingSources`, and `bypassPermissions` mode ([#176](https://github.com/anthropics/claude-agent-sdk-typescript/issues/176))
+**Status**: Resolved — `SDKSessionOptions` now includes `permissionMode` (all modes), `allowedTools`, `disallowedTools`, `canUseTool`, `hooks`, `cwd`, `settingSources`, and `allowDangerouslySkipPermissions`. V2 sessions can now use `bypassPermissions` mode with `allowDangerouslySkipPermissions: true`.
+**Remaining gaps**: `plugins`, `systemPrompt`, `mcpServers`, `agents`, `outputFormat`, `sandbox`, and file checkpointing remain absent from `SDKSessionOptions`.
+**Workaround**: Use `query()` API if you need any of the remaining unsupported options.
 
 ### #22: Large MCP tool output forces filesystem tool dependency
 **Error**: When MCP tools return ≥180KB output, SDK truncates response and saves full output to local file, then agent attempts to read file using `Bash`/filesystem tools ([#175](https://github.com/anthropics/claude-agent-sdk-typescript/issues/175), [#187](https://github.com/anthropics/claude-agent-sdk-typescript/issues/187))
@@ -1902,15 +1913,15 @@ This approach stays under 80MB RSS regardless of polling frequency.
 
 ---
 
-## Changelog Highlights (v0.2.12 → v0.2.109)
+## Changelog Highlights (v0.2.12 → v0.2.110)
 
 | Version | Change |
 |---------|--------|
 | v0.2.105 | Fixed `error_max_structured_output_retries` being incorrectly emitted when the final retry attempt succeeded — valid `structured_output` is now preserved |
 | v0.2.105 | Added `system/memory_recall` event and `memory_paths` on `system/init` for SDK renderers to surface memory operations |
-| v0.2.109 | Added `network.allowMachLookup` sandbox option (macOS only — allows XPC/Mach service lookups needed for Playwright, iOS Simulator, Go-based tools with MITM proxy) |
-| v0.2.109 | Added `PermissionDenied` hook event (27 total) |
-| v0.2.109 | Added `Query.getContextUsage()` method (context window breakdown by category); made `SDKUserMessage.session_id` optional; added `@anthropic-ai/sdk` and `@modelcontextprotocol/sdk` as explicit dependencies (fixes type-any regression) |
+| v0.2.110 | Added `network.allowMachLookup` sandbox option (macOS only — allows XPC/Mach service lookups needed for Playwright, iOS Simulator, Go-based tools with MITM proxy) |
+| v0.2.110 | Added `PermissionDenied` hook event (27 total) |
+| v0.2.110 | Added `Query.getContextUsage()` method (context window breakdown by category); made `SDKUserMessage.session_id` optional; added `@anthropic-ai/sdk` and `@modelcontextprotocol/sdk` as explicit dependencies (fixes type-any regression) |
 | v0.2.94 | Fixed MCP server child processes not being cleaned up when `query()` session ends — resolves zombie process accumulation ([Known Issue #38](#38-mcp-server-processes-remain-as-zombies-after-session-ends--fixed-in-v0294)) |
 | v0.2.94 | Fixed `getContextUsage()` to include agents passed via `options.agents` in the `agents` breakdown |
 | v0.2.92 | Fixed file-based agents from `.claude/agents/` not being discovered as invocable subagent types (regression since v0.2.87) |
@@ -1933,4 +1944,4 @@ This approach stays under 80MB RSS regardless of polling frequency.
 
 ---
 
-**Last verified**: 2026-04-15 | **SDK version**: 0.2.109
+**Last verified**: 2026-04-16 | **SDK version**: 0.2.110

@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-04-16
+
+- SDK TS v0.2.109 → v0.2.110; PY v0.1.59 unchanged
+- TS: added `SYSTEM_PROMPT_DYNAMIC_BOUNDARY` constant + `string[]` systemPrompt support for cross-session prompt caching; 3 new message types: `SDKNotificationMessage`, `SDKPluginInstallMessage`, `SDKMemoryRecallMessage` (25 → 28 total)
+- Typecheck false-positive (recurring stale-comma); mended in 1 pass; verify passed 18/18 on attempt 2
+- [Full report](reports/2026-04-16.md)
+
 ## 2026-04-13
 
 - No version changes; TS v0.2.104 and PY v0.1.58 unchanged

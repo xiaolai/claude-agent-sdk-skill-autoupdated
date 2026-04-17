@@ -1,13 +1,13 @@
 ---
 paths: "**/*agent*.py"
-description: Auto-corrections for Claude Agent SDK (Python) v0.1.59
+description: Auto-corrections for Claude Agent SDK (Python) v0.1.61
 ---
 
 # Claude Agent SDK Rules (Python)
 
 ## Package
 - Package: `claude-agent-sdk` (PyPI, NOT `anthropic-sdk-python`)
-- Latest: v0.1.59
+- Latest: v0.1.61
 
 ## Common Mistakes
 

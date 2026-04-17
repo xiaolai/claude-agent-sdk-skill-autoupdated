@@ -1,7 +1,7 @@
-# Claude Agent SDK — TypeScript Reference (v0.2.110)
+# Claude Agent SDK — TypeScript Reference (v0.2.112)
 
 
-**Package**: `@anthropic-ai/claude-agent-sdk@0.2.110`
+**Package**: `@anthropic-ai/claude-agent-sdk@0.2.112`
 **Docs**: https://platform.claude.com/docs/en/agent-sdk/overview
 **Repo**: https://github.com/anthropics/claude-agent-sdk-typescript
 **Migration**: Renamed from `@anthropic-ai/claude-code`. See [migration guide](https://platform.claude.com/docs/en/agent-sdk/migration-guide).
@@ -442,7 +442,7 @@ await q.setMcpServers(newServersConfig);    // Replace MCP servers mid-session
 
 // Plugin management
 await q.reloadPlugins();                    // Reload plugins from disk; returns { commands, agents, plugins, mcpServers, error_count }
-await q.getContextUsage();                  // Get context window usage breakdown by category — returns SDKControlGetContextUsageResponse (v0.2.110)
+await q.getContextUsage();                  // Get context window usage breakdown by category — returns SDKControlGetContextUsageResponse (v0.2.112)
 
 // File checkpointing (requires enableFileCheckpointing: true)
 await q.rewindFiles(userMessageUuid, { dryRun?: boolean }); // Rewind to checkpoint
@@ -545,7 +545,7 @@ type SDKMessage =
   // Status & progress
   | SDKStatusMessage              // type: 'system', subtype: 'status' — status updates (e.g., 'compacting')
   | SDKSessionStateChangedMessage // type: 'system', subtype: 'session_state_changed' — idle/running/requires_action
-  | SDKAPIRetryMessage            // type: 'system', subtype: 'api_retry' — transient API error being retried (v0.2.110)
+  | SDKAPIRetryMessage            // type: 'system', subtype: 'api_retry' — transient API error being retried (v0.2.112)
   | SDKToolProgressMessage        // type: 'tool_progress' — tool execution progress with elapsed time
   | SDKToolUseSummaryMessage      // type: 'tool_use_summary' — summary of tool usage
   | SDKAuthStatusMessage          // type: 'auth_status' — authentication status
@@ -570,7 +570,7 @@ type SDKMessage =
   | SDKPromptSuggestionMessage    // type: 'prompt_suggestion' — predicted next user prompt (requires promptSuggestions: true)
 ```
 
-### SDKAPIRetryMessage (v0.2.110)
+### SDKAPIRetryMessage (v0.2.112)
 
 ```typescript
 { type: 'system', subtype: 'api_retry', uuid, session_id,
@@ -1733,16 +1733,22 @@ sandbox: {
 **Impact**: Automated pipelines that use `permissionMode: 'bypassPermissions'` with `allowDangerouslySkipPermissions: true` will have subagents block or prompt on permission checks, hanging in headless environments.
 **Workaround**: Use `permissionMode: 'acceptEdits'` instead of `'bypassPermissions'` for workflows requiring subagents. `acceptEdits` automatically approves file edits without the safety flag requirement. For completely unrestricted tool use, set explicit permissions via `allowedTools` and a `canUseTool` callback that always allows.
 
-### #42: `sandbox.enabled: true` silently degrades to unsandboxed execution when `bwrap` is not installed
+### #42: `sandbox.enabled: true` silently degrades to unsandboxed execution when `bwrap` is not installed ✅ Fixed in v0.2.91
 **Error**: No error thrown — commands run with full filesystem and network access despite `sandbox.enabled: true` ([#239](https://github.com/anthropics/claude-agent-sdk-typescript/issues/239))
 **Cause**: When `bwrap` (bubblewrap) is not installed, `checkDependencies()` records an error and `isSandboxingEnabled()` returns `false`. The SDK silently skips sandbox initialization and runs all commands without any restriction. `allowUnsandboxedCommands: false` does not prevent this — it only applies per-command when the sandbox is active.
 **Impact**: Security-sensitive deployments that require sandboxing as a hard gate cannot detect silently-degraded execution. All `filesystem.allowWrite`, `network.allowedDomains`, and other sandbox restrictions are completely ignored.
-**Fix**: Set `failIfUnavailable: true` in sandbox settings to make the SDK exit with an error at startup if sandboxing cannot start:
+**Fix (v0.2.91+)**: `failIfUnavailable` now defaults to `true` when `sandbox.enabled: true`. The SDK automatically exits with an error at startup if sandbox dependencies (`bwrap`, `socat`) are missing. No configuration change needed on v0.2.91+.
 ```typescript
+// v0.2.91+: failIfUnavailable defaults to true — SDK exits with error if bwrap not installed
 sandbox: {
   enabled: true,
-  failIfUnavailable: true,  // Fail loudly if bwrap/sandbox not available
   filesystem: { allowWrite: ['/sandbox/path'] }
+}
+
+// To allow graceful degradation (old behavior) — set explicitly:
+sandbox: {
+  enabled: true,
+  failIfUnavailable: false,  // Allow unsandboxed fallback if bwrap unavailable
 }
 ```
 **Note**: Install bubblewrap with `apt-get install bubblewrap` (Debian/Ubuntu) or `dnf install bubblewrap` (Fedora/RHEL).
@@ -1913,15 +1919,15 @@ This approach stays under 80MB RSS regardless of polling frequency.
 
 ---
 
-## Changelog Highlights (v0.2.12 → v0.2.110)
+## Changelog Highlights (v0.2.12 → v0.2.112)
 
 | Version | Change |
 |---------|--------|
 | v0.2.105 | Fixed `error_max_structured_output_retries` being incorrectly emitted when the final retry attempt succeeded — valid `structured_output` is now preserved |
 | v0.2.105 | Added `system/memory_recall` event and `memory_paths` on `system/init` for SDK renderers to surface memory operations |
-| v0.2.110 | Added `network.allowMachLookup` sandbox option (macOS only — allows XPC/Mach service lookups needed for Playwright, iOS Simulator, Go-based tools with MITM proxy) |
-| v0.2.110 | Added `PermissionDenied` hook event (27 total) |
-| v0.2.110 | Added `Query.getContextUsage()` method (context window breakdown by category); made `SDKUserMessage.session_id` optional; added `@anthropic-ai/sdk` and `@modelcontextprotocol/sdk` as explicit dependencies (fixes type-any regression) |
+| v0.2.112 | Added `network.allowMachLookup` sandbox option (macOS only — allows XPC/Mach service lookups needed for Playwright, iOS Simulator, Go-based tools with MITM proxy) |
+| v0.2.112 | Added `PermissionDenied` hook event (27 total) |
+| v0.2.112 | Added `Query.getContextUsage()` method (context window breakdown by category); made `SDKUserMessage.session_id` optional; added `@anthropic-ai/sdk` and `@modelcontextprotocol/sdk` as explicit dependencies (fixes type-any regression) |
 | v0.2.94 | Fixed MCP server child processes not being cleaned up when `query()` session ends — resolves zombie process accumulation ([Known Issue #38](#38-mcp-server-processes-remain-as-zombies-after-session-ends--fixed-in-v0294)) |
 | v0.2.94 | Fixed `getContextUsage()` to include agents passed via `options.agents` in the `agents` breakdown |
 | v0.2.92 | Fixed file-based agents from `.claude/agents/` not being discovered as invocable subagent types (regression since v0.2.87) |
@@ -1944,4 +1950,4 @@ This approach stays under 80MB RSS regardless of polling frequency.
 
 ---
 
-**Last verified**: 2026-04-16 | **SDK version**: 0.2.110
+**Last verified**: 2026-04-17 | **SDK version**: 0.2.112

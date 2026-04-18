@@ -1,7 +1,7 @@
-# Claude Agent SDK — TypeScript Reference (v0.2.112)
+# Claude Agent SDK — TypeScript Reference (v0.2.114)
 
 
-**Package**: `@anthropic-ai/claude-agent-sdk@0.2.112`
+**Package**: `@anthropic-ai/claude-agent-sdk@0.2.114`
 **Docs**: https://platform.claude.com/docs/en/agent-sdk/overview
 **Repo**: https://github.com/anthropics/claude-agent-sdk-typescript
 **Migration**: Renamed from `@anthropic-ai/claude-code`. See [migration guide](https://platform.claude.com/docs/en/agent-sdk/migration-guide).
@@ -11,7 +11,7 @@
 ## Table of Contents
 
 - [Breaking Changes](#breaking-changes-v010)
-- [Core API](#core-api) — `query()`, `tool()`, `createSdkMcpServer()`, `listSessions()`, `getSessionMessages()`, `getSessionInfo()`, `renameSession()`, `forkSession()`, `tagSession()`, `listSubagents()`, `getSubagentMessages()`
+- [Core API](#core-api) — `query()`, `tool()`, `createSdkMcpServer()`, `listSessions()`, `getSessionMessages()`, `getSessionInfo()`, `renameSession()`, `forkSession()`, `tagSession()`, `deleteSession()`, `listSubagents()`, `getSubagentMessages()`
 - [Options](#options) — Core, Tools & Permissions, Models & Output, Sessions, MCP & Agents, Advanced
 - [Query Object Methods](#query-object-methods)
 - [Message Types](#message-types) — All 28 SDKMessage types
@@ -269,6 +269,26 @@ console.log(sessions[0].tag); // "needs-review"
 await tagSession(sessionId, null);
 ```
 
+### `deleteSession()`
+
+Deletes a session. Without `sessionStore`: removes `{sessionId}.jsonl` and the `{sessionId}/` subagent-transcript subdirectory from the local projects dir. Throws if the session is not found.
+
+```typescript
+import { deleteSession } from "@anthropic-ai/claude-agent-sdk";
+
+function deleteSession(
+  sessionId: string,
+  options?: { dir?: string }  // Project directory; searches all projects if omitted
+): Promise<void>
+```
+
+Example:
+
+```typescript
+// Delete an old session to free disk space
+await deleteSession(oldSessionId);
+```
+
 ### `listSubagents()`
 
 Lists subagent IDs for a given session by scanning the subagents directory. Subagent transcripts are stored at `~/.claude/projects/<dir>/<sessionId>/subagents/agent-<agentId>.jsonl`.
@@ -355,7 +375,7 @@ if (agentIds.length > 0) {
 |--------|------|---------|-------------|
 | `outputFormat` | `{ type: 'json_schema', schema: JSONSchema }` | — | Structured output schema |
 | `thinking` | `ThinkingConfig` | — | `{ type: 'enabled', budgetTokens?: number, display?: 'summarized' \| 'omitted' } \| { type: 'disabled' } \| { type: 'adaptive', display?: 'summarized' \| 'omitted' }` — `display` controls thinking content visibility in the stream |
-| `effort` | `'low' \| 'medium' \| 'high' \| 'max'` | — | Controls response effort level |
+| `effort` | `'low' \| 'medium' \| 'high' \| 'xhigh' \| 'max'` | — | Controls response effort level (`'xhigh'` is Opus 4.7+ only) |
 | `maxThinkingTokens` | `number` | — | **Deprecated** — use `thinking` instead |
 | `fallbackModel` | `string` | — | Fallback model on failure |
 | `betas` | `SdkBeta[]` | `[]` | Beta features (e.g., `['context-1m-2025-08-07']`) |
@@ -374,6 +394,7 @@ if (agentIds.length > 0) {
 | `sessionId` | `string` | auto | Custom UUID for session (v0.2.33) |
 | `resumeSessionAt` | `string` | — | Resume at specific message UUID |
 | `persistSession` | `boolean` | `true` | When false, disables session persistence to disk |
+| `title` | `string` | — | Custom title for a new session (skips auto-title generation; ignored when resuming — use `renameSession()` to retitle existing sessions) |
 | `maxTurns` | `number` | — | Max conversation turns (critical safety net — sessions never timeout) |
 | `maxBudgetUsd` | `number` | — | Max budget in USD |
 | `enableFileCheckpointing` | `boolean` | `false` | Enable file rollback |
@@ -442,7 +463,7 @@ await q.setMcpServers(newServersConfig);    // Replace MCP servers mid-session
 
 // Plugin management
 await q.reloadPlugins();                    // Reload plugins from disk; returns { commands, agents, plugins, mcpServers, error_count }
-await q.getContextUsage();                  // Get context window usage breakdown by category — returns SDKControlGetContextUsageResponse (v0.2.112)
+await q.getContextUsage();                  // Get context window usage breakdown by category — returns SDKControlGetContextUsageResponse (v0.2.114)
 
 // File checkpointing (requires enableFileCheckpointing: true)
 await q.rewindFiles(userMessageUuid, { dryRun?: boolean }); // Rewind to checkpoint
@@ -475,7 +496,7 @@ type ModelInfo = {
   displayName: string;    // Human-readable name
   description: string;    // Model capabilities description
   supportsEffort?: boolean;                              // Whether this model supports effort levels
-  supportedEffortLevels?: ('low' | 'medium' | 'high' | 'max')[];  // Available effort levels
+  supportedEffortLevels?: ('low' | 'medium' | 'high' | 'xhigh' | 'max')[];  // Available effort levels
   supportsAdaptiveThinking?: boolean;                   // Whether this model supports adaptive thinking
   supportsFastMode?: boolean;                           // Whether this model supports fast mode (rate-limit speed optimization)
   supportsAutoMode?: boolean;                           // Whether this model supports auto mode
@@ -530,7 +551,7 @@ type SDKControlGetContextUsageResponse = {
 
 ## Message Types
 
-The SDK emits 28 message types through the async generator:
+The SDK emits 29 message types through the async generator:
 
 ```typescript
 type SDKMessage =
@@ -545,7 +566,7 @@ type SDKMessage =
   // Status & progress
   | SDKStatusMessage              // type: 'system', subtype: 'status' — status updates (e.g., 'compacting')
   | SDKSessionStateChangedMessage // type: 'system', subtype: 'session_state_changed' — idle/running/requires_action
-  | SDKAPIRetryMessage            // type: 'system', subtype: 'api_retry' — transient API error being retried (v0.2.112)
+  | SDKAPIRetryMessage            // type: 'system', subtype: 'api_retry' — transient API error being retried (v0.2.114)
   | SDKToolProgressMessage        // type: 'tool_progress' — tool execution progress with elapsed time
   | SDKToolUseSummaryMessage      // type: 'tool_use_summary' — summary of tool usage
   | SDKAuthStatusMessage          // type: 'auth_status' — authentication status
@@ -568,9 +589,11 @@ type SDKMessage =
   // Rate limiting & suggestions
   | SDKRateLimitEvent             // type: 'rate_limit_event' — rate limit status for claude.ai subscriptions
   | SDKPromptSuggestionMessage    // type: 'prompt_suggestion' — predicted next user prompt (requires promptSuggestions: true)
+  // Session store mirroring
+  | SDKMirrorErrorMessage         // type: 'system', subtype: 'mirror_error' — SessionStore.append() failed/timed out (batch dropped, at-most-once delivery)
 ```
 
-### SDKAPIRetryMessage (v0.2.112)
+### SDKAPIRetryMessage (v0.2.114)
 
 ```typescript
 { type: 'system', subtype: 'api_retry', uuid, session_id,
@@ -1056,7 +1079,7 @@ type AgentDefinition = {
   criticalSystemReminder_EXPERIMENTAL?: string;  // Critical reminder added to system prompt
   background?: boolean;       // Run as a background task (non-blocking, fire-and-forget) when invoked
   memory?: 'user' | 'project' | 'local';  // Scope for auto-loading agent memory files (~/.claude/agent-memory/, .claude/agent-memory/, or .claude/agent-memory-local/)
-  effort?: ('low' | 'medium' | 'high' | 'max') | number;  // Reasoning effort level for this agent
+  effort?: ('low' | 'medium' | 'high' | 'xhigh' | 'max') | number;  // Reasoning effort level for this agent ('xhigh' is Opus 4.7+ only)
   permissionMode?: PermissionMode;  // Permission mode controlling how tool executions are handled
 }
 ```
@@ -1179,6 +1202,7 @@ type SandboxSettings = {
     httpProxyPort?: number;
     socksProxyPort?: number;
     allowedDomains?: string[];          // Restrict network to specific domains
+    deniedDomains?: string[];           // Block specific domains (applied after allowedDomains)
     allowManagedDomainsOnly?: boolean;  // Only allow managed domains
     allowMachLookup?: string[];         // macOS only: XPC/Mach service names to allow (supports trailing-wildcard prefix, e.g. "com.apple.coresimulator.*"). Needed for Playwright, iOS Simulator, gcloud, etc.
   };
@@ -1919,15 +1943,15 @@ This approach stays under 80MB RSS regardless of polling frequency.
 
 ---
 
-## Changelog Highlights (v0.2.12 → v0.2.112)
+## Changelog Highlights (v0.2.12 → v0.2.114)
 
 | Version | Change |
 |---------|--------|
 | v0.2.105 | Fixed `error_max_structured_output_retries` being incorrectly emitted when the final retry attempt succeeded — valid `structured_output` is now preserved |
 | v0.2.105 | Added `system/memory_recall` event and `memory_paths` on `system/init` for SDK renderers to surface memory operations |
-| v0.2.112 | Added `network.allowMachLookup` sandbox option (macOS only — allows XPC/Mach service lookups needed for Playwright, iOS Simulator, Go-based tools with MITM proxy) |
-| v0.2.112 | Added `PermissionDenied` hook event (27 total) |
-| v0.2.112 | Added `Query.getContextUsage()` method (context window breakdown by category); made `SDKUserMessage.session_id` optional; added `@anthropic-ai/sdk` and `@modelcontextprotocol/sdk` as explicit dependencies (fixes type-any regression) |
+| v0.2.114 | Added `network.allowMachLookup` sandbox option (macOS only — allows XPC/Mach service lookups needed for Playwright, iOS Simulator, Go-based tools with MITM proxy) |
+| v0.2.114 | Added `PermissionDenied` hook event (27 total) |
+| v0.2.114 | Added `Query.getContextUsage()` method (context window breakdown by category); made `SDKUserMessage.session_id` optional; added `@anthropic-ai/sdk` and `@modelcontextprotocol/sdk` as explicit dependencies (fixes type-any regression) |
 | v0.2.94 | Fixed MCP server child processes not being cleaned up when `query()` session ends — resolves zombie process accumulation ([Known Issue #38](#38-mcp-server-processes-remain-as-zombies-after-session-ends--fixed-in-v0294)) |
 | v0.2.94 | Fixed `getContextUsage()` to include agents passed via `options.agents` in the `agents` breakdown |
 | v0.2.92 | Fixed file-based agents from `.claude/agents/` not being discovered as invocable subagent types (regression since v0.2.87) |
@@ -1950,4 +1974,4 @@ This approach stays under 80MB RSS regardless of polling frequency.
 
 ---
 
-**Last verified**: 2026-04-17 | **SDK version**: 0.2.112
+**Last verified**: 2026-04-18 | **SDK version**: 0.2.114

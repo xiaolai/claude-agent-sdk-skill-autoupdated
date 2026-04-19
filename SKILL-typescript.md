@@ -11,10 +11,10 @@
 ## Table of Contents
 
 - [Breaking Changes](#breaking-changes-v010)
-- [Core API](#core-api) — `query()`, `tool()`, `createSdkMcpServer()`, `listSessions()`, `getSessionMessages()`, `getSessionInfo()`, `renameSession()`, `forkSession()`, `tagSession()`, `deleteSession()`, `listSubagents()`, `getSubagentMessages()`
+- [Core API](#core-api) — `query()`, `tool()`, `createSdkMcpServer()`, `startup()`, `listSessions()`, `getSessionMessages()`, `getSessionInfo()`, `renameSession()`, `forkSession()`, `tagSession()`, `deleteSession()`, `listSubagents()`, `getSubagentMessages()`
 - [Options](#options) — Core, Tools & Permissions, Models & Output, Sessions, MCP & Agents, Advanced
 - [Query Object Methods](#query-object-methods)
-- [Message Types](#message-types) — All 28 SDKMessage types
+- [Message Types](#message-types) — All 29 SDKMessage types
 - [Hooks](#hooks) — 27 hook events, matchers, return values, async hooks
 - [Permissions](#permissions) — 5 modes, `canUseTool` callback
 - [MCP Servers](#mcp-servers) — stdio, HTTP, SSE, SDK, claudeai-proxy
@@ -342,6 +342,43 @@ if (agentIds.length > 0) {
 }
 ```
 
+### `startup()`
+
+Pre-warms the CLI subprocess so the first `query()` call has zero cold-start latency. The subprocess starts in the background, completes the initialize handshake, and waits. Calling `query()` on the returned `WarmQuery` sends the prompt to the already-ready process — eliminating the typical 3–12 second startup time.
+
+```typescript
+import { startup } from "@anthropic-ai/claude-agent-sdk";
+
+async function startup(params?: {
+  options?: Options;             // Pre-configure the subprocess with options
+  initializeTimeoutMs?: number;  // Timeout for the initialize handshake (ms)
+}): Promise<WarmQuery>
+
+interface WarmQuery extends AsyncDisposable {
+  query(prompt: string | AsyncIterable<SDKUserMessage>): Query;  // Send prompt to the pre-warmed process (one-shot)
+  close(): void;                                                  // Discard without sending a prompt
+  [Symbol.asyncDispose](): Promise<void>;                         // 'await using' support
+}
+```
+
+Example:
+
+```typescript
+import { startup, query } from "@anthropic-ai/claude-agent-sdk";
+
+// Start warming immediately
+const warm = await startup({ options: { model: 'claude-sonnet-4-6', permissionMode: 'bypassPermissions', allowDangerouslySkipPermissions: true } });
+
+// Later, when the user's prompt arrives:
+await using warmed = warm;
+for await (const msg of warmed.query("Analyze this codebase")) {
+  if (msg.type === 'result' && msg.subtype === 'success') console.log(msg.result);
+}
+// warm is automatically closed if query() is never called
+```
+
+**Note**: `query()` can only be called once per `WarmQuery`. If the prompt is not yet known, warm without options and pass options to `query()`.
+
 ---
 
 ## Options
@@ -398,6 +435,8 @@ if (agentIds.length > 0) {
 | `maxTurns` | `number` | — | Max conversation turns (critical safety net — sessions never timeout) |
 | `maxBudgetUsd` | `number` | — | Max budget in USD |
 | `enableFileCheckpointing` | `boolean` | `false` | Enable file rollback |
+| `sessionStore` | `SessionStore` | — | **@alpha** Mirror session transcripts to external storage (S3, DB, Redis). The subprocess still writes to local disk (set `CLAUDE_CONFIG_DIR=/tmp` for ephemeral local copy); the adapter receives a secondary copy for multi-tenant/cloud deployments. Cannot be used with `persistSession: false`. |
+| `loadTimeoutMs` | `number` | `60000` | **@alpha** Timeout (ms) for each `sessionStore.load()` call during resume materialization. Prevents hanging indefinitely if the adapter doesn't respond. |
 
 ### MCP & Agents
 
@@ -622,6 +661,7 @@ Authoritative turn-over signal. `'idle'` fires after the result flushes and the 
 { type: 'result', subtype: 'success', session_id, duration_ms, duration_api_ms,
   is_error: false, num_turns, result: string, total_cost_usd,
   usage, modelUsage, permission_denials, structured_output?, stop_reason?: string | null,
+  api_error_status?: number | null,        // HTTP status code of the last API error (if any)
   deferred_tool_use?: SDKDeferredToolUse,  // set when a tool use was deferred (plan mode etc.)
   terminal_reason?: TerminalReason,        // why the query loop terminated
   fast_mode_state?: FastModeState }
@@ -1974,4 +2014,4 @@ This approach stays under 80MB RSS regardless of polling frequency.
 
 ---
 
-**Last verified**: 2026-04-18 | **SDK version**: 0.2.114
+**Last verified**: 2026-04-19 | **SDK version**: 0.2.114

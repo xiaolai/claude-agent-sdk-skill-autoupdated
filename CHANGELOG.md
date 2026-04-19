@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-04-19
+
+- No version bump (TS v0.2.114 and PY v0.1.63 unchanged); monitor detected registry dedup artifacts only
+- Update agent added `startup()` API docs to SKILL-typescript.md; SDKMessage count updated 28→29 types
+- Typecheck failed (recurring stale-comma false positive); verify failed (unfixable: old==new==0.2.114); 2 mend runs
+- Changes uncommitted due to verify failure
+- [Full report](reports/2026-04-19.md)
+
 ## 2026-04-16
 
 - SDK TS v0.2.109 → v0.2.110; PY v0.1.59 unchanged

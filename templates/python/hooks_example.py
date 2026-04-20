@@ -5,11 +5,11 @@ This example uses ClaudeSDKClient for its multi-turn conversation support.
 """
 import asyncio
 from typing import Any
-from claude_agent_sdk import ClaudeSDKClient, ClaudeAgentOptions, HookMatcher, HookContext
+from claude_agent_sdk import ClaudeSDKClient, ClaudeAgentOptions, HookMatcher, HookContext, HookInput
 
 
 async def audit_logger(
-    input_data: dict[str, Any], tool_use_id: str | None, context: HookContext
+    input_data: HookInput, tool_use_id: str | None, context: HookContext
 ) -> dict[str, Any]:
     """Log every tool call."""
     print(f"[audit] {input_data.get('tool_name')} called (id: {tool_use_id})")
@@ -17,7 +17,7 @@ async def audit_logger(
 
 
 async def protect_sensitive_files(
-    input_data: dict[str, Any], tool_use_id: str | None, context: HookContext
+    input_data: HookInput, tool_use_id: str | None, context: HookContext
 ) -> dict[str, Any]:
     """Block writes to protected paths by redirecting."""
     file_path = input_data.get("tool_input", {}).get("file_path", "")
@@ -35,7 +35,7 @@ async def protect_sensitive_files(
 
 
 async def bash_guardrails(
-    input_data: dict[str, Any], tool_use_id: str | None, context: HookContext
+    input_data: HookInput, tool_use_id: str | None, context: HookContext
 ) -> dict[str, Any]:
     """Add safety context before Bash execution."""
     return {
@@ -47,7 +47,7 @@ async def bash_guardrails(
 
 
 async def result_logger(
-    input_data: dict[str, Any], tool_use_id: str | None, context: HookContext
+    input_data: HookInput, tool_use_id: str | None, context: HookContext
 ) -> dict[str, Any]:
     """Log tool results."""
     tool_name = input_data.get("tool_name", "unknown")
@@ -56,7 +56,7 @@ async def result_logger(
 
 
 async def on_stop(
-    input_data: dict[str, Any], tool_use_id: str | None, context: HookContext
+    input_data: HookInput, tool_use_id: str | None, context: HookContext
 ) -> dict[str, Any]:
     """Cleanup on agent stop."""
     print("[stop] Agent finished, running cleanup...")

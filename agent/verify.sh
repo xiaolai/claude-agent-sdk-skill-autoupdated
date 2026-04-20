@@ -68,7 +68,7 @@ warn() {
 # 1. Version string checks (only when npm version changed)
 # ---------------------------------------------------------------------------
 
-if [[ -n "$HAS_VERSION_CHANGE" ]]; then
+if [[ -n "$HAS_VERSION_CHANGE" && "$OLD_VERSION" != "$NEW_VERSION" ]]; then
   echo "Checking version strings: $OLD_VERSION → $NEW_VERSION"
   echo ""
 

@@ -2,7 +2,7 @@
 
 A self-updating Claude Code skill for building AI agents with the Claude Agent SDK — covering both [TypeScript](https://github.com/anthropics/claude-agent-sdk-typescript) and [Python](https://github.com/anthropics/claude-agent-sdk-python).
 
-**SDK Version**: TypeScript v0.2.114 | Python v0.1.63 | **This skill is auto-updated**: 2026-04-19
+**SDK Version**: TypeScript v0.2.114 | Python v0.1.63 | **This skill is auto-updated**: 2026-04-20
 
 ## What It Does
 

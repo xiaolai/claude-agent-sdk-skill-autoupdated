@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-04-21
+
+- SDK TS v0.2.114 → v0.2.116; PY v0.1.63 → v0.1.64
+- Python docs expanded: `SessionStore` API, `session_store`/`load_timeout_ms` options, `MirrorErrorMessage` type; TS version refs updated
+- Typecheck false-positive (stale-comma); mended in 1 pass; verify passed 28/28 on attempt 2
+- [Full report](reports/2026-04-21.md)
+
 ## 2026-04-19
 
 - No version bump (TS v0.2.114 and PY v0.1.63 unchanged); monitor detected registry dedup artifacts only

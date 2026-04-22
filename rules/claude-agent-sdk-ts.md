@@ -1,13 +1,13 @@
 ---
 paths: "**/*agent*.ts"
-description: Auto-corrections for Claude Agent SDK v0.2.116
+description: Auto-corrections for Claude Agent SDK v0.2.117
 ---
 
 # Claude Agent SDK Rules
 
 ## Package
 - Package: `@anthropic-ai/claude-agent-sdk` (NOT `@anthropic-ai/claude-code`)
-- Latest: v0.2.116
+- Latest: v0.2.117
 
 ## Common Mistakes
 

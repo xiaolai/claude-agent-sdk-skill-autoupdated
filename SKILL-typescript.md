@@ -1,7 +1,7 @@
-# Claude Agent SDK — TypeScript Reference (v0.2.116)
+# Claude Agent SDK — TypeScript Reference (v0.2.117)
 
 
-**Package**: `@anthropic-ai/claude-agent-sdk@0.2.116`
+**Package**: `@anthropic-ai/claude-agent-sdk@0.2.117`
 **Docs**: https://platform.claude.com/docs/en/agent-sdk/overview
 **Repo**: https://github.com/anthropics/claude-agent-sdk-typescript
 **Migration**: Renamed from `@anthropic-ai/claude-code`. See [migration guide](https://platform.claude.com/docs/en/agent-sdk/migration-guide).
@@ -11,11 +11,11 @@
 ## Table of Contents
 
 - [Breaking Changes](#breaking-changes-v010)
-- [Core API](#core-api) — `query()`, `tool()`, `createSdkMcpServer()`, `startup()`, `listSessions()`, `getSessionMessages()`, `getSessionInfo()`, `renameSession()`, `forkSession()`, `tagSession()`, `deleteSession()`, `listSubagents()`, `getSubagentMessages()`
+- [Core API](#core-api) — `query()`, `tool()`, `createSdkMcpServer()`, `startup()`, `listSessions()`, `getSessionMessages()`, `getSessionInfo()`, `renameSession()`, `forkSession()`, `tagSession()`, `deleteSession()`, `listSubagents()`, `getSubagentMessages()`, `importSessionToStore()`
 - [Options](#options) — Core, Tools & Permissions, Models & Output, Sessions, MCP & Agents, Advanced
 - [Query Object Methods](#query-object-methods)
 - [Message Types](#message-types) — All 29 SDKMessage types
-- [Hooks](#hooks) — 27 hook events, matchers, return values, async hooks
+- [Hooks](#hooks) — 28 hook events, matchers, return values, async hooks
 - [Permissions](#permissions) — 5 modes, `canUseTool` callback
 - [MCP Servers](#mcp-servers) — stdio, HTTP, SSE, SDK, claudeai-proxy
 - [Subagents](#subagents) — AgentDefinition, tool enforcement workaround
@@ -342,6 +342,33 @@ if (agentIds.length > 0) {
 }
 ```
 
+### `importSessionToStore()`
+
+Copies a local JSONL session (and optionally its subagent transcripts) into a `SessionStore` adapter. Useful for migrating existing local sessions to a remote backend (S3, DB, Redis). Appends in batches to avoid payload limits.
+
+```typescript
+import { importSessionToStore } from "@anthropic-ai/claude-agent-sdk";
+
+async function importSessionToStore(
+  sessionId: string,
+  store: SessionStore,
+  options?: {
+    dir?: string;              // Project directory; searches all projects if omitted
+    includeSubagents?: boolean; // Also import subagent transcripts (default: true)
+    batchSize?: number;         // Max entries per store.append() call (default: 500)
+  }
+): Promise<void>
+```
+
+Example:
+
+```typescript
+import { importSessionToStore, InMemorySessionStore } from "@anthropic-ai/claude-agent-sdk";
+
+const store = new InMemorySessionStore();
+await importSessionToStore(sessionId, store, { includeSubagents: true });
+```
+
 ### `startup()`
 
 Pre-warms the CLI subprocess so the first `query()` call has zero cold-start latency. The subprocess starts in the background, completes the initialize handshake, and waits. Calling `query()` on the returned `WarmQuery` sends the prompt to the already-ready process — eliminating the typical 3–12 second startup time.
@@ -502,7 +529,8 @@ await q.setMcpServers(newServersConfig);    // Replace MCP servers mid-session
 
 // Plugin management
 await q.reloadPlugins();                    // Reload plugins from disk; returns { commands, agents, plugins, mcpServers, error_count }
-await q.getContextUsage();                  // Get context window usage breakdown by category — returns SDKControlGetContextUsageResponse (v0.2.116)
+await q.getContextUsage();                  // Get context window usage breakdown by category — returns SDKControlGetContextUsageResponse (v0.2.117)
+await q.readFile(path, { maxBytes? });      // Read a file from the session filesystem (gated by same read-permission rules as Read tool); returns SDKControlReadFileResponse | null
 
 // File checkpointing (requires enableFileCheckpointing: true)
 await q.rewindFiles(userMessageUuid, { dryRun?: boolean }); // Rewind to checkpoint
@@ -605,7 +633,7 @@ type SDKMessage =
   // Status & progress
   | SDKStatusMessage              // type: 'system', subtype: 'status' — status updates (e.g., 'compacting')
   | SDKSessionStateChangedMessage // type: 'system', subtype: 'session_state_changed' — idle/running/requires_action
-  | SDKAPIRetryMessage            // type: 'system', subtype: 'api_retry' — transient API error being retried (v0.2.116)
+  | SDKAPIRetryMessage            // type: 'system', subtype: 'api_retry' — transient API error being retried (v0.2.117)
   | SDKToolProgressMessage        // type: 'tool_progress' — tool execution progress with elapsed time
   | SDKToolUseSummaryMessage      // type: 'tool_use_summary' — summary of tool usage
   | SDKAuthStatusMessage          // type: 'auth_status' — authentication status
@@ -632,7 +660,7 @@ type SDKMessage =
   | SDKMirrorErrorMessage         // type: 'system', subtype: 'mirror_error' — SessionStore.append() failed/timed out (batch dropped, at-most-once delivery)
 ```
 
-### SDKAPIRetryMessage (v0.2.116)
+### SDKAPIRetryMessage (v0.2.117)
 
 ```typescript
 { type: 'system', subtype: 'api_retry', uuid, session_id,
@@ -784,6 +812,7 @@ Hooks use **callback matchers**: an optional regex `matcher` for tool names and 
 | `PostToolUse` | After tool execution | Yes | Yes |
 | `PostToolUseFailure` | Tool execution failed | Yes | No |
 | `UserPromptSubmit` | User prompt received | Yes | Yes |
+| `UserPromptExpansion` | Slash command or MCP prompt expanded into a prompt (fires with `expansion_type`, `command_name`, `command_args`, `prompt`) | Yes | No |
 | `Stop` | Agent stopping | Yes | Yes |
 | `StopFailure` | Agent stopping due to an error (API error, billing, rate limit, etc.) | Yes | No |
 | `SubagentStart` | Subagent spawned | Yes | No |
@@ -954,6 +983,7 @@ Common fields on all hooks: `session_id`, `transcript_path`, `cwd`, `permission_
 | `tool_response` | PostToolUse |
 | `error`, `is_interrupt` | PostToolUseFailure |
 | `prompt`, `session_title?` | UserPromptSubmit |
+| `expansion_type` (`'slash_command' \| 'mcp_prompt'`), `command_name`, `command_args`, `command_source?`, `prompt` | UserPromptExpansion |
 | `stop_hook_active` | Stop, SubagentStop |
 | `last_assistant_message` | Stop, StopFailure, SubagentStop (text of last assistant message, avoids parsing transcript) |
 | `error` (`SDKAssistantMessageError`), `error_details?`, `last_assistant_message?` | StopFailure |
@@ -1983,15 +2013,15 @@ This approach stays under 80MB RSS regardless of polling frequency.
 
 ---
 
-## Changelog Highlights (v0.2.12 → v0.2.116)
+## Changelog Highlights (v0.2.12 → v0.2.117)
 
 | Version | Change |
 |---------|--------|
 | v0.2.105 | Fixed `error_max_structured_output_retries` being incorrectly emitted when the final retry attempt succeeded — valid `structured_output` is now preserved |
 | v0.2.105 | Added `system/memory_recall` event and `memory_paths` on `system/init` for SDK renderers to surface memory operations |
-| v0.2.116 | Added `network.allowMachLookup` sandbox option (macOS only — allows XPC/Mach service lookups needed for Playwright, iOS Simulator, Go-based tools with MITM proxy) |
-| v0.2.116 | Added `PermissionDenied` hook event (27 total) |
-| v0.2.116 | Added `Query.getContextUsage()` method (context window breakdown by category); made `SDKUserMessage.session_id` optional; added `@anthropic-ai/sdk` and `@modelcontextprotocol/sdk` as explicit dependencies (fixes type-any regression) |
+| v0.2.117 | Added `network.allowMachLookup` sandbox option (macOS only — allows XPC/Mach service lookups needed for Playwright, iOS Simulator, Go-based tools with MITM proxy) |
+| v0.2.117 | Added `PermissionDenied` hook event (27 total) |
+| v0.2.117 | Added `Query.getContextUsage()` method (context window breakdown by category); made `SDKUserMessage.session_id` optional; added `@anthropic-ai/sdk` and `@modelcontextprotocol/sdk` as explicit dependencies (fixes type-any regression) |
 | v0.2.94 | Fixed MCP server child processes not being cleaned up when `query()` session ends — resolves zombie process accumulation ([Known Issue #38](#38-mcp-server-processes-remain-as-zombies-after-session-ends--fixed-in-v0294)) |
 | v0.2.94 | Fixed `getContextUsage()` to include agents passed via `options.agents` in the `agents` breakdown |
 | v0.2.92 | Fixed file-based agents from `.claude/agents/` not being discovered as invocable subagent types (regression since v0.2.87) |
@@ -2014,4 +2044,4 @@ This approach stays under 80MB RSS regardless of polling frequency.
 
 ---
 
-**Last verified**: 2026-04-21 | **SDK version**: 0.2.116
+**Last verified**: 2026-04-22 | **SDK version**: 0.2.117

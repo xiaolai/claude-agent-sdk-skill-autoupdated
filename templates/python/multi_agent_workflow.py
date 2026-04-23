@@ -2,7 +2,7 @@
 import asyncio
 from typing import Any
 from claude_agent_sdk import (
-    query, ClaudeAgentOptions, create_sdk_mcp_server, tool,
+    query, ClaudeAgentOptions, AgentDefinition, create_sdk_mcp_server, tool,
     AssistantMessage, ResultMessage, TextBlock,
 )
 from claude_agent_sdk.types import (
@@ -48,24 +48,24 @@ async def main():
         system_prompt="You are a DevOps orchestrator. Coordinate agents to complete tasks safely.",
         mcp_servers={"app-services": app_tools},
         agents={
-            "deployer": {
-                "description": "Handles deployments and rollbacks",
-                "prompt": "You deploy applications. Always verify health after deployment.",
-                "tools": ["Bash", "Read", "mcp__app-services__check_health", "mcp__app-services__send_notification"],
-                "model": "sonnet",
-            },
-            "security-checker": {
-                "description": "Security audits and vulnerability scanning",
-                "prompt": "Scan for exposed secrets, outdated deps, and OWASP issues.",
-                "tools": ["Read", "Grep", "Bash"],
-                "model": "sonnet",
-            },
-            "monitor": {
-                "description": "System monitoring and alerting",
-                "prompt": "Check metrics, error rates, and system health.",
-                "tools": ["Bash", "Read", "mcp__app-services__check_health"],
-                "model": "haiku",
-            },
+            "deployer": AgentDefinition(
+                description="Handles deployments and rollbacks",
+                prompt="You deploy applications. Always verify health after deployment.",
+                tools=["Bash", "Read", "mcp__app-services__check_health", "mcp__app-services__send_notification"],
+                model="sonnet",
+            ),
+            "security-checker": AgentDefinition(
+                description="Security audits and vulnerability scanning",
+                prompt="Scan for exposed secrets, outdated deps, and OWASP issues.",
+                tools=["Read", "Grep", "Bash"],
+                model="sonnet",
+            ),
+            "monitor": AgentDefinition(
+                description="System monitoring and alerting",
+                prompt="Check metrics, error rates, and system health.",
+                tools=["Bash", "Read", "mcp__app-services__check_health"],
+                model="haiku",
+            ),
         },
         allowed_tools=[
             "Task", "Read", "Bash", "Grep",

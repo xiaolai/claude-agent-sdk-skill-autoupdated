@@ -1,7 +1,7 @@
-# Claude Agent SDK — TypeScript Reference (v0.2.118)
+# Claude Agent SDK — TypeScript Reference (v0.2.119)
 
 
-**Package**: `@anthropic-ai/claude-agent-sdk@0.2.118`
+**Package**: `@anthropic-ai/claude-agent-sdk@0.2.119`
 **Docs**: https://platform.claude.com/docs/en/agent-sdk/overview
 **Repo**: https://github.com/anthropics/claude-agent-sdk-typescript
 **Migration**: Renamed from `@anthropic-ai/claude-code`. See [migration guide](https://platform.claude.com/docs/en/agent-sdk/migration-guide).
@@ -432,6 +432,7 @@ for await (const msg of warmed.query("Analyze this codebase")) {
 | `canUseTool` | `CanUseTool` | — | Custom permission callback |
 | `allowDangerouslySkipPermissions` | `boolean` | `false` | Required with `bypassPermissions` |
 | `permissionPromptToolName` | `string` | — | Route permission prompts through a named MCP tool |
+| `planModeInstructions` | `string` | — | Custom workflow instructions for plan mode. Replaces the default code-implementation workflow body in the plan-mode system reminder (the CLI still wraps it with the read-only enforcement preamble and ExitPlanMode footer). |
 
 ### Models & Output
 
@@ -484,6 +485,7 @@ for await (const msg of warmed.query("Analyze this codebase")) {
 | `hooks` | `Partial<Record<HookEvent, HookCallbackMatcher[]>>` | `{}` | Hook callbacks |
 | `includeHookEvents` | `boolean` | `false` | Include hook lifecycle events (`hook_started`, `hook_progress`, `hook_response`) in the output stream. SessionStart and Setup hook events are always emitted regardless of this setting. |
 | `settings` | `string \| Settings` | — | Additional settings to apply (path to JSON file or inline object). Loaded into the highest-priority "flag settings" layer. Equivalent to `--settings` CLI flag. |
+| `managedSettings` | `Settings` | — | Policy-tier settings supplied by the spawning parent process. Merged into the managed-settings layer (below IT-controlled sources but above user settings). Intended for embedding applications (e.g. desktop apps) that enforce enterprise lockdown settings on the spawned subprocess. Unlike `settings`, this cannot be widened by user/project settings. |
 | `toolConfig` | `ToolConfig` | — | Per-tool configuration for built-in tools (e.g., `{ askUserQuestion: { previewFormat: 'html' } }`) |
 | `additionalDirectories` | `string[]` | `[]` | Extra directories for Claude to access |
 | `debug` | `boolean` | — | Enable debug logging (v0.2.30) |
@@ -529,7 +531,7 @@ await q.setMcpServers(newServersConfig);    // Replace MCP servers mid-session
 
 // Plugin management
 await q.reloadPlugins();                    // Reload plugins from disk; returns { commands, agents, plugins, mcpServers, error_count }
-await q.getContextUsage();                  // Get context window usage breakdown by category — returns SDKControlGetContextUsageResponse (v0.2.118)
+await q.getContextUsage();                  // Get context window usage breakdown by category — returns SDKControlGetContextUsageResponse (v0.2.119)
 await q.readFile(path, { maxBytes? });      // Read a file from the session filesystem (gated by same read-permission rules as Read tool); returns SDKControlReadFileResponse | null
 
 // File checkpointing (requires enableFileCheckpointing: true)
@@ -633,7 +635,7 @@ type SDKMessage =
   // Status & progress
   | SDKStatusMessage              // type: 'system', subtype: 'status' — status updates (e.g., 'compacting')
   | SDKSessionStateChangedMessage // type: 'system', subtype: 'session_state_changed' — idle/running/requires_action
-  | SDKAPIRetryMessage            // type: 'system', subtype: 'api_retry' — transient API error being retried (v0.2.118)
+  | SDKAPIRetryMessage            // type: 'system', subtype: 'api_retry' — transient API error being retried (v0.2.119)
   | SDKToolProgressMessage        // type: 'tool_progress' — tool execution progress with elapsed time
   | SDKToolUseSummaryMessage      // type: 'tool_use_summary' — summary of tool usage
   | SDKAuthStatusMessage          // type: 'auth_status' — authentication status
@@ -660,7 +662,7 @@ type SDKMessage =
   | SDKMirrorErrorMessage         // type: 'system', subtype: 'mirror_error' — SessionStore.append() failed/timed out (batch dropped, at-most-once delivery)
 ```
 
-### SDKAPIRetryMessage (v0.2.118)
+### SDKAPIRetryMessage (v0.2.119)
 
 ```typescript
 { type: 'system', subtype: 'api_retry', uuid, session_id,
@@ -2015,15 +2017,15 @@ This approach stays under 80MB RSS regardless of polling frequency.
 
 ---
 
-## Changelog Highlights (v0.2.12 → v0.2.118)
+## Changelog Highlights (v0.2.12 → v0.2.119)
 
 | Version | Change |
 |---------|--------|
 | v0.2.105 | Fixed `error_max_structured_output_retries` being incorrectly emitted when the final retry attempt succeeded — valid `structured_output` is now preserved |
 | v0.2.105 | Added `system/memory_recall` event and `memory_paths` on `system/init` for SDK renderers to surface memory operations |
-| v0.2.118 | Added `network.allowMachLookup` sandbox option (macOS only — allows XPC/Mach service lookups needed for Playwright, iOS Simulator, Go-based tools with MITM proxy) |
-| v0.2.118 | Added `PermissionDenied` hook event (27 total) |
-| v0.2.118 | Added `Query.getContextUsage()` method (context window breakdown by category); made `SDKUserMessage.session_id` optional; added `@anthropic-ai/sdk` and `@modelcontextprotocol/sdk` as explicit dependencies (fixes type-any regression) |
+| v0.2.119 | Added `network.allowMachLookup` sandbox option (macOS only — allows XPC/Mach service lookups needed for Playwright, iOS Simulator, Go-based tools with MITM proxy) |
+| v0.2.119 | Added `PermissionDenied` hook event (29 total as of v0.2.119) |
+| v0.2.119 | Added `Query.getContextUsage()` method (context window breakdown by category); made `SDKUserMessage.session_id` optional; added `@anthropic-ai/sdk` and `@modelcontextprotocol/sdk` as explicit dependencies (fixes type-any regression) |
 | v0.2.94 | Fixed MCP server child processes not being cleaned up when `query()` session ends — resolves zombie process accumulation ([Known Issue #38](#38-mcp-server-processes-remain-as-zombies-after-session-ends--fixed-in-v0294)) |
 | v0.2.94 | Fixed `getContextUsage()` to include agents passed via `options.agents` in the `agents` breakdown |
 | v0.2.92 | Fixed file-based agents from `.claude/agents/` not being discovered as invocable subagent types (regression since v0.2.87) |
@@ -2046,4 +2048,4 @@ This approach stays under 80MB RSS regardless of polling frequency.
 
 ---
 
-**Last verified**: 2026-04-23 | **SDK version**: 0.2.118
+**Last verified**: 2026-04-24 | **SDK version**: 0.2.119

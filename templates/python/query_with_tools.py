@@ -1,12 +1,12 @@
 """Claude Agent SDK query with custom tools."""
 import asyncio
-from typing import Any
+from typing import Annotated, Any
 from claude_agent_sdk import (
     query, tool, create_sdk_mcp_server, ClaudeAgentOptions,
     ResultMessage,
 )
 
-@tool("get_weather", "Get weather for a city", {"city": {"type": "string", "description": "City name"}})
+@tool("get_weather", "Get weather for a city", {"city": Annotated[str, "City name"]})
 async def get_weather(args: dict[str, Any]) -> dict[str, Any]:
     city = args.get("city", "")
     return {"content": [{"type": "text", "text": f"Weather in {city}: 72°F, sunny"}]}

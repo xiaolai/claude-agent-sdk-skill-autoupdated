@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-04-24
+
+- SDK TS v0.2.118 → v0.2.119; PY v0.1.65 → v0.1.66
+- TS: added `planModeInstructions` and `managedSettings` options; PY: added `ThinkingDisplay` type, `AgentDefinition.background/effort/permissionMode` fields
+- Typecheck false-positive (stale-comma); mended in 1 pass; verify passed 28/28 on attempt 2
+- [Full report](reports/2026-04-24.md)
+
 ## 2026-04-22
 
 - SDK TS v0.2.116 → v0.2.117; PY v0.1.64 → v0.1.65

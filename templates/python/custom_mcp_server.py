@@ -1,11 +1,11 @@
 """In-process MCP server with Claude Agent SDK."""
 import asyncio
-from typing import Any
+from typing import Annotated, Any
 from claude_agent_sdk import query, tool, create_sdk_mcp_server, ClaudeAgentOptions
 
 @tool("search_docs", "Search documentation", {
-    "query": {"type": "string", "description": "Search query"},
-    "limit": {"type": "integer", "description": "Max results", "default": 5}
+    "query": Annotated[str, "Search query"],
+    "limit": Annotated[int, "Max results (default 5)"],
 })
 async def search_docs(args: dict[str, Any]) -> dict[str, Any]:
     q = args.get("query", "")
@@ -14,7 +14,7 @@ async def search_docs(args: dict[str, Any]) -> dict[str, Any]:
     return {"content": [{"type": "text", "text": "\n".join(results)}]}
 
 @tool("get_doc", "Get a specific document", {
-    "doc_id": {"type": "string", "description": "Document ID"}
+    "doc_id": Annotated[str, "Document ID"],
 })
 async def get_doc(args: dict[str, Any]) -> dict[str, Any]:
     doc_id = args.get("doc_id", "")

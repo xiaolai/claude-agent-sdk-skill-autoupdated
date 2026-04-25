@@ -640,7 +640,7 @@
   },
   "python": {
     "registry": {
-      "version": "0.1.66"
+      "version": "0.1.68"
     },
     "github": {
       "repo": "anthropics/claude-agent-sdk-python",
@@ -1448,5 +1448,5 @@
     "lastScannedIssueNumber": 776,
     "lastAuditedVersion": "0.1.56"
   },
-  "lastUpdated": "2026-04-24T08:36:44Z"
+  "lastUpdated": "2026-04-25T08:15:57Z"
 }

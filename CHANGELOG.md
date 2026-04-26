@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-04-26
+
+- No version bump (TS v0.2.119 and PY v0.1.68 unchanged); monitor detected registry dedup artifacts only
+- TS: added Known Issue #54 (Linux musl/glibc binary auto-discovery bug, v0.2.116+); PY: clarified SessionStore.append() retry semantics
+- Typecheck false-positive (recurring stale-comma); verify passed 2/2 on attempt 1 with 0 mend runs
+- [Full report](reports/2026-04-26.md)
+
 ## 2026-04-24
 
 - SDK TS v0.2.118 → v0.2.119; PY v0.1.65 → v0.1.66

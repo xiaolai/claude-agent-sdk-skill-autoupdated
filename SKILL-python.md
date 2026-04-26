@@ -1784,7 +1784,9 @@ from claude_agent_sdk import SessionStore, SessionKey, SessionStoreEntry, Sessio
 class SessionStore(Protocol):
     # REQUIRED — implement both to get mirroring + resume
     async def append(self, key: SessionKey, entries: list[SessionStoreEntry]) -> None:
-        """Called after every local write (~100ms cadence). At-most-once — failed batches not retried."""
+        """Called after every local write (~100ms cadence). Failed batches are retried (3 attempts total)
+        with short backoff before being dropped and surfaced as a MirrorErrorMessage.
+        Timeouts are not retried (in-flight call may still land). Implement as an idempotent upsert."""
         ...
 
     async def load(self, key: SessionKey) -> list[SessionStoreEntry] | None:

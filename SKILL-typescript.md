@@ -2015,6 +2015,43 @@ This approach stays under 80MB RSS regardless of polling frequency.
 **Workaround**: Use an HTTP proxy via `ANTHROPIC_BASE_URL` that intercepts outgoing requests and moves `cache_control: { type: "ephemeral" }` from the latest user message to the second-to-latest user message. This approximates what a correctly-replayed history would look like and restores prefix caching. Note: this workaround is fragile and requires ongoing maintenance as the SDK evolves. An official fix (preserve reminders in replay, or always use array format) has been proposed but not yet merged.
 **Note**: Issue [#269](https://github.com/anthropics/claude-agent-sdk-typescript/issues/269) (closed as duplicate) documents detailed reproduction steps and three proposed fixes for this root cause.
 
+### #54: Linux CLI binary auto-discovery prefers musl variant over glibc — `ENOENT` / `EPIPE` on glibc systems
+**Error**: `"Claude Code native binary not found at .../claude-agent-sdk-linux-x64-musl/claude"` or silent `EPIPE` crash on first `query()` call on Linux ([#296](https://github.com/anthropics/claude-agent-sdk-typescript/issues/296), [#306](https://github.com/anthropics/claude-agent-sdk-typescript/issues/306))
+**Cause**: The SDK's bundled-binary resolver on Linux always tries the musl variant (`@anthropic-ai/claude-agent-sdk-linux-{arch}-musl`) before the glibc variant (`@anthropic-ai/claude-agent-sdk-linux-{arch}`). Two failure modes result:
+1. **pnpm/both installed**: pnpm installs all optional deps for the current CPU architecture, so both `linux-x64-musl` and `linux-x64` are present. `require.resolve` succeeds for the musl path, but executing the musl ELF on a glibc system fails because the musl dynamic loader is missing — the SDK does not fall back to glibc and emits a misleading error (`EPIPE` instead of loader-not-found).
+2. **npm/only glibc installed**: Even when npm correctly filters out the musl package (via `libc: ['musl']` in package.json), the resolver tries the musl path first. The `try/catch` guard only wraps `require.resolve`, not the downstream spawn — so if the musl directory was never installed, `query()` still reports "binary not found" for the musl path without trying glibc.
+
+**Affected versions**: v0.2.116+ (when per-platform native binary packages were introduced).
+**Workaround** — choose one:
+```typescript
+// Option 1: Pass the glibc binary path explicitly (most reliable)
+import { query } from "@anthropic-ai/claude-agent-sdk";
+import { createRequire } from "module";
+const req = createRequire(import.meta.url);
+const claudePath = req.resolve("@anthropic-ai/claude-agent-sdk-linux-x64/claude");
+
+for await (const msg of query({ prompt: "...", options: { pathToClaudeCodeExecutable: claudePath } })) { ... }
+```
+```json
+// Option 2: Override musl packages with a stub in package.json
+{
+  "overrides": {
+    "@anthropic-ai/claude-agent-sdk": {
+      "@anthropic-ai/claude-agent-sdk-linux-x64-musl": "npm:@favware/skip-dependency@^1",
+      "@anthropic-ai/claude-agent-sdk-linux-arm64-musl": "npm:@favware/skip-dependency@^1"
+    }
+  }
+}
+```
+```dockerfile
+# Option 3: Dockerfile symlink (for npm deploys where only glibc package is installed)
+RUN mkdir -p /app/node_modules/@anthropic-ai/claude-agent-sdk-linux-x64-musl && \
+    ln -sf /app/node_modules/@anthropic-ai/claude-agent-sdk-linux-x64/claude \
+           /app/node_modules/@anthropic-ai/claude-agent-sdk-linux-x64-musl/claude
+```
+**Legacy workaround**: Downgrade to `@anthropic-ai/claude-agent-sdk@0.2.112` (last version before native binary packages).
+**Note**: PR [#305](https://github.com/anthropics/claude-agent-sdk-typescript/issues/305) (pending) adds a libc probe to select the correct variant at runtime.
+
 ---
 
 ## Changelog Highlights (v0.2.12 → v0.2.119)

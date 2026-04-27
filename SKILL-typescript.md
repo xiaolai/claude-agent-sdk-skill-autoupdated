@@ -982,10 +982,12 @@ Common fields on all hooks: `session_id`, `transcript_path`, `cwd`, `permission_
 
 | Field | Hooks |
 |-------|-------|
-| `tool_name`, `tool_input`, `tool_use_id` | PreToolUse, PostToolUse, PostToolUseFailure, PermissionRequest |
+| `tool_name`, `tool_input`, `tool_use_id` | PreToolUse, PostToolUse, PostToolUseFailure, PermissionRequest, PermissionDenied |
 | `tool_response` | PostToolUse |
+| `duration_ms?` (tool execution time in ms, excludes permission-prompt and hook time) | PostToolUse, PostToolUseFailure |
 | `tool_calls` (array of `{ tool_name, tool_input, tool_use_id, tool_response? }`) | PostToolBatch |
 | `error`, `is_interrupt` | PostToolUseFailure |
+| `reason` | PermissionDenied (why permission was denied) |
 | `prompt`, `session_title?` | UserPromptSubmit |
 | `expansion_type` (`'slash_command' \| 'mcp_prompt'`), `command_name`, `command_args`, `command_source?`, `prompt` | UserPromptExpansion |
 | `stop_hook_active` | Stop, SubagentStop |
@@ -2085,4 +2087,4 @@ RUN mkdir -p /app/node_modules/@anthropic-ai/claude-agent-sdk-linux-x64-musl && 
 
 ---
 
-**Last verified**: 2026-04-24 | **SDK version**: 0.2.119
+**Last verified**: 2026-04-27 | **SDK version**: 0.2.119

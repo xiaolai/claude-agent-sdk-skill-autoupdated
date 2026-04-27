@@ -2730,4 +2730,4 @@ options = ClaudeAgentOptions(
 
 ---
 
-**Last verified**: 2026-04-25 | **SDK version**: 0.1.68
+**Last verified**: 2026-04-27 | **SDK version**: 0.1.68

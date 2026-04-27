@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-04-27
+
+- No version bump (TS v0.2.119 and PY v0.1.68 unchanged); registry dedup artifacts only
+- TS: expanded hooks field table — added `PermissionDenied` hook, `duration_ms` (PostToolUse/PostToolUseFailure), and `reason` (PermissionDenied) fields; PY: date refresh only
+- Typecheck false-positive (recurring stale-comma); verify passed 2/2 on attempt 1 with 0 mend runs
+- [Full report](reports/2026-04-27.md)
+
 ## 2026-04-26
 
 - No version bump (TS v0.2.119 and PY v0.1.68 unchanged); monitor detected registry dedup artifacts only

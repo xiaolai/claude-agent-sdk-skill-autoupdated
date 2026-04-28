@@ -1,7 +1,7 @@
-# Claude Agent SDK — TypeScript Reference (v0.2.119)
+# Claude Agent SDK — TypeScript Reference (v0.2.121)
 
 
-**Package**: `@anthropic-ai/claude-agent-sdk@0.2.119`
+**Package**: `@anthropic-ai/claude-agent-sdk@0.2.121`
 **Docs**: https://platform.claude.com/docs/en/agent-sdk/overview
 **Repo**: https://github.com/anthropics/claude-agent-sdk-typescript
 **Migration**: Renamed from `@anthropic-ai/claude-code`. See [migration guide](https://platform.claude.com/docs/en/agent-sdk/migration-guide).
@@ -99,6 +99,7 @@ function createSdkMcpServer(options: {
   name: string;
   version?: string;
   tools?: Array<SdkMcpToolDefinition<any>>;
+  alwaysLoad?: boolean;  // When true, all tools from this server are always included in the prompt (never deferred behind tool search). Per-tool tool({ alwaysLoad }) is OR'd with this.
 }): McpSdkServerConfigWithInstance
 ```
 
@@ -487,6 +488,8 @@ for await (const msg of warmed.query("Analyze this codebase")) {
 | `settings` | `string \| Settings` | — | Additional settings to apply (path to JSON file or inline object). Loaded into the highest-priority "flag settings" layer. Equivalent to `--settings` CLI flag. |
 | `managedSettings` | `Settings` | — | Policy-tier settings supplied by the spawning parent process. Merged into the managed-settings layer (below IT-controlled sources but above user settings). Intended for embedding applications (e.g. desktop apps) that enforce enterprise lockdown settings on the spawned subprocess. Unlike `settings`, this cannot be widened by user/project settings. |
 | `toolConfig` | `ToolConfig` | — | Per-tool configuration for built-in tools (e.g., `{ askUserQuestion: { previewFormat: 'html' } }`) |
+| `skills` | `string[] \| 'all'` | — | Skills to enable for the session. `'all'` enables every discovered skill. `string[]` enables only the listed skills (names match SKILL.md `name` / directory name, or `plugin:skill` for plugin-qualified skills). Omitting this does NOT disable skills — the CLI's own defaults still apply. This is a context filter: unlisted skills are hidden from the model but their files remain on disk. |
+| `forwardSubagentText` | `boolean` | `false` | Forward subagent text and thinking blocks as assistant/user messages with `parent_tool_use_id` set. By default, only tool_use/tool_result blocks from subagents are emitted (heartbeat counter). When `true`, the full subagent conversation is forwarded so consumers can render a nested transcript. |
 | `additionalDirectories` | `string[]` | `[]` | Extra directories for Claude to access |
 | `debug` | `boolean` | — | Enable debug logging (v0.2.30) |
 | `debugFile` | `string` | — | Debug log file path (v0.2.30) |
@@ -531,8 +534,8 @@ await q.setMcpServers(newServersConfig);    // Replace MCP servers mid-session
 
 // Plugin management
 await q.reloadPlugins();                    // Reload plugins from disk; returns { commands, agents, plugins, mcpServers, error_count }
-await q.getContextUsage();                  // Get context window usage breakdown by category — returns SDKControlGetContextUsageResponse (v0.2.119)
-await q.readFile(path, { maxBytes? });      // Read a file from the session filesystem (gated by same read-permission rules as Read tool); returns SDKControlReadFileResponse | null
+await q.getContextUsage();                  // Get context window usage breakdown by category — returns SDKControlGetContextUsageResponse (v0.2.121)
+await q.readFile(path, { maxBytes?, encoding?: 'utf-8' | 'base64' });  // Read a file from the session filesystem (gated by same read-permission rules as Read tool); returns SDKControlReadFileResponse | null. Use 'base64' for binary files like images.
 
 // File checkpointing (requires enableFileCheckpointing: true)
 await q.rewindFiles(userMessageUuid, { dryRun?: boolean }); // Rewind to checkpoint
@@ -635,7 +638,7 @@ type SDKMessage =
   // Status & progress
   | SDKStatusMessage              // type: 'system', subtype: 'status' — status updates (e.g., 'compacting')
   | SDKSessionStateChangedMessage // type: 'system', subtype: 'session_state_changed' — idle/running/requires_action
-  | SDKAPIRetryMessage            // type: 'system', subtype: 'api_retry' — transient API error being retried (v0.2.119)
+  | SDKAPIRetryMessage            // type: 'system', subtype: 'api_retry' — transient API error being retried (v0.2.121)
   | SDKToolProgressMessage        // type: 'tool_progress' — tool execution progress with elapsed time
   | SDKToolUseSummaryMessage      // type: 'tool_use_summary' — summary of tool usage
   | SDKAuthStatusMessage          // type: 'auth_status' — authentication status
@@ -662,7 +665,7 @@ type SDKMessage =
   | SDKMirrorErrorMessage         // type: 'system', subtype: 'mirror_error' — SessionStore.append() failed/timed out (batch dropped, at-most-once delivery)
 ```
 
-### SDKAPIRetryMessage (v0.2.119)
+### SDKAPIRetryMessage (v0.2.121)
 
 ```typescript
 { type: 'system', subtype: 'api_retry', uuid, session_id,
@@ -901,7 +904,15 @@ return {
   }
 };
 
-// Modify MCP tool output (PostToolUse only)
+// Modify tool output (PostToolUse only) — updatedToolOutput works for ALL tools
+return {
+  hookSpecificOutput: {
+    hookEventName: input.hook_event_name,
+    updatedToolOutput: 'filtered output'  // preferred: replaces output for any tool
+  }
+};
+
+// Modify MCP tool output only (PostToolUse only, legacy — prefer updatedToolOutput)
 return {
   hookSpecificOutput: {
     hookEventName: input.hook_event_name,
@@ -2056,15 +2067,15 @@ RUN mkdir -p /app/node_modules/@anthropic-ai/claude-agent-sdk-linux-x64-musl && 
 
 ---
 
-## Changelog Highlights (v0.2.12 → v0.2.119)
+## Changelog Highlights (v0.2.12 → v0.2.121)
 
 | Version | Change |
 |---------|--------|
 | v0.2.105 | Fixed `error_max_structured_output_retries` being incorrectly emitted when the final retry attempt succeeded — valid `structured_output` is now preserved |
 | v0.2.105 | Added `system/memory_recall` event and `memory_paths` on `system/init` for SDK renderers to surface memory operations |
-| v0.2.119 | Added `network.allowMachLookup` sandbox option (macOS only — allows XPC/Mach service lookups needed for Playwright, iOS Simulator, Go-based tools with MITM proxy) |
-| v0.2.119 | Added `PermissionDenied` hook event (29 total as of v0.2.119) |
-| v0.2.119 | Added `Query.getContextUsage()` method (context window breakdown by category); made `SDKUserMessage.session_id` optional; added `@anthropic-ai/sdk` and `@modelcontextprotocol/sdk` as explicit dependencies (fixes type-any regression) |
+| v0.2.121 | Added `network.allowMachLookup` sandbox option (macOS only — allows XPC/Mach service lookups needed for Playwright, iOS Simulator, Go-based tools with MITM proxy) |
+| v0.2.121 | Added `PermissionDenied` hook event (29 total as of v0.2.121) |
+| v0.2.121 | Added `Query.getContextUsage()` method (context window breakdown by category); made `SDKUserMessage.session_id` optional; added `@anthropic-ai/sdk` and `@modelcontextprotocol/sdk` as explicit dependencies (fixes type-any regression) |
 | v0.2.94 | Fixed MCP server child processes not being cleaned up when `query()` session ends — resolves zombie process accumulation ([Known Issue #38](#38-mcp-server-processes-remain-as-zombies-after-session-ends--fixed-in-v0294)) |
 | v0.2.94 | Fixed `getContextUsage()` to include agents passed via `options.agents` in the `agents` breakdown |
 | v0.2.92 | Fixed file-based agents from `.claude/agents/` not being discovered as invocable subagent types (regression since v0.2.87) |
@@ -2087,4 +2098,4 @@ RUN mkdir -p /app/node_modules/@anthropic-ai/claude-agent-sdk-linux-x64-musl && 
 
 ---
 
-**Last verified**: 2026-04-27 | **SDK version**: 0.2.119
+**Last verified**: 2026-04-28 | **SDK version**: 0.2.121

@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-04-29
+
+- SDK TS v0.2.121 → v0.2.123; PY v0.1.69 → v0.1.71
+- TS: added `planModeInstructions` to V2 supported options; PY: version refs updated for AssistantMessage/ResultMessage/AgentDefinition fields
+- Typecheck false-positive (stale-comma); mended in 1 pass; verify passed 28/28 on attempt 2; no new Known Issues added
+- [Full report](reports/2026-04-29.md)
+
 ## 2026-04-27
 
 - No version bump (TS v0.2.119 and PY v0.1.68 unchanged); registry dedup artifacts only

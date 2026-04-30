@@ -2099,4 +2099,4 @@ RUN mkdir -p /app/node_modules/@anthropic-ai/claude-agent-sdk-linux-x64-musl && 
 
 ---
 
-**Last verified**: 2026-04-29 | **SDK version**: 0.2.123
+**Last verified**: 2026-04-30 | **SDK version**: 0.2.123

@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-04-30
+
+- No version bump (TS v0.2.123 and PY v0.1.71 unchanged); monitor detected registry dedup artifacts only
+- Research agents ran (56 + 70 turns) but found no new Known Issues to document; date refresh only
+- Typecheck false-positive (stale-comma in import check); verify passed 2/2 on attempt 1 with 0 mend runs
+- [Full report](reports/2026-04-30.md)
+
 ## 2026-04-29
 
 - SDK TS v0.2.121 → v0.2.123; PY v0.1.69 → v0.1.71

@@ -1,7 +1,7 @@
-# Claude Agent SDK — TypeScript Reference (v0.2.123)
+# Claude Agent SDK — TypeScript Reference (v0.2.126)
 
 
-**Package**: `@anthropic-ai/claude-agent-sdk@0.2.123`
+**Package**: `@anthropic-ai/claude-agent-sdk@0.2.126`
 **Docs**: https://platform.claude.com/docs/en/agent-sdk/overview
 **Repo**: https://github.com/anthropics/claude-agent-sdk-typescript
 **Migration**: Renamed from `@anthropic-ai/claude-code`. See [migration guide](https://platform.claude.com/docs/en/agent-sdk/migration-guide).
@@ -534,7 +534,7 @@ await q.setMcpServers(newServersConfig);    // Replace MCP servers mid-session
 
 // Plugin management
 await q.reloadPlugins();                    // Reload plugins from disk; returns { commands, agents, plugins, mcpServers, error_count }
-await q.getContextUsage();                  // Get context window usage breakdown by category — returns SDKControlGetContextUsageResponse (v0.2.123)
+await q.getContextUsage();                  // Get context window usage breakdown by category — returns SDKControlGetContextUsageResponse (v0.2.126)
 await q.readFile(path, { maxBytes?, encoding?: 'utf-8' | 'base64' });  // Read a file from the session filesystem (gated by same read-permission rules as Read tool); returns SDKControlReadFileResponse | null. Use 'base64' for binary files like images.
 
 // File checkpointing (requires enableFileCheckpointing: true)
@@ -638,7 +638,7 @@ type SDKMessage =
   // Status & progress
   | SDKStatusMessage              // type: 'system', subtype: 'status' — status updates (e.g., 'compacting')
   | SDKSessionStateChangedMessage // type: 'system', subtype: 'session_state_changed' — idle/running/requires_action
-  | SDKAPIRetryMessage            // type: 'system', subtype: 'api_retry' — transient API error being retried (v0.2.123)
+  | SDKAPIRetryMessage            // type: 'system', subtype: 'api_retry' — transient API error being retried (v0.2.126)
   | SDKToolProgressMessage        // type: 'tool_progress' — tool execution progress with elapsed time
   | SDKToolUseSummaryMessage      // type: 'tool_use_summary' — summary of tool usage
   | SDKAuthStatusMessage          // type: 'auth_status' — authentication status
@@ -665,7 +665,7 @@ type SDKMessage =
   | SDKMirrorErrorMessage         // type: 'system', subtype: 'mirror_error' — SessionStore.append() failed/timed out (batch dropped, at-most-once delivery)
 ```
 
-### SDKAPIRetryMessage (v0.2.123)
+### SDKAPIRetryMessage (v0.2.126)
 
 ```typescript
 { type: 'system', subtype: 'api_retry', uuid, session_id,
@@ -2065,18 +2065,45 @@ RUN mkdir -p /app/node_modules/@anthropic-ai/claude-agent-sdk-linux-x64-musl && 
 **Legacy workaround**: Downgrade to `@anthropic-ai/claude-agent-sdk@0.2.112` (last version before native binary packages).
 **Note**: PR [#305](https://github.com/anthropics/claude-agent-sdk-typescript/issues/305) (pending) adds a libc probe to select the correct variant at runtime.
 
+### #55: `skillOverrides: { "name": "off" }` blocks invocation but does not hide the skill from the model's skill listing
+**Symptom**: Setting `skillOverrides: { "<name>": "off" }` (via `settings` option or `~/.claude/settings.json`) prevents the skill from running, but the skill still appears in the `<skills>` listing injected into the model's system prompt every turn. The model is told the skill exists, then gets `"Skill <name> is disabled"` when it tries to invoke it — causing confusing "I know about X but cannot use it" behavior ([#291](https://github.com/anthropics/claude-agent-sdk-typescript/issues/291))
+**Cause**: The skill loader checks `skillOverrides` at invocation time but not during the listing-injection pass. The listing pass appends all discovered skills to the prompt regardless of override state.
+**Impact**: Skills that should be hidden from the model's awareness (e.g., internal or dangerous skills) remain visible. The model wastes turns attempting to use disabled skills, and may behave unpredictably when invocation fails.
+**Workaround**: Use the `skills` option to control visibility rather than `skillOverrides`. Pass an explicit allowlist of skill names you want the model to see and use — skills not in the list are hidden from both listing and invocation:
+```typescript
+// WRONG — skill is still listed in model's system prompt
+const q = query({
+  prompt: "...",
+  options: {
+    settings: { skillOverrides: { "dangerous-skill": "off" } }
+  }
+});
+
+// CORRECT — explicitly list only the skills the model should see
+const q = query({
+  prompt: "...",
+  options: {
+    skills: ["allowed-skill-1", "allowed-skill-2"]  // dangerous-skill not listed → invisible to model
+  }
+});
+
+// To disable ALL skills:
+const q = query({ prompt: "...", options: { skills: [] } });
+```
+**Note**: `skills: []` disables the SDK's own skills context filter but the CLI may still inject built-in skills. Use `skillOverrides: { "*": "off" }` combined with an explicit `skills` allowlist for the strictest control.
+
 ---
 
-## Changelog Highlights (v0.2.12 → v0.2.123)
+## Changelog Highlights (v0.2.12 → v0.2.126)
 
 | Version | Change |
 |---------|--------|
 | v0.2.105 | Fixed `error_max_structured_output_retries` being incorrectly emitted when the final retry attempt succeeded — valid `structured_output` is now preserved |
 | v0.2.105 | Added `system/memory_recall` event and `memory_paths` on `system/init` for SDK renderers to surface memory operations |
-| v0.2.123 | `planModeInstructions` added to `SDKSessionOptions` — now supported in V2 session API (`unstable_v2_createSession`, `unstable_v2_resumeSession`) |
-| v0.2.123 | Added `network.allowMachLookup` sandbox option (macOS only — allows XPC/Mach service lookups needed for Playwright, iOS Simulator, Go-based tools with MITM proxy) |
-| v0.2.123 | Added `PermissionDenied` hook event (29 total as of v0.2.123) |
-| v0.2.123 | Added `Query.getContextUsage()` method (context window breakdown by category); made `SDKUserMessage.session_id` optional; added `@anthropic-ai/sdk` and `@modelcontextprotocol/sdk` as explicit dependencies (fixes type-any regression) |
+| v0.2.126 | `planModeInstructions` added to `SDKSessionOptions` — now supported in V2 session API (`unstable_v2_createSession`, `unstable_v2_resumeSession`) |
+| v0.2.126 | Added `network.allowMachLookup` sandbox option (macOS only — allows XPC/Mach service lookups needed for Playwright, iOS Simulator, Go-based tools with MITM proxy) |
+| v0.2.126 | Added `PermissionDenied` hook event (29 total as of v0.2.126) |
+| v0.2.126 | Added `Query.getContextUsage()` method (context window breakdown by category); made `SDKUserMessage.session_id` optional; added `@anthropic-ai/sdk` and `@modelcontextprotocol/sdk` as explicit dependencies (fixes type-any regression) |
 | v0.2.94 | Fixed MCP server child processes not being cleaned up when `query()` session ends — resolves zombie process accumulation ([Known Issue #38](#38-mcp-server-processes-remain-as-zombies-after-session-ends--fixed-in-v0294)) |
 | v0.2.94 | Fixed `getContextUsage()` to include agents passed via `options.agents` in the `agents` breakdown |
 | v0.2.92 | Fixed file-based agents from `.claude/agents/` not being discovered as invocable subagent types (regression since v0.2.87) |
@@ -2099,4 +2126,4 @@ RUN mkdir -p /app/node_modules/@anthropic-ai/claude-agent-sdk-linux-x64-musl && 
 
 ---
 
-**Last verified**: 2026-04-30 | **SDK version**: 0.2.123
+**Last verified**: 2026-05-01 | **SDK version**: 0.2.126

@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-05-02
+
+- No version bump (TS v0.2.126 and PY v0.1.72 unchanged); monitor detected registry dedup artifacts only
+- Research agents ran (55 + 56 turns) but found no new issues beyond scanned high-water marks (TS #236, PY #776)
+- Typecheck false-positive (recurring stale-comma in import check); verify passed 2/2 on attempt 1 with 0 mend runs
+- [Full report](reports/2026-05-02.md)
+
 ## 2026-04-30
 
 - No version bump (TS v0.2.123 and PY v0.1.71 unchanged); monitor detected registry dedup artifacts only

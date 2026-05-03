@@ -1144,7 +1144,7 @@ myTool.annotations = { destructiveHint: true, readOnlyHint: false };
 - **In-process MCP servers don't work in subagents** since v0.2.23 ([#158](https://github.com/anthropics/claude-agent-sdk-typescript/issues/158))
 - **HTTP MCP servers fail behind corporate proxies** — use SSE or stdio instead ([Known Issue #14](#14-http-mcp-servers-fail-behind-corporate-proxies))
 - **Unicode U+2028/U+2029 in tool results breaks JSON** — sanitize all MCP responses (see [Known Issue #5](#5-unicode-line-separators-break-json))
-- **5-minute hard timeout** on MCP tool calls — no workaround (see [Known Issue #10](#10-mcp-tool-calls-timeout-at-5-minutes-despite-mcp_tool_timeout))
+- **Hardcoded timeouts** on MCP tool calls — 5 min for all types, 60s for HTTP MCP POST; no workaround (see [Known Issue #10](#10-mcp-timeout-issues--5-minutes-for-all-tool-calls-60s-for-http-mcp-post-requests))
 
 ---
 
@@ -1564,10 +1564,11 @@ const rgPath = path.join(extensionPath, "node_modules/@anthropic-ai/claude-agent
 await fs.promises.chmod(rgPath, 0o755);
 ```
 
-### #10: MCP tool calls timeout at 5 minutes despite MCP_TOOL_TIMEOUT
-**Error**: MCP tools timeout at exactly 300s with "fetch failed" even with `MCP_TOOL_TIMEOUT=1200000` ([#118](https://github.com/anthropics/claude-agent-sdk-typescript/issues/118))
-**Cause**: Hardcoded undici `headersTimeout` overrides environment variable.
-**Status**: No workaround available — long-running MCP tools (>5min) not currently supported.
+### #10: MCP timeout issues — 5 minutes for all tool calls, 60s for HTTP MCP POST requests
+**Error (all MCP types)**: MCP tools timeout at exactly 300s with "fetch failed" even with `MCP_TOOL_TIMEOUT=1200000` ([#118](https://github.com/anthropics/claude-agent-sdk-typescript/issues/118))
+**Error (HTTP MCP servers)**: HTTP MCP POST requests time out at 60s with `"The operation timed out"` regardless of `MCP_TOOL_TIMEOUT` or `MCP_TIMEOUT` env vars ([#297](https://github.com/anthropics/claude-agent-sdk-typescript/issues/297))
+**Cause**: (1) Hardcoded undici `headersTimeout` overrides `MCP_TOOL_TIMEOUT` for all MCP tool calls. (2) A separate hardcoded 60-second `fetch` timeout wraps all HTTP/SSE MCP POST requests in the native CLI binary — env vars do not affect it.
+**Status**: No workaround available — long-running MCP tool calls (>5min via stdio, >60s via HTTP) are not currently supported.
 
 ### #11: Opaque "process exited with code 1" errors
 **Error**: Cryptic crash without detail when input is too long, session expired, or other failures ([#106](https://github.com/anthropics/claude-agent-sdk-typescript/issues/106))
@@ -2126,4 +2127,4 @@ const q = query({ prompt: "...", options: { skills: [] } });
 
 ---
 
-**Last verified**: 2026-05-01 | **SDK version**: 0.2.126
+**Last verified**: 2026-05-03 | **SDK version**: 0.2.126

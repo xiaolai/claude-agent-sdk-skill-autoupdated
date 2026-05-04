@@ -1070,7 +1070,7 @@ PermissionMode = Literal[
 ]
 ```
 
-**Note**: The Python SDK exposes 6 permission modes as of v0.1.57. The TypeScript SDK additionally has `"delegate"`.
+**Note**: The Python SDK exposes 6 permission modes as of v0.1.72 (`dontAsk` added in v0.1.72; `auto` added in v0.1.57). The TypeScript SDK additionally has `"delegate"`.
 
 ### `can_use_tool`
 

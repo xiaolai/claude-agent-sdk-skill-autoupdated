@@ -2127,4 +2127,4 @@ const q = query({ prompt: "...", options: { skills: [] } });
 
 ---
 
-**Last verified**: 2026-05-03 | **SDK version**: 0.2.126
+**Last verified**: 2026-05-04 | **SDK version**: 0.2.126

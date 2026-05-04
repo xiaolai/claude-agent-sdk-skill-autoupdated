@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-05-04
+
+- No version bump (TS v0.2.126 and PY v0.1.72 unchanged); monitor detected registry dedup artifacts only
+- Python SKILL-python.md doc fix: `dontAsk` permission mode correctly attributed to v0.1.72 (not v0.1.57); both research agents ran 70 turns with no new findings
+- Recurring typecheck false-positive (stale-comma in import resolution check); verify passed 2/2 on attempt 1 with 0 mend runs
+- [Full report](reports/2026-05-04.md)
+
 ## 2026-05-03
 
 - No version bump (TS v0.2.126 and PY v0.1.72 unchanged); monitor detected registry dedup artifacts only

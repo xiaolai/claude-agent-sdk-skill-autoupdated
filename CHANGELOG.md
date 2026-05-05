@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-05-05
+
+- Update agent failed (hit 30-turn max) during TS v0.2.126→0.2.128 + PY v0.1.72→0.1.73 bump; partial changes appear complete (all template/doc/state files updated)
+- Both research agents succeeded (103 + 97 turns); no new Known Issues found above high-water marks (TS #236, PY #776)
+- Recurring typecheck stale-comma false-positive fixed by mending (attempt 2); verify passed 28/28
+- [Full report](reports/2026-05-05.md)
+
 ## 2026-05-04
 
 - No version bump (TS v0.2.126 and PY v0.1.72 unchanged); monitor detected registry dedup artifacts only

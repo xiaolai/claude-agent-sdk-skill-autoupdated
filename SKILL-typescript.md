@@ -1,7 +1,7 @@
-# Claude Agent SDK — TypeScript Reference (v0.2.126)
+# Claude Agent SDK — TypeScript Reference (v0.2.128)
 
 
-**Package**: `@anthropic-ai/claude-agent-sdk@0.2.126`
+**Package**: `@anthropic-ai/claude-agent-sdk@0.2.128`
 **Docs**: https://platform.claude.com/docs/en/agent-sdk/overview
 **Repo**: https://github.com/anthropics/claude-agent-sdk-typescript
 **Migration**: Renamed from `@anthropic-ai/claude-code`. See [migration guide](https://platform.claude.com/docs/en/agent-sdk/migration-guide).
@@ -25,7 +25,7 @@
 - [V2 Session API (Preview)](#v2-session-api-preview) — `unstable_v2_createSession`, `unstable_v2_resumeSession`, `unstable_v2_prompt`
 - [Debugging & Error Handling](#debugging--error-handling)
 - [Known Issues](#known-issues)
-- [Changelog Highlights](#changelog-highlights-v0212--v0287)
+- [Changelog Highlights](#changelog-highlights-v0212--v02128)
 
 ---
 
@@ -465,6 +465,7 @@ for await (const msg of warmed.query("Analyze this codebase")) {
 | `maxBudgetUsd` | `number` | — | Max budget in USD |
 | `enableFileCheckpointing` | `boolean` | `false` | Enable file rollback |
 | `sessionStore` | `SessionStore` | — | **@alpha** Mirror session transcripts to external storage (S3, DB, Redis). The subprocess still writes to local disk (set `CLAUDE_CONFIG_DIR=/tmp` for ephemeral local copy); the adapter receives a secondary copy for multi-tenant/cloud deployments. Cannot be used with `persistSession: false`. |
+| `sessionStoreFlush` | `'batched' \| 'eager'` | `'batched'` | **@alpha** Controls how aggressively transcript entries are flushed to `sessionStore`. `'batched'` buffers frames and flushes at end-of-turn or when pending thresholds are exceeded. `'eager'` schedules a background flush after every frame for near-real-time delivery to `SessionStore.append()` (each frame becomes its own batch, no coalescing — adapters should be cheap per call). Ignored when `sessionStore` is not set. |
 | `loadTimeoutMs` | `number` | `60000` | **@alpha** Timeout (ms) for each `sessionStore.load()` call during resume materialization. Prevents hanging indefinitely if the adapter doesn't respond. |
 
 ### MCP & Agents
@@ -534,7 +535,7 @@ await q.setMcpServers(newServersConfig);    // Replace MCP servers mid-session
 
 // Plugin management
 await q.reloadPlugins();                    // Reload plugins from disk; returns { commands, agents, plugins, mcpServers, error_count }
-await q.getContextUsage();                  // Get context window usage breakdown by category — returns SDKControlGetContextUsageResponse (v0.2.126)
+await q.getContextUsage();                  // Get context window usage breakdown by category — returns SDKControlGetContextUsageResponse (v0.2.128)
 await q.readFile(path, { maxBytes?, encoding?: 'utf-8' | 'base64' });  // Read a file from the session filesystem (gated by same read-permission rules as Read tool); returns SDKControlReadFileResponse | null. Use 'base64' for binary files like images.
 
 // File checkpointing (requires enableFileCheckpointing: true)
@@ -638,7 +639,7 @@ type SDKMessage =
   // Status & progress
   | SDKStatusMessage              // type: 'system', subtype: 'status' — status updates (e.g., 'compacting')
   | SDKSessionStateChangedMessage // type: 'system', subtype: 'session_state_changed' — idle/running/requires_action
-  | SDKAPIRetryMessage            // type: 'system', subtype: 'api_retry' — transient API error being retried (v0.2.126)
+  | SDKAPIRetryMessage            // type: 'system', subtype: 'api_retry' — transient API error being retried (v0.2.128)
   | SDKToolProgressMessage        // type: 'tool_progress' — tool execution progress with elapsed time
   | SDKToolUseSummaryMessage      // type: 'tool_use_summary' — summary of tool usage
   | SDKAuthStatusMessage          // type: 'auth_status' — authentication status
@@ -665,7 +666,7 @@ type SDKMessage =
   | SDKMirrorErrorMessage         // type: 'system', subtype: 'mirror_error' — SessionStore.append() failed/timed out (batch dropped, at-most-once delivery)
 ```
 
-### SDKAPIRetryMessage (v0.2.126)
+### SDKAPIRetryMessage (v0.2.128)
 
 ```typescript
 { type: 'system', subtype: 'api_retry', uuid, session_id,
@@ -697,17 +698,19 @@ Authoritative turn-over signal. `'idle'` fires after the result flushes and the 
   api_error_status?: number | null,        // HTTP status code of the last API error (if any)
   deferred_tool_use?: SDKDeferredToolUse,  // set when a tool use was deferred (plan mode etc.)
   terminal_reason?: TerminalReason,        // why the query loop terminated
-  fast_mode_state?: FastModeState }
+  fast_mode_state?: FastModeState,
+  origin?: SDKMessageOrigin }              // provenance of the message (absent or 'human' = keyboard input)
 
 // Error variants
 { type: 'result', subtype: 'error_max_turns' | 'error_during_execution'
   | 'error_max_budget_usd' | 'error_max_structured_output_retries',
   session_id, is_error: true, errors: string[], ...,
   terminal_reason?: TerminalReason,
-  fast_mode_state?: FastModeState }
+  fast_mode_state?: FastModeState,
+  origin?: SDKMessageOrigin }
 
 // Error codes (SDKAssistantMessageError)
-'authentication_failed' | 'billing_error' | 'rate_limit' |
+'authentication_failed' | 'oauth_org_not_allowed' | 'billing_error' | 'rate_limit' |
 'invalid_request' | 'server_error' | 'unknown' | 'max_output_tokens'
 
 // TerminalReason — why the query loop terminated (unset when bypassed or interrupted externally)
@@ -731,6 +734,15 @@ type SDKDeferredToolUse = {
   name: string;
   input: Record<string, unknown>;
 };
+
+// SDKMessageOrigin — provenance of a result or user-role message
+// Absent or kind 'human' means keyboard input from the user.
+type SDKMessageOrigin =
+  | { kind: 'human' }                          // keyboard / direct user input
+  | { kind: 'channel'; server: string }        // peer session via channel
+  | { kind: 'peer'; from: string; name?: string }  // message from a peer agent
+  | { kind: 'task-notification' }              // emitted by a background task
+  | { kind: 'coordinator' };                   // emitted by an orchestrating agent
 ```
 
 ### SDKSystemMessage (init)
@@ -2095,16 +2107,17 @@ const q = query({ prompt: "...", options: { skills: [] } });
 
 ---
 
-## Changelog Highlights (v0.2.12 → v0.2.126)
+## Changelog Highlights (v0.2.12 → v0.2.128)
 
 | Version | Change |
 |---------|--------|
+| v0.2.128 | Added `sessionStoreFlush` option (@alpha) — controls flush strategy for `sessionStore` transcript mirroring (`'batched'` default buffers per-turn, `'eager'` delivers each frame as its own `append()` batch for near-real-time delivery; added `'oauth_org_not_allowed'` error code to `SDKAssistantMessageError`; added `origin?: SDKMessageOrigin` field to both `SDKResultSuccess` and `SDKResultError`; added `SDKMessageOrigin` type (`'human' \| 'channel' \| 'peer' \| 'task-notification' \| 'coordinator'`) |
 | v0.2.105 | Fixed `error_max_structured_output_retries` being incorrectly emitted when the final retry attempt succeeded — valid `structured_output` is now preserved |
 | v0.2.105 | Added `system/memory_recall` event and `memory_paths` on `system/init` for SDK renderers to surface memory operations |
-| v0.2.126 | `planModeInstructions` added to `SDKSessionOptions` — now supported in V2 session API (`unstable_v2_createSession`, `unstable_v2_resumeSession`) |
-| v0.2.126 | Added `network.allowMachLookup` sandbox option (macOS only — allows XPC/Mach service lookups needed for Playwright, iOS Simulator, Go-based tools with MITM proxy) |
-| v0.2.126 | Added `PermissionDenied` hook event (29 total as of v0.2.126) |
-| v0.2.126 | Added `Query.getContextUsage()` method (context window breakdown by category); made `SDKUserMessage.session_id` optional; added `@anthropic-ai/sdk` and `@modelcontextprotocol/sdk` as explicit dependencies (fixes type-any regression) |
+| v0.2.128 | `planModeInstructions` added to `SDKSessionOptions` — now supported in V2 session API (`unstable_v2_createSession`, `unstable_v2_resumeSession`) |
+| v0.2.128 | Added `network.allowMachLookup` sandbox option (macOS only — allows XPC/Mach service lookups needed for Playwright, iOS Simulator, Go-based tools with MITM proxy) |
+| v0.2.128 | Added `PermissionDenied` hook event (29 total as of v0.2.128) |
+| v0.2.128 | Added `Query.getContextUsage()` method (context window breakdown by category); made `SDKUserMessage.session_id` optional; added `@anthropic-ai/sdk` and `@modelcontextprotocol/sdk` as explicit dependencies (fixes type-any regression) |
 | v0.2.94 | Fixed MCP server child processes not being cleaned up when `query()` session ends — resolves zombie process accumulation ([Known Issue #38](#38-mcp-server-processes-remain-as-zombies-after-session-ends--fixed-in-v0294)) |
 | v0.2.94 | Fixed `getContextUsage()` to include agents passed via `options.agents` in the `agents` breakdown |
 | v0.2.92 | Fixed file-based agents from `.claude/agents/` not being discovered as invocable subagent types (regression since v0.2.87) |
@@ -2127,4 +2140,4 @@ const q = query({ prompt: "...", options: { skills: [] } });
 
 ---
 
-**Last verified**: 2026-05-04 | **SDK version**: 0.2.126
+**Last verified**: 2026-05-05 | **SDK version**: 0.2.128

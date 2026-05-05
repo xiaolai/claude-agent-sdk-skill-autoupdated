@@ -2,7 +2,7 @@
 
 A self-updating Claude Code skill for building AI agents with the Claude Agent SDK — covering both [TypeScript](https://github.com/anthropics/claude-agent-sdk-typescript) and [Python](https://github.com/anthropics/claude-agent-sdk-python).
 
-**SDK Version**: TypeScript v0.2.126 | Python v0.1.72 | **This skill is auto-updated**: 2026-05-04
+**SDK Version**: TypeScript v0.2.128 | Python v0.1.73 | **This skill is auto-updated**: 2026-05-05
 
 ## What It Does
 
@@ -73,7 +73,7 @@ Both SDKs wrap the Claude Code CLI and share the same core concepts, but they di
 
 | | TypeScript | Python |
 |---|---|---|
-| **Version** | v0.2.126 | v0.1.72 |
+| **Version** | v0.2.128 | v0.1.73 |
 | **GitHub stars** | ~800 | ~4,800 |
 | **Open issues** | ~176 | ~570 |
 | **Release cadence** | ~daily | ~daily |
@@ -198,6 +198,7 @@ flowchart LR
 
 | Date | SDK Version | Update | Research | Report | Total | Notes |
 |------|-------------|--------|----------|--------|-------|-------|
+| 2026-05-05 | TS v0.2.128 | $0.24 | — | — | **$0.24** | SDK v0.2.126→v0.2.128: sessionStoreFlush option, oauth_org_not_allowed error, SDKMessageOrigin type; GitHub API unavailable |
 | 2026-05-03 | — | $0.18 | — | $0.24 | **$0.42** | SDK v0.2.126→v0.2.126 |
 | 2026-05-02 | — | $0.16 | — | $0.24 | **$0.40** | SDK v0.2.126→v0.2.126 |
 | 2026-04-27 | — | $0.26 | — | $0.24 | **$0.50** | SDK v0.2.119→v0.2.119 |

@@ -1,28 +1,43 @@
 """Custom permission control with Claude Agent SDK."""
 import asyncio
-from claude_agent_sdk import query, ClaudeAgentOptions
-from claude_agent_sdk.types import (
-    ToolPermissionContext, PermissionResultAllow, PermissionResultDeny,
-)
+from claude_agent_sdk import query, ClaudeAgentOptions, HookMatcher, HookContext
 
-async def can_use_tool(
-    tool_name: str, tool_input: dict, context: ToolPermissionContext
-) -> PermissionResultAllow | PermissionResultDeny:
-    read_only = ["Read", "Grep", "Glob"]
-    if tool_name in read_only:
-        return PermissionResultAllow(updated_input=tool_input)
-    if tool_name == "Bash" and any(
-        cmd in tool_input.get("command", "")
-        for cmd in ["rm -rf", "dd if=", "mkfs"]
-    ):
-        return PermissionResultDeny(message="Destructive command blocked")
-    return PermissionResultAllow(updated_input=tool_input)
+# NOTE: Use PreToolUse hooks for permission enforcement (recommended approach).
+# can_use_tool callbacks require AsyncIterable prompts (raises ValueError with
+# string prompts since v0.1.78+), and may not fire reliably — see KI #27.
+
+async def permission_hook(
+    input_data: dict, tool_use_id: str | None, context: HookContext
+) -> dict:
+    """Block dangerous operations using a PreToolUse hook."""
+    tool_name = input_data.get("tool_name", "")
+    tool_input = input_data.get("tool_input", {})
+
+    # Allow read-only tools immediately
+    if tool_name in ["Read", "Grep", "Glob"]:
+        return {}
+
+    # Block destructive bash commands
+    if tool_name == "Bash":
+        dangerous_patterns = ["rm -rf", "dd if=", "mkfs"]
+        command = tool_input.get("command", "")
+        if any(p in command for p in dangerous_patterns):
+            return {
+                "hookSpecificOutput": {
+                    "hookEventName": "PreToolUse",
+                    "permissionDecision": "deny",
+                    "permissionDecisionReason": "Destructive command blocked",
+                }
+            }
+
+    # Allow everything else
+    return {}
 
 async def main():
     from claude_agent_sdk import ResultMessage
 
     options = ClaudeAgentOptions(
-        can_use_tool=can_use_tool,
+        hooks={"PreToolUse": [HookMatcher(hooks=[permission_hook])]},
         permission_mode="default",
         max_turns=10,
     )

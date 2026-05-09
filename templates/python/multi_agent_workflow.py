@@ -3,10 +3,7 @@ import asyncio
 from typing import Any
 from claude_agent_sdk import (
     query, ClaudeAgentOptions, AgentDefinition, create_sdk_mcp_server, tool,
-    AssistantMessage, ResultMessage, TextBlock,
-)
-from claude_agent_sdk.types import (
-    ToolPermissionContext, PermissionResultAllow, PermissionResultDeny,
+    AssistantMessage, ResultMessage, TextBlock, HookMatcher, HookContext,
 )
 
 
@@ -32,15 +29,26 @@ app_tools = create_sdk_mcp_server(
 )
 
 
-async def can_use_tool(
-    tool_name: str, tool_input: dict, context: ToolPermissionContext
-) -> PermissionResultAllow | PermissionResultDeny:
-    """Block destructive commands."""
-    if tool_name == "Bash":
+async def safety_hook(
+    input_data: dict, tool_use_id: str | None, context: HookContext
+) -> dict:
+    """Block destructive commands via PreToolUse hook.
+
+    NOTE: Use PreToolUse hooks instead of can_use_tool — hooks work with string
+    prompts and are the recommended permission enforcement mechanism (KI #27).
+    """
+    if input_data.get("tool_name") == "Bash":
         dangerous = ["rm -rf", "dd if=", "mkfs", "shutdown"]
-        if any(p in tool_input.get("command", "") for p in dangerous):
-            return PermissionResultDeny(message=f"Blocked: {tool_input['command']}")
-    return PermissionResultAllow(updated_input=tool_input)
+        command = input_data.get("tool_input", {}).get("command", "")
+        if any(p in command for p in dangerous):
+            return {
+                "hookSpecificOutput": {
+                    "hookEventName": "PreToolUse",
+                    "permissionDecision": "deny",
+                    "permissionDecisionReason": f"Blocked: {command}",
+                }
+            }
+    return {}
 
 
 async def main():
@@ -72,7 +80,7 @@ async def main():
             "mcp__app-services__send_notification",
             "mcp__app-services__check_health",
         ],
-        can_use_tool=can_use_tool,
+        hooks={"PreToolUse": [HookMatcher(hooks=[safety_hook])]},
         permission_mode="bypassPermissions",
     )
 

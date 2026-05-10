@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-05-10
+
+- No version bump (TS v0.2.138 and PY v0.1.80 unchanged); monitor detected registry dedup artifacts only
+- Update agent made Python doc improvements: new `TaskBudget`/`SdkBeta` type sections, `PermissionUpdate.from_dict()`, store functions updated to `directory=` param with full signatures; TS message count updated to 30
+- Both research agents ran (88 + 81 turns) with no new Known Issues found above scan high-water marks (TS #236, PY #776)
+- Recurring typecheck false-positive (stale-comma in import resolution check, exit code 1); overridden to success in outcomes; verify passed 2/2
+- [Full report](reports/2026-05-10.md)
+
 ## 2026-05-05
 
 - Update agent failed (hit 30-turn max) during TS v0.2.126→0.2.128 + PY v0.1.72→0.1.73 bump; partial changes appear complete (all template/doc/state files updated)

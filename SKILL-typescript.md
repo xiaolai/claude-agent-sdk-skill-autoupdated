@@ -14,7 +14,7 @@
 - [Core API](#core-api) — `query()`, `tool()`, `createSdkMcpServer()`, `startup()`, `resolveSettings()`, `listSessions()`, `getSessionMessages()`, `getSessionInfo()`, `renameSession()`, `forkSession()`, `tagSession()`, `deleteSession()`, `listSubagents()`, `getSubagentMessages()`, `importSessionToStore()`
 - [Options](#options) — Core, Tools & Permissions, Models & Output, Sessions, MCP & Agents, Advanced
 - [Query Object Methods](#query-object-methods)
-- [Message Types](#message-types) — All 29 SDKMessage types
+- [Message Types](#message-types) — All 30 SDKMessage types
 - [Hooks](#hooks) — 29 hook events, matchers, return values, async hooks
 - [Permissions](#permissions) — 5 modes, `canUseTool` callback
 - [MCP Servers](#mcp-servers) — stdio, HTTP, SSE, SDK, claudeai-proxy
@@ -663,7 +663,7 @@ type SDKControlGetContextUsageResponse = {
 
 ## Message Types
 
-The SDK emits 29 message types through the async generator:
+The SDK emits 30 message types through the async generator:
 
 ```typescript
 type SDKMessage =
@@ -698,6 +698,8 @@ type SDKMessage =
   | SDKMemoryRecallMessage        // type: 'system', subtype: 'memory_recall' — memory recall events (relevant memories surfaced into turn)
   // MCP Elicitation
   | SDKElicitationCompleteMessage // type: 'system', subtype: 'elicitation_complete' — MCP elicitation finished
+  // Permissions
+  | SDKPermissionDeniedMessage    // type: 'system', subtype: 'permission_denied' — tool call auto-denied (auto-mode classifier, dontAsk mode, deny rule); only covers silent deny path, not interactive 'ask' path
   // Rate limiting & suggestions
   | SDKRateLimitEvent             // type: 'rate_limit_event' — rate limit status for claude.ai subscriptions
   | SDKPromptSuggestionMessage    // type: 'prompt_suggestion' — predicted next user prompt (requires promptSuggestions: true)
@@ -827,6 +829,7 @@ for await (const message of query({ prompt: "...", options })) {
       if (message.subtype === 'hook_progress') console.log('Hook:', message.output);  // also: .stdout, .stderr, .hook_name, .hook_event
       if (message.subtype === 'local_command_output') console.log('Slash cmd output:', message.content);
       if (message.subtype === 'elicitation_complete') console.log('Elicitation done:', message.mcp_server_name, message.elicitation_id);
+      if (message.subtype === 'permission_denied') console.log('Auto-denied:', message.tool_name, message.message, message.decision_reason_type);  // decision_reason?: string; agent_id?: string
       if (message.subtype === 'task_started') console.log('Task started:', message.task_id, message.description, message.task_type, message.prompt);  // task_type?: string; workflow_name?: string (when task_type is 'local_workflow'); prompt?: string
       if (message.subtype === 'task_updated') console.log('Task updated:', message.task_id, message.patch);  // patch: { status?, description?, end_time?, total_paused_ms?, error?, is_backgrounded? } — merge into local task map
       if (message.subtype === 'task_progress') console.log('Task progress:', message.task_id, message.description, message.last_tool_name, message.usage, message.summary);  // usage: {total_tokens, tool_uses, duration_ms}; last_tool_name?: string; tool_use_id?: string; summary?: string (from agentProgressSummaries)
@@ -2179,4 +2182,4 @@ const q = query({ prompt: "...", options: { skills: [] } });
 
 ---
 
-**Last verified**: 2026-05-09 | **SDK version**: 0.2.138
+**Last verified**: 2026-05-10 | **SDK version**: 0.2.138

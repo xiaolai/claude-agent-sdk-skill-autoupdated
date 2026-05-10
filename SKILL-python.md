@@ -253,7 +253,7 @@ class SdkMcpTool(Generic[T]):
 | `cwd` | `str \| Path \| None` | `None` | Working directory |
 | `system_prompt` | `str \| SystemPromptPreset \| SystemPromptFile \| None` | `None` | System prompt, preset dict, or file reference (see [`SystemPromptPreset`](#systempromptsettings)) |
 | `setting_sources` | `list[SettingSource] \| None` | `None` | Which settings files to load: `"user"` (`~/.claude/`), `"project"` (`.claude/` in cwd), `"local"`. Empty list silently ignored — see [#40](#40-setting_sources-silently-ignored--no-way-to-fully-isolate-from-filesystem-settings) |
-| `env` | `dict[str, str]` | `{}` | Environment variables |
+| `env` | `dict[str, str]` | `{}` | Environment variables. Set `CLAUDE_AGENT_SDK_CLIENT_APP="my-app/1.0.0"` to identify your app in the User-Agent header. |
 | `cli_path` | `str \| Path \| None` | `None` | Custom path to Claude Code CLI |
 
 #### `SystemPromptPreset` / `SystemPromptFile` / `ToolsPreset`
@@ -272,6 +272,31 @@ class ToolsPreset(TypedDict):
 class SystemPromptFile(TypedDict):
     type: Literal["file"]
     path: str                        # Path to a file containing the system prompt
+```
+
+#### `TaskBudget`
+
+```python
+from claude_agent_sdk.types import TaskBudget
+
+class TaskBudget(TypedDict):
+    total: int   # Maximum token budget for the task
+```
+
+Use `task_budget` to signal the model to pace its tool use and wrap up before hitting the limit:
+
+```python
+options = ClaudeAgentOptions(
+    task_budget={"total": 50_000}  # Model paces itself to stay within 50k tokens
+)
+```
+
+#### `SdkBeta`
+
+```python
+from claude_agent_sdk.types import SdkBeta
+
+SdkBeta = Literal["context-1m-2025-08-07"]  # Enable 1M token context window (Sonnet 4/4.5 only)
 ```
 
 Use these to opt in to the full Claude Code system prompt and/or toolset:
@@ -315,7 +340,7 @@ options = ClaudeAgentOptions(
 | `betas` | `list[SdkBeta]` | `[]` | Beta features (e.g., `["context-1m-2025-08-07"]`) |
 | `include_partial_messages` | `bool` | `False` | Include streaming partial `StreamEvent` messages |
 | `include_hook_events` | `bool` | `False` | Emit `HookEventMessage` objects (subtype `"hook_started"` / `"hook_response"`) into the message stream for every hook lifecycle event (matches TS SDK `includeHookEvents`) |
-| `task_budget` | `TaskBudget \| None` | `None` | API-side token budget hint; model paces tool use to finish within limit (`{"total": int}`) |
+| `task_budget` | `TaskBudget \| None` | `None` | API-side token budget hint; model paces tool use to finish within limit (`{"total": int}`). |
 
 ### Sessions
 
@@ -1194,7 +1219,9 @@ class PermissionUpdate:
     directories: list[str] | None = None
     destination: Literal["userSettings", "projectSettings", "localSettings", "session"] | None = None
 
-    def to_dict(self) -> dict[str, Any]: ...  # Converts to TypeScript control protocol format
+    def to_dict(self) -> dict[str, Any]: ...        # Converts to TypeScript control protocol format (camelCase)
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "PermissionUpdate": ...  # Inverse of to_dict(); parses wire format
 ```
 
 #### Example
@@ -1917,6 +1944,8 @@ from claude_agent_sdk import project_key_for_directory
 
 key = project_key_for_directory("/home/user/myproject")
 # Returns a sanitized, stable string for use as SessionKey.project_key
+# Useful for low-level store operations that work directly with SessionKey
+# (the high-level *_from_store / *_via_store functions use directory= instead)
 ```
 
 #### `fold_session_summary`
@@ -1991,11 +2020,21 @@ from claude_agent_sdk import (
     get_subagent_messages_from_store,
 )
 
-sessions = await list_sessions_from_store(store, project_key="my-project")
-info = await get_session_info_from_store(store, project_key="my-project", session_id="<uuid>")
-messages = await get_session_messages_from_store(store, project_key="my-project", session_id="<uuid>")
-agent_ids = await list_subagents_from_store(store, project_key="my-project", session_id="<uuid>")
-sub_msgs = await get_subagent_messages_from_store(store, project_key="my-project", session_id="<uuid>", agent_id="<id>")
+# directory is optional — omit to search all projects in CLAUDE_CONFIG_DIR
+sessions = await list_sessions_from_store(store, directory="/path/to/project")
+info = await get_session_info_from_store(store, session_id="<uuid>", directory="/path/to/project")
+messages = await get_session_messages_from_store(store, session_id="<uuid>", directory="/path/to/project")
+agent_ids = await list_subagents_from_store(store, session_id="<uuid>", directory="/path/to/project")
+sub_msgs = await get_subagent_messages_from_store(store, session_id="<uuid>", agent_id="<id>", directory="/path/to/project")
+```
+
+**Signatures**:
+```python
+async def list_sessions_from_store(session_store, directory=None, limit=None, offset=0) -> list[SDKSessionInfo]
+async def get_session_info_from_store(session_store, session_id, directory=None) -> SDKSessionInfo | None
+async def get_session_messages_from_store(session_store, session_id, directory=None, limit=None, offset=0) -> list[SessionMessage]
+async def list_subagents_from_store(session_store, session_id, directory=None) -> list[str]
+async def get_subagent_messages_from_store(session_store, session_id, agent_id, directory=None, limit=None, offset=0) -> list[SessionMessage]
 ```
 
 #### Store-Backed Mutation Functions
@@ -2008,10 +2047,10 @@ from claude_agent_sdk import (
     fork_session_via_store,
 )
 
-await rename_session_via_store(store, project_key="my-project", session_id="<uuid>", title="New title")
-await tag_session_via_store(store, project_key="my-project", session_id="<uuid>", tag="experiment")
-await delete_session_via_store(store, project_key="my-project", session_id="<uuid>")
-result = await fork_session_via_store(store, project_key="my-project", session_id="<uuid>")
+await rename_session_via_store(store, session_id="<uuid>", title="New title", directory="/path/to/project")
+await tag_session_via_store(store, session_id="<uuid>", tag="experiment", directory="/path/to/project")
+await delete_session_via_store(store, session_id="<uuid>", directory="/path/to/project")
+result = await fork_session_via_store(store, session_id="<uuid>", directory="/path/to/project")
 ```
 
 #### Full Example
@@ -2020,12 +2059,11 @@ result = await fork_session_via_store(store, project_key="my-project", session_i
 import asyncio
 from claude_agent_sdk import (
     InMemorySessionStore, query, ClaudeAgentOptions,
-    ResultMessage, SystemMessage, project_key_for_directory,
+    ResultMessage, SystemMessage,
 )
 
 async def main():
     store = InMemorySessionStore()
-    project_key = project_key_for_directory("/my/project")
 
     # First session — stored automatically
     session_id = None
@@ -2814,4 +2852,4 @@ options = ClaudeAgentOptions(
 
 ---
 
-**Last verified**: 2026-05-09 | **SDK version**: 0.1.80
+**Last verified**: 2026-05-10 | **SDK version**: 0.1.80

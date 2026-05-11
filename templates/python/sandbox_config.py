@@ -26,7 +26,11 @@ async def basic_sandbox():
 
 
 async def production_sandbox():
-    """Production sandbox — restricted network, canUseTool for escape hatch."""
+    """Production sandbox — restricted network, canUseTool for escape hatch.
+
+    NOTE: can_use_tool requires AsyncIterable prompt since v0.1.78+ (KI #27).
+    Using a string prompt with can_use_tool raises ValueError immediately.
+    """
 
     async def can_use_tool(
         tool_name: str, tool_input: dict, context: ToolPermissionContext
@@ -57,7 +61,11 @@ async def production_sandbox():
         },
     )
 
-    async for msg in query(prompt="Deploy and verify health checks", options=options):
+    # can_use_tool requires AsyncIterable prompt (raises ValueError with string prompts)
+    async def prompt_gen():
+        yield {"type": "text", "text": "Deploy and verify health checks"}
+
+    async for msg in query(prompt=prompt_gen(), options=options):
         if isinstance(msg, ResultMessage) and msg.subtype == "success":
             print(msg.result)
 

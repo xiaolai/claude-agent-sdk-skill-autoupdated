@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-05-11
+
+- No version bump (TS v0.2.138 and PY v0.1.80 unchanged); monitor detected registry dedup artifacts only
+- Update agent added `suppressOriginalPrompt`/`effort?` to TS hook docs, V2 session API deprecation notice, and Python `sandbox_config.py` KI #27 fix (can_use_tool requires AsyncIterable prompt)
+- Both research agents ran (82 + 70 turns) with no new Known Issues found above scan high-water marks (TS #236, PY #776)
+- Recurring typecheck false-positive (stale-comma in import resolution check, exit code 1); overridden to success in outcomes; verify passed 2/2
+- [Full report](reports/2026-05-11.md)
+
 ## 2026-05-10
 
 - No version bump (TS v0.2.138 and PY v0.1.80 unchanged); monitor detected registry dedup artifacts only

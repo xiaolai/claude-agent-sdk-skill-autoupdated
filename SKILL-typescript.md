@@ -982,12 +982,13 @@ return {
   }
 };
 
-// UserPromptSubmit only: set a custom session title
+// UserPromptSubmit only: set a custom session title or suppress the original prompt
 return {
   hookSpecificOutput: {
     hookEventName: 'UserPromptSubmit',
     sessionTitle: 'Auth module refactor',  // sets/overrides the session title
-    additionalContext: 'Extra context for this prompt.'
+    additionalContext: 'Extra context for this prompt.',
+    suppressOriginalPrompt: true  // when decision is "block", omit the original prompt from the block message
   }
 };
 
@@ -1043,7 +1044,7 @@ return { async: true, asyncTimeout: 30000 };  // 30s timeout
 
 ### Hook Input Fields
 
-Common fields on all hooks: `session_id`, `transcript_path`, `cwd`, `permission_mode?`, `agent_id?` (set when hook fires from within a subagent), `agent_type?` (set when hook fires from within a subagent, or on the main thread of a session started with `--agent`)
+Common fields on all hooks: `session_id`, `transcript_path`, `cwd`, `permission_mode?`, `agent_id?` (set when hook fires from within a subagent), `agent_type?` (set when hook fires from within a subagent, or on the main thread of a session started with `--agent`), `effort?` (active effort level for the current turn, e.g. `{ level: "high" }`; present for tool-use context hooks — PreToolUse, PostToolUse, Stop, SubagentStop, etc. — on models that support effort; absent for session-lifecycle hooks and models without effort support; also exposed as `CLAUDE_EFFORT` env var)
 
 | Field | Hooks |
 |-------|-------|
@@ -1403,6 +1404,8 @@ for await (const msg of query({
 ---
 
 ## V2 Session API (Preview)
+
+> **⚠️ Deprecated**: `unstable_v2_createSession`, `unstable_v2_resumeSession`, and `unstable_v2_prompt` are officially `@deprecated` in the SDK. Use `query()` instead. The V2 session API will be removed in a future release.
 
 The V2 API simplifies multi-turn conversations by removing async generators. **Unstable** — APIs may change.
 

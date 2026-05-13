@@ -2,7 +2,7 @@
 
 A self-updating Claude Code skill for building AI agents with the Claude Agent SDK — covering both [TypeScript](https://github.com/anthropics/claude-agent-sdk-typescript) and [Python](https://github.com/anthropics/claude-agent-sdk-python).
 
-**SDK Version**: TypeScript v0.2.139 | Python v0.1.81 | **This skill is auto-updated**: 2026-05-12
+**SDK Version**: TypeScript v0.2.140 | Python v0.1.81 | **This skill is auto-updated**: 2026-05-13
 
 ## What It Does
 
@@ -73,7 +73,7 @@ Both SDKs wrap the Claude Code CLI and share the same core concepts, but they di
 
 | | TypeScript | Python |
 |---|---|---|
-| **Version** | v0.2.139 | v0.1.81 |
+| **Version** | v0.2.140 | v0.1.81 |
 | **GitHub stars** | ~800 | ~4,800 |
 | **Open issues** | ~176 | ~570 |
 | **Release cadence** | ~daily | ~daily |
@@ -198,15 +198,13 @@ flowchart LR
 
 | Date | SDK Version | Update | Research | Report | Total | Notes |
 |------|-------------|--------|----------|--------|-------|-------|
+| 2026-05-13 | — | $0.32 | — | $0.23 | **$0.55** | SDK v0.2.139→v0.2.140 |
 | 2026-05-07 | TS v0.2.132 | — | ~$1.50 | — | **~$1.50** | API audit skipped (version unchanged); researched issues #237–#320; 21 already_documented, 63 skipped; no new KIs added (KI #55 is latest) |
 | 2026-05-05 | TS v0.2.128 | $0.24 | — | — | **$0.24** | SDK v0.2.126→v0.2.128: sessionStoreFlush option, oauth_org_not_allowed error, SDKMessageOrigin type; GitHub API unavailable |
 | 2026-05-03 | — | $0.18 | — | $0.24 | **$0.42** | SDK v0.2.126→v0.2.126 |
 | 2026-05-02 | — | $0.16 | — | $0.24 | **$0.40** | SDK v0.2.126→v0.2.126 |
 | 2026-04-27 | — | $0.26 | — | $0.24 | **$0.50** | SDK v0.2.119→v0.2.119 |
 | 2026-04-10 | — | $0.24 | — | $0.23 | **$0.47** | SDK v0.2.97→v0.2.98 |
-| 2026-04-07 | — | — | — | $0.18 | **$0.18** | Research only |
-| 2026-04-06 | — | — | — | $0.20 | **$0.20** | Research only |
-| 2026-04-05 | — | — | — | $0.22 | **$0.22** | Research only |
 
 _Last 7 days only. Updated automatically by the report agent. See [reports/](reports/) for full history._
 

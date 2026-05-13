@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-05-13
+
+- SDK v0.2.139 → v0.2.140 (TS only; Python unchanged at v0.1.81)
+- 8 files updated by update agent; verify passed 18/18 on attempt 2 (1 mend run for recurring typecheck false-positive)
+- Both research agents ran (43 + 51 turns); no new Known Issues found above high-water marks (TS #236, PY #776)
+- [Full report](reports/2026-05-13.md)
+
 ## 2026-05-11
 
 - No version bump (TS v0.2.138 and PY v0.1.80 unchanged); monitor detected registry dedup artifacts only

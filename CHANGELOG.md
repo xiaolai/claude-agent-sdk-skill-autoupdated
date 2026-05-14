@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-05-14
+
+- SDK v0.2.140 → v0.2.141 (TS only; Python unchanged at v0.1.81)
+- KI #43 updated (Zod v4 `.describe()` partial fix in v0.2.89); KI #52 marked fixed (v0.2.128); new v0.2.141 features documented (`planModeInstructions`, `network.allowMachLookup`, `PermissionDenied` hook)
+- Both research agents ran (81 + 69 turns); no new Known Issues above high-water marks (TS #236, PY #776)
+- Recurring typecheck false-positive (stale-comma in import check, exit code 1); overridden to success; verify passed 18/18 on attempt 2 (1 mend run)
+- [Full report](reports/2026-05-14.md)
+
 ## 2026-05-13
 
 - SDK v0.2.139 → v0.2.140 (TS only; Python unchanged at v0.1.81)

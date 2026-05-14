@@ -1,7 +1,7 @@
-# Claude Agent SDK — TypeScript Reference (v0.2.140)
+# Claude Agent SDK — TypeScript Reference (v0.2.141)
 
 
-**Package**: `@anthropic-ai/claude-agent-sdk@0.2.140`
+**Package**: `@anthropic-ai/claude-agent-sdk@0.2.141`
 **Docs**: https://platform.claude.com/docs/en/agent-sdk/overview
 **Repo**: https://github.com/anthropics/claude-agent-sdk-typescript
 **Migration**: Renamed from `@anthropic-ai/claude-code`. See [migration guide](https://platform.claude.com/docs/en/agent-sdk/migration-guide).
@@ -574,7 +574,7 @@ await q.setMcpServers(newServersConfig);    // Replace MCP servers mid-session
 
 // Plugin management
 await q.reloadPlugins();                    // Reload plugins from disk; returns { commands, agents, plugins, mcpServers, error_count }
-await q.getContextUsage();                  // Get context window usage breakdown by category — returns SDKControlGetContextUsageResponse (v0.2.140)
+await q.getContextUsage();                  // Get context window usage breakdown by category — returns SDKControlGetContextUsageResponse (v0.2.141)
 await q.readFile(path, { maxBytes?, encoding?: 'utf-8' | 'base64' });  // Read a file from the session filesystem (gated by same read-permission rules as Read tool); returns SDKControlReadFileResponse | null. Use 'base64' for binary files like images.
 
 // File checkpointing (requires enableFileCheckpointing: true)
@@ -678,7 +678,7 @@ type SDKMessage =
   // Status & progress
   | SDKStatusMessage              // type: 'system', subtype: 'status' — status updates (e.g., 'compacting')
   | SDKSessionStateChangedMessage // type: 'system', subtype: 'session_state_changed' — idle/running/requires_action
-  | SDKAPIRetryMessage            // type: 'system', subtype: 'api_retry' — transient API error being retried (v0.2.140)
+  | SDKAPIRetryMessage            // type: 'system', subtype: 'api_retry' — transient API error being retried (v0.2.141)
   | SDKToolProgressMessage        // type: 'tool_progress' — tool execution progress with elapsed time
   | SDKToolUseSummaryMessage      // type: 'tool_use_summary' — summary of tool usage
   | SDKAuthStatusMessage          // type: 'auth_status' — authentication status
@@ -707,7 +707,7 @@ type SDKMessage =
   | SDKMirrorErrorMessage         // type: 'system', subtype: 'mirror_error' — SessionStore.append() failed/timed out (batch dropped, at-most-once delivery)
 ```
 
-### SDKAPIRetryMessage (v0.2.140)
+### SDKAPIRetryMessage (v0.2.141)
 
 ```typescript
 { type: 'system', subtype: 'api_retry', uuid, session_id,
@@ -1923,18 +1923,33 @@ sandbox: {
 **Note**: Install bubblewrap with `apt-get install bubblewrap` (Debian/Ubuntu) or `dnf install bubblewrap` (Fedora/RHEL).
 
 ### #43: `createSdkMcpServer` drops Zod v4 field `.describe()` metadata from tool input schemas
-**Error**: Field descriptions defined with `.describe()` in Zod v4 schemas are absent from the MCP `tools/list` response — Claude has no per-field guidance ([#243](https://github.com/anthropics/claude-agent-sdk-typescript/issues/243))
-**Cause**: The SDK's internal Zod-to-JSON-Schema converter reads `.describe()` metadata from `schema._def.description` (Zod v3 location). In Zod v4, `.describe()` stores metadata on the schema instance (`schema.description`) and in a metadata registry (`schema.meta()?.description`). The converter does not read from these new locations, so all field descriptions are silently dropped.
-**Impact**: Affects any `tool()` definition using Zod v4 with per-field `.describe()` calls. Tool-level descriptions (the second argument to `tool()`) still work. Only field-level descriptions in the shape object are affected.
-**Workaround**: Downgrade to Zod v3 (`npm install zod@3`) until the SDK updates its converter:
+**Error**: Field descriptions defined with `.describe()` in Zod v4 schemas are absent from the MCP `tools/list` response — Claude has no per-field guidance ([#243](https://github.com/anthropics/claude-agent-sdk-typescript/issues/243), [#325](https://github.com/anthropics/claude-agent-sdk-typescript/issues/325))
+**Cause**: The SDK's internal Zod-to-JSON-Schema converter reads `.describe()` metadata from `schema._def.description` (Zod v3 location). In Zod v4, `.describe()` stores metadata on the schema instance (`schema.description`) and in a metadata registry (`schema.meta()?.description`). The converter does not read from these new locations for all cases.
+**Status**: Partially fixed in v0.2.89 — top-level shape properties (tools passed in the `tools` array at `createSdkMcpServer` creation time) now have their `.describe()` descriptions preserved. Two remaining gaps:
+1. **Nested properties** — `.describe()` on nested objects/arrays within the top-level schema is still dropped
+2. **`registerTool` after creation** — tools added via `server.registerTool(...)` after `createSdkMcpServer` returns are not backfilled with descriptions
+**Impact**: Affects any `tool()` definition using Zod v4 with nested `.describe()` calls or tools registered dynamically.
+**Workaround**: For the remaining cases, use `jsonSchema` (a plain JSON Schema object) instead of a Zod schema for tool input definitions to bypass the converter entirely:
 ```typescript
-// With Zod v4 — field descriptions silently dropped:
+// With Zod v4 nested — descriptions silently dropped:
 tool("create_item", "Create an item", {
-  userId: z.string().describe("related user id"),  // description lost
+  metadata: z.object({
+    label: z.string().describe("human-readable label"),  // lost for nested
+  }),
 }, handler);
 
-// Workaround: use Zod v3 — descriptions preserved correctly
-// npm install zod@3
+// Workaround: pass JSON Schema directly instead of Zod
+tool("create_item", "Create an item", {
+  type: "object" as const,
+  properties: {
+    metadata: {
+      type: "object",
+      properties: {
+        label: { type: "string", description: "human-readable label" }  // preserved
+      }
+    }
+  }
+}, handler);
 ```
 
 ### #44: `ExitWorktree` state lost across `query()` calls — cannot exit a worktree opened in a previous call
@@ -2074,11 +2089,22 @@ async function listSessionsDirect(projectDir?: string) {
 ```
 This approach stays under 80MB RSS regardless of polling frequency.
 
-### #52: `PostToolUse` callback-only hooks: return value (`updatedMCPToolOutput`) silently discarded
+### #52: `PostToolUse` callback-only hooks: return value (`updatedMCPToolOutput`) silently discarded ✅ Fixed in v0.2.128
 **Error**: MCP tool output in the transcript and live API calls remains unchanged even when a `PostToolUse` callback returns `{ updatedMCPToolOutput: "..." }` ([#280](https://github.com/anthropics/claude-agent-sdk-typescript/issues/280))
-**Cause**: The SDK hook executor has two paths: (1) a mixed-hooks path (≥1 non-callback hook) that extracts and persists `hookSpecificOutput` fields, and (2) a callback-only fast path used when all hooks are JavaScript callbacks (the normal SDK pattern). The fast path runs `await c.callback(...); return;` and discards the return value entirely, leaving the original tool response unchanged.
-**Impact**: Any application using `PostToolUse` callbacks to rewrite, redact, or replace MCP tool responses (e.g., sanitize PII, truncate large outputs, replace errors with custom messages) will find that modifications are silently ignored — neither persisted to the JSONL transcript nor visible to the model in subsequent API calls.
-**Workaround**: Post-process MCP tool results at transcript persist time — after the `query()` completes, read the session JSONL file via `getSessionMessages()`, apply your transformations, and write to your own storage backend. There is currently no hook-based workaround that applies the modification in-flight.
+**Cause**: The SDK hook executor had two paths: (1) a mixed-hooks path (≥1 non-callback hook) that extracts and persists `hookSpecificOutput` fields, and (2) a callback-only fast path used when all hooks are JavaScript callbacks. The fast path ran `await c.callback(...); return;` and discarded the return value entirely, leaving the original tool response unchanged.
+**Fix** (v0.2.128): The callback-only fast path was narrowed to only apply to *internal* harness callbacks. SDK-registered `HookCallback`s now always go through the full processing path that captures the return value and propagates `hookSpecificOutput`.
+**Also**: As of v0.2.121, `PostToolUseHookSpecificOutput` has a new `updatedToolOutput` field that works for **all** tools (built-in and MCP alike), not just MCP tools. `updatedMCPToolOutput` still works for MCP tools but `updatedToolOutput` is the recommended field going forward:
+```typescript
+// Recommended (v0.2.121+) — works for built-in tools too
+hooks: {
+  PostToolUse: [{ hooks: [async (input) => ({
+    hookSpecificOutput: {
+      hookEventName: "PostToolUse",
+      updatedToolOutput: "sanitized output",  // replaces output for any tool
+    }
+  })] }],
+}
+```
 
 ### #53: Runtime `<system-reminder>` injections bust prompt cache prefix every turn — `cache_create` instead of `cache_read` on every call
 **Symptom**: Prompt cache hit rate near 0% for user messages despite identical content; `cache_create` used every turn instead of `cache_read`; ~11K message tokens recalculated per turn (~$0.08/turn in extra input costs) ([#263](https://github.com/anthropics/claude-agent-sdk-typescript/issues/263), [#269](https://github.com/anthropics/claude-agent-sdk-typescript/issues/269))
@@ -2152,17 +2178,17 @@ const q = query({ prompt: "...", options: { skills: [] } });
 
 ---
 
-## Changelog Highlights (v0.2.12 → v0.2.140)
+## Changelog Highlights (v0.2.12 → v0.2.141)
 
 | Version | Change |
 |---------|--------|
-| v0.2.140 | Added `sessionStoreFlush` option (@alpha) — controls flush strategy for `sessionStore` transcript mirroring (`'batched'` default buffers per-turn, `'eager'` delivers each frame as its own `append()` batch for near-real-time delivery; added `'oauth_org_not_allowed'` error code to `SDKAssistantMessageError`; added `origin?: SDKMessageOrigin` field to both `SDKResultSuccess` and `SDKResultError`; added `SDKMessageOrigin` type (`'human' \| 'channel' \| 'peer' \| 'task-notification' \| 'coordinator'`) |
+| v0.2.141 | Added `sessionStoreFlush` option (@alpha) — controls flush strategy for `sessionStore` transcript mirroring (`'batched'` default buffers per-turn, `'eager'` delivers each frame as its own `append()` batch for near-real-time delivery; added `'oauth_org_not_allowed'` error code to `SDKAssistantMessageError`; added `origin?: SDKMessageOrigin` field to both `SDKResultSuccess` and `SDKResultError`; added `SDKMessageOrigin` type (`'human' \| 'channel' \| 'peer' \| 'task-notification' \| 'coordinator'`) |
 | v0.2.105 | Fixed `error_max_structured_output_retries` being incorrectly emitted when the final retry attempt succeeded — valid `structured_output` is now preserved |
 | v0.2.105 | Added `system/memory_recall` event and `memory_paths` on `system/init` for SDK renderers to surface memory operations |
-| v0.2.140 | `planModeInstructions` added to `SDKSessionOptions` — now supported in V2 session API (`unstable_v2_createSession`, `unstable_v2_resumeSession`) |
-| v0.2.140 | Added `network.allowMachLookup` sandbox option (macOS only — allows XPC/Mach service lookups needed for Playwright, iOS Simulator, Go-based tools with MITM proxy) |
-| v0.2.140 | Added `PermissionDenied` hook event (29 total as of v0.2.140) |
-| v0.2.140 | Added `Query.getContextUsage()` method (context window breakdown by category); made `SDKUserMessage.session_id` optional; added `@anthropic-ai/sdk` and `@modelcontextprotocol/sdk` as explicit dependencies (fixes type-any regression) |
+| v0.2.141 | `planModeInstructions` added to `SDKSessionOptions` — now supported in V2 session API (`unstable_v2_createSession`, `unstable_v2_resumeSession`) |
+| v0.2.141 | Added `network.allowMachLookup` sandbox option (macOS only — allows XPC/Mach service lookups needed for Playwright, iOS Simulator, Go-based tools with MITM proxy) |
+| v0.2.141 | Added `PermissionDenied` hook event (29 total as of v0.2.141) |
+| v0.2.141 | Added `Query.getContextUsage()` method (context window breakdown by category); made `SDKUserMessage.session_id` optional; added `@anthropic-ai/sdk` and `@modelcontextprotocol/sdk` as explicit dependencies (fixes type-any regression) |
 | v0.2.94 | Fixed MCP server child processes not being cleaned up when `query()` session ends — resolves zombie process accumulation ([Known Issue #38](#38-mcp-server-processes-remain-as-zombies-after-session-ends--fixed-in-v0294)) |
 | v0.2.94 | Fixed `getContextUsage()` to include agents passed via `options.agents` in the `agents` breakdown |
 | v0.2.92 | Fixed file-based agents from `.claude/agents/` not being discovered as invocable subagent types (regression since v0.2.87) |
@@ -2185,4 +2211,4 @@ const q = query({ prompt: "...", options: { skills: [] } });
 
 ---
 
-**Last verified**: 2026-05-13 | **SDK version**: 0.2.140
+**Last verified**: 2026-05-14 | **SDK version**: 0.2.141

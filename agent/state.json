@@ -1,7 +1,7 @@
 {
   "typescript": {
     "registry": {
-      "version": "0.2.140",
+      "version": "0.2.141",
       "peerDependencies": {
         "zod": "^4.0.0"
       },
@@ -636,7 +636,7 @@
       }
     },
     "lastScannedIssueNumber": 236,
-    "lastAuditedVersion": "0.2.140"
+    "lastAuditedVersion": "0.2.141"
   },
   "python": {
     "registry": {
@@ -1448,5 +1448,5 @@
     "lastScannedIssueNumber": 776,
     "lastAuditedVersion": "0.1.56"
   },
-  "lastUpdated": "2026-05-13T08:56:34Z"
+  "lastUpdated": "2026-05-14T08:51:58Z"
 }

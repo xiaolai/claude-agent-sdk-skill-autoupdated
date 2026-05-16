@@ -1,9 +1,11 @@
 {
   "typescript": {
     "registry": {
-      "version": "0.3.142",
+      "version": "0.3.143",
       "peerDependencies": {
-        "zod": "^4.0.0"
+        "zod": "^4.0.0",
+        "@anthropic-ai/sdk": ">=0.93.0",
+        "@modelcontextprotocol/sdk": "^1.29.0"
       },
       "engines": {
         "node": ">=18.0.0"
@@ -636,7 +638,7 @@
       }
     },
     "lastScannedIssueNumber": 236,
-    "lastAuditedVersion": "0.3.142"
+    "lastAuditedVersion": "0.3.143"
   },
   "python": {
     "registry": {
@@ -1448,5 +1450,5 @@
     "lastScannedIssueNumber": 776,
     "lastAuditedVersion": "0.1.56"
   },
-  "lastUpdated": "2026-05-15T08:58:19Z"
+  "lastUpdated": "2026-05-16T08:30:53Z"
 }

@@ -291,6 +291,16 @@ options = ClaudeAgentOptions(
 )
 ```
 
+#### `EffortLevel`
+
+```python
+from claude_agent_sdk import EffortLevel
+
+EffortLevel = Literal["low", "medium", "high", "xhigh", "max"]
+# "xhigh" requires Opus 4.7+; falls back to "high" on other models.
+# Also accepted as effort: int by AgentDefinition (not ClaudeAgentOptions).
+```
+
 #### `SdkBeta`
 
 ```python
@@ -1152,12 +1162,14 @@ PermissionMode = Literal[
     "acceptEdits",        # Auto-allow file edits, prompt for others
     "plan",               # Read-only planning mode — no writes/execution
     "bypassPermissions",  # Skip all prompts (use with caution)
-    "dontAsk",            # Never ask for permission (alias for bypassPermissions in some contexts)
-    "auto",               # Delegate permission decisions to the CLI heuristics (added v0.1.57)
+    "dontAsk",            # Don't prompt for permissions; deny if not pre-approved by allow rules
+    "auto",               # A model classifier approves or denies each tool call (added v0.1.57)
 ]
 ```
 
 **Note**: The Python SDK exposes 6 permission modes as of v0.2.82 (`dontAsk` added in v0.2.82; `auto` added in v0.1.57). The TypeScript SDK additionally has `"delegate"`.
+
+**`dontAsk` vs `bypassPermissions`**: These are distinct modes. `bypassPermissions` silently allows all tool calls; `dontAsk` denies any tool call not pre-approved via `allowed_tools` or permission rules (no prompt shown to user).
 
 ### `can_use_tool`
 
@@ -1849,6 +1861,12 @@ def fork_session(
 ```
 
 **`ForkSessionResult`**:
+
+```python
+@dataclass
+class ForkSessionResult:
+    session_id: str  # UUID of the newly created forked session
+```
 
 ```python
 from claude_agent_sdk import fork_session, delete_session, ForkSessionResult

@@ -2758,23 +2758,24 @@ async for msg in query(prompt="/my-skill", options=options):
 ```
 Alternatively, use `setting_sources=["user", "project", "local"]` with the skill referenced in CLAUDE.md — this may help the CLI discover plugin-installed skills in some configurations.
 
-### #40: `setting_sources=[]` Silently Ignored — No Way to Fully Isolate from Filesystem Settings
-**Error**: Passing `setting_sources=[]` to disable all setting sources has no effect; the CLI still loads its default settings ([#794](https://github.com/anthropics/claude-agent-sdk-python/issues/794))
-**Cause**: Two compounding bugs: (1) SDK uses a truthiness check (`if self._options.setting_sources:`) rather than a `None` check, so an empty list evaluates to `False` and the `--setting-sources` flag is never passed to the CLI. (2) Even if the flag were passed with an empty value, the CLI silently ignores it and falls back to defaults.
-**Impact**: There is currently **no way to fully isolate an SDK application from all filesystem settings** (e.g., `~/.claude/settings.json`). This is relevant when running multi-tenant servers where per-user settings should not bleed into SDK queries.
-**Partial workaround**: `setting_sources=["project"]` excludes user-level settings (`~/.claude/`) but still loads `.claude/settings.json` if present in the `cwd`. See also [Known Issue #18](#18-global-claudesettingsjson-overrides-sdk-configuration) for the broader settings override problem.
+### #40: `setting_sources=[]` Does Not Fully Isolate from All Settings Sources
+**Error**: Passing `setting_sources=[]` to disable all setting sources may not prevent all external settings from loading ([#794](https://github.com/anthropics/claude-agent-sdk-python/issues/794), [#853](https://github.com/anthropics/claude-agent-sdk-python/issues/853))
+**Cause**: Two remaining issues after the v0.2.82 fix: (1) **Fixed in v0.2.82** — The SDK previously used a truthiness check (`if self._options.setting_sources:`) so an empty list `[]` was silently omitted. PR [#822](https://github.com/anthropics/claude-agent-sdk-python/issues/822) fixed this to use `is not None`. (2) **Still open** — OAuth-fetched claude.ai MCP servers (Figma, Gmail, Calendar, Drive, etc. provisioned on the operator's claude.ai account) are NOT filtered by `setting_sources=[]`. These MCP servers are fetched via OAuth at runtime and loaded regardless of `setting_sources` value.
+**Impact**: Even with `setting_sources=[]` on v0.2.82+, OAuth-provisioned claude.ai MCP servers still appear as available tools. This is relevant for multi-tenant deployments where operator's personal claude.ai MCP servers should not be exposed to users.
+**Partial workaround**: `setting_sources=["project"]` excludes user-level settings (`~/.claude/`) but still loads `.claude/settings.json` in `cwd`. Use `strict_mcp_config=True` to filter extra MCP servers (including OAuth ones). See also [Known Issue #18](#18-global-claudesettingsjson-overrides-sdk-configuration).
 ```python
-# WRONG — empty list is falsy, flag is silently omitted, all settings still load
+# WRONG on pre-v0.2.82 — empty list was falsy, flag was silently omitted
 options = ClaudeAgentOptions(setting_sources=[])
 
-# WRONG — [""] passes the flag but CLI ignores empty strings, still loads all settings
-options = ClaudeAgentOptions(setting_sources=[""])
+# CORRECT on v0.2.82+ — empty list now passed as --setting-sources= to CLI
+# BUT: OAuth-fetched claude.ai MCP servers are still NOT filtered
+options = ClaudeAgentOptions(setting_sources=[])
+
+# BETTER — also set strict_mcp_config to block OAuth MCP servers
+options = ClaudeAgentOptions(setting_sources=[], strict_mcp_config=True)
 
 # PARTIAL WORKAROUND — excludes ~/.claude/ but still loads .claude/settings.json in cwd
 options = ClaudeAgentOptions(setting_sources=["project"])
-
-# Use None (default) to load all sources explicitly
-options = ClaudeAgentOptions(setting_sources=None)
 ```
 
 ### #41: `ThinkingBlock` Missing `signature` Field Crashes Message Parser
@@ -2838,6 +2839,12 @@ options = ClaudeAgentOptions(
 )
 ```
 **Note**: Pinning to v0.1.45 loses all SDK improvements since that version (no `task_budget`, no `get_context_usage()`, no `exclude_dynamic_sections`, no background task messages, etc.). Monitor [#789](https://github.com/anthropics/claude-agent-sdk-python/issues/789) for an official fix.
+
+### #44: Session Resume Fails with 400 Error Due to Invalid `tool_use.id` Format
+**Error**: `API Error: 400 Invalid tool_use_id format: must match ^[a-zA-Z0-9_-]+$` when resuming sessions created with certain CLI versions ([#856](https://github.com/anthropics/claude-agent-sdk-python/issues/856))
+**Cause**: Some CLI versions generate `tool_use.id` values in the format `functions.{ToolName}:{N}` (e.g., `functions.AskUserQuestion:1`). These contain `.` and `:` characters that violate the Anthropic API's strict validation pattern `^[a-zA-Z0-9_-]+$`. While valid in the local JSONL transcript, these IDs fail when replayed during session resume — the API rejects the entire request with a 400 error.
+**Fix**: Not yet released. PR [#876](https://github.com/anthropics/claude-agent-sdk-python/issues/876) sanitizes affected tool IDs during resume. Upgrade when available.
+**Workaround**: If a session fails to resume with a 400 error referencing `tool_use_id`, start a fresh session instead. There is no safe way to repair the transcript without risk of corruption. Affected sessions were likely created with older bundled CLI versions — newer CLIs in v0.2.82 generate conforming IDs.
 
 ---
 

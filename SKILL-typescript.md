@@ -1,7 +1,7 @@
-# Claude Agent SDK — TypeScript Reference (v0.3.143)
+# Claude Agent SDK — TypeScript Reference (v0.2.141)
 
 
-**Package**: `@anthropic-ai/claude-agent-sdk@0.3.143`
+**Package**: `@anthropic-ai/claude-agent-sdk@0.2.141`
 **Docs**: https://platform.claude.com/docs/en/agent-sdk/overview
 **Repo**: https://github.com/anthropics/claude-agent-sdk-typescript
 **Migration**: Renamed from `@anthropic-ai/claude-code`. See [migration guide](https://platform.claude.com/docs/en/agent-sdk/migration-guide).
@@ -2222,4 +2222,4 @@ const q = query({ prompt: "...", options: { skills: [] } });
 
 ---
 
-**Last verified**: 2026-05-16 | **SDK version**: 0.3.143
+**Last verified**: 2026-05-17 | **SDK version**: 0.2.141

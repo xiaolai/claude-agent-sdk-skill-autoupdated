@@ -1,8 +1,8 @@
 {
   "name": "claude-agent-sdk",
-  "description": "[DEPRECATED 2026-05-18 — superseded by https://github.com/xiaolai/autoupdated-anthropic-documentation-knowledge (claude-agent-sdk skill)] Build autonomous AI agents with Claude Agent SDK. TypeScript v0.2.141 | Python v0.2.82. API reference for query(), hooks, subagents, MCP, permissions, sandbox, structured outputs, and sessions.",
+  "description": "[DEPRECATED 2026-05-18 — superseded by https://github.com/xiaolai/anthropic-docs (claude-agent-sdk skill)] Build autonomous AI agents with Claude Agent SDK. TypeScript v0.2.141 | Python v0.2.82. API reference for query(), hooks, subagents, MCP, permissions, sandbox, structured outputs, and sessions.",
   "version": "2.0.0-deprecated",
-  "deprecated": "Superseded by autoupdated-anthropic-documentation-knowledge — see https://github.com/xiaolai/autoupdated-anthropic-documentation-knowledge",
+  "deprecated": "Superseded by anthropic-docs — see https://github.com/xiaolai/anthropic-docs",
   "author": {
     "name": "xiaolai"
   },

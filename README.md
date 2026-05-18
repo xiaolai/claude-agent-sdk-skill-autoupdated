@@ -1,21 +1,23 @@
 # ⚠️ Deprecated — superseded 2026-05-18
 
-> This skill has been folded into the **autoupdated-anthropic-documentation-knowledge**
-> multi-skill plugin, which auto-refreshes 8 Anthropic documentation skills every
-> 30 minutes (vs daily here). The Claude Agent SDK content lives there now as
-> the `claude-agent-sdk` skill — same coverage (TypeScript + Python), fresher
-> upstream, plus cross-references to `claude-code`, `anthropic-api`, `mcp-spec`,
-> and `anthropic-pulse` (release-news digest).
+> This skill has been folded into the **`anthropic-docs`** multi-skill plugin,
+> which auto-refreshes 8 Anthropic documentation skills every 30 minutes
+> (vs daily here). The Claude Agent SDK content lives there now as the
+> `claude-agent-sdk` skill — same coverage (TypeScript + Python), fresher
+> upstream, plus cross-references to `claude-code`, `anthropic-api`,
+> `mcp-spec`, and `anthropic-pulse` (release-news digest).
 >
-> **New home:** <https://github.com/xiaolai/autoupdated-anthropic-documentation-knowledge>
+> **New home:** <https://github.com/xiaolai/anthropic-docs>
 >
 > **Migrate:**
 >
 > ```bash
-> # Remove the old install
+> # Remove the old skill install
 > rm -rf ~/.claude/skills/claude-agent-sdk-skill-autoupdated
 >
-> # Install the multi-skill plugin via the marketplace (see new repo's README)
+> # Install the new multi-skill plugin from the xiaolai marketplace
+> claude plugin marketplace add xiaolai/claude-plugin-marketplace
+> claude plugin install anthropic-docs@xiaolai
 > ```
 >
 > This repository is archived (read-only). Content below is preserved for

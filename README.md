@@ -1,3 +1,28 @@
+# ⚠️ Deprecated — superseded 2026-05-18
+
+> This skill has been folded into the **autoupdated-anthropic-documentation-knowledge**
+> multi-skill plugin, which auto-refreshes 8 Anthropic documentation skills every
+> 30 minutes (vs daily here). The Claude Agent SDK content lives there now as
+> the `claude-agent-sdk` skill — same coverage (TypeScript + Python), fresher
+> upstream, plus cross-references to `claude-code`, `anthropic-api`, `mcp-spec`,
+> and `anthropic-pulse` (release-news digest).
+>
+> **New home:** <https://github.com/xiaolai/autoupdated-anthropic-documentation-knowledge>
+>
+> **Migrate:**
+>
+> ```bash
+> # Remove the old install
+> rm -rf ~/.claude/skills/claude-agent-sdk-skill-autoupdated
+>
+> # Install the multi-skill plugin via the marketplace (see new repo's README)
+> ```
+>
+> This repository is archived (read-only). Content below is preserved for
+> historical reference and is no longer maintained.
+
+---
+
 # Claude Agent SDK Skill (Auto-Updated)
 
 A self-updating Claude Code skill for building AI agents with the Claude Agent SDK — covering both [TypeScript](https://github.com/anthropics/claude-agent-sdk-typescript) and [Python](https://github.com/anthropics/claude-agent-sdk-python).
